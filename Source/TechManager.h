@@ -13,6 +13,7 @@ private:
     static bool tech_avail_; // Set to true (by canMakeTechExpendituresUpdate) if there is a tech I can get.
 
 public:
+
     static bool updateCanMakeTechExpenditures(); //Checks if a tech item can be purchased (usually has gas).
     static void updateOptimalTech(); //Runs a round of FAP sims and then updates the scores of all the tech in the upgrade cycle. Will consider tech if the upgrade is not full and in the upgrade cartridge. Calls chooseTech();
     static void weightOptimalTech(const bool & condition, const UpgradeType & up, const double & weight);

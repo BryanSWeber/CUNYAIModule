@@ -269,7 +269,7 @@ void Diagnostics::printPhase(const StoredUnit unit, const Position & screen_pos)
 void Diagnostics::drawReservations(const Reservation reservations, const Position & screen_pos)
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        for (auto const res : reservations.getReservedUnits()) {
+        for (auto const res : reservations.getReservedBuildings()) {
             Position upper_left = Position(res.first);
             Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
@@ -415,7 +415,7 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         int u_count = CUNYAIModule::countUnits(((UnitType)i), res);
         if (u_count > 0) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "Reserved Buildings:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y, "Reserved Buildings/Units:");  //
             Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
             another_row_of_printing++;
         }

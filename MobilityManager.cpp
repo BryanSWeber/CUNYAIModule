@@ -244,10 +244,10 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
     //}
 
     if (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Egg, ei) < ei.unit_map_.size()) {
-        Diagnostics::DiagnosticText("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
-        Diagnostics::DiagnosticText("This is the passed unit map");
+        Diagnostics::DiagnosticWrite("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
+        Diagnostics::DiagnosticWrite("This is the passed unit map");
         for (auto u : ei.unit_map_) {
-            Diagnostics::DiagnosticText("%s", u.second.type_.c_str());
+            Diagnostics::DiagnosticWrite("%s", u.second.type_.c_str());
         }
     }
     return false; // no target, we got a falsehood.
@@ -261,7 +261,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
 bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_) && CUNYAIModule::currentMapInventory.isTileGroundThreatened(pos_)) {
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
@@ -291,7 +291,7 @@ bool Mobility::Scatter_Logic(const Position pos)
     Position problem_pos = Positions::Origin;
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_)) {
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
@@ -345,8 +345,8 @@ Position Mobility::encircle() {
         return Positions::Origin;
 
     //otherwise, move to a spot that is blind, or
-    for (auto x = -7; x < 7; x++) {
-        for (auto y = -7; y < 7; y++) {
+    for (auto x = -8; x < 8; x++) {
+        for (auto y = -8; y < 8; y++) {
             TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
             if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && dis(gen) > 0.5){ // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
                 CUNYAIModule::currentMapInventory.setSurroundField(target_tile, false);
@@ -383,7 +383,7 @@ Position Mobility::avoid_edges() {
     }
 
     if (higher_ground.empty()) {
-        Diagnostics::DiagnosticText("No higher ground?");
+        Diagnostics::DiagnosticWrite("No higher ground?");
         return Positions::Origin;
     }
     else {

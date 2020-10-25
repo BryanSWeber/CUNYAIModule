@@ -179,7 +179,7 @@ void BaseManager::updateBases()
 
         if (enemy_unit_count_ >= 2 && !CUNYAIModule::buildorder.ever_clear_) {
             CUNYAIModule::buildorder.clearRemainingBuildOrder(false);
-            Diagnostics::DiagnosticText("Clearing Build order since there are %d baddies nearby.", enemy_unit_count_);
+            Diagnostics::DiagnosticWrite("Clearing Build order since there are %d baddies nearby.", enemy_unit_count_);
         }
 
         Mobility base_mobility = Mobility(b.second.unit_);

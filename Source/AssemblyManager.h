@@ -20,9 +20,9 @@ using namespace std;
 //There should only be one assembly manager, so it can be declared static fairly safely.
 class AssemblyManager {
 private:
-    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
-    static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
-    inline static std::map<UnitType, int> max_units_ = { { UnitTypes::Zerg_Ultralisk, 4 },
+    static std::map<UnitType, int> assemblyCycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> coreBuildings_; // persistent set of intended buildings.
+    inline static std::map<UnitType, int> maxUnits_ = { { UnitTypes::Zerg_Ultralisk, 4 },
                                                         { UnitTypes::Zerg_Mutalisk, 75 },
                                                         { UnitTypes::Zerg_Scourge, 12 },
                                                         { UnitTypes::Zerg_Hydralisk, 36 },
@@ -47,15 +47,15 @@ private:
                                                         { UnitTypes::Zerg_Sunken_Colony, 30 },
                                                         { UnitTypes::Zerg_Spore_Colony, 30 } }; // persistent hard maximums for all combat units.
 
-    static UnitInventory larva_bank_; // collection of larva interested in morphing units.
-    static UnitInventory hydra_bank_; // colleciton of hydras that may morph into lurkers.
-    static UnitInventory muta_bank_; // collection of mutas that may morph into mutas.
-    static UnitInventory builder_bank_; // collection of drones that could build.
-    static UnitInventory creep_colony_bank_; // collection of creep colonies that could morph into sunkens/spores.
-    static UnitInventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
+    static UnitInventory larvaBank_; // collection of larva interested in morphing units.
+    static UnitInventory hydraBank_; // colleciton of hydras that may morph into lurkers.
+    static UnitInventory mutaBank_; // collection of mutas that may morph into mutas.
+    static UnitInventory builderBank_; // collection of drones that could build.
+    static UnitInventory creepColonyBank_; // collection of creep colonies that could morph into sunkens/spores.
+    static UnitInventory productionFacilityBank_; // Set of hatchery decendants that could be used to create units.
 
-    static bool subgoal_econ_; // If econ is preferred to army. Useful for slackness conditions.
-    static bool subgoal_army_; // If army is preferred to econ. Useful for slackness conditions.
+    static bool subgoalEcon_; // If econ is preferred to army. Useful for slackness conditions.
+    static bool subgoalArmy_; // If army is preferred to econ. Useful for slackness conditions.
 
     int last_frame_of_larva_morph_command = 0;
     int last_frame_of_hydra_morph_command = 0;
@@ -72,8 +72,9 @@ public:
 
     //Unit assembly functions.
     bool assignAssemblyRole(); // Assigns units to appropriate bank and builds them when needed.
+    void morphReservedUnits(); // Build units that have been reserved.
     static bool buildCombatUnit(const Unit & morph_canidate);  // Builds a Combat Unit. Which one? Assigned by morphOptimalCombatUnit.
-    static bool morphOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
+    static bool reserveOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
     static UnitType refineOptimalUnit(const map<UnitType, int> combat_types, const ResearchInventory & ri); // returns an optimal unit type from a comparison set.
     void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim. Higher rank = better!
@@ -81,7 +82,6 @@ public:
     static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit in the sim by +weight (w can be negative to penalize), when conditions are met.
     static void applyWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
-
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     //static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
@@ -112,6 +112,7 @@ public:
 
     static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.
     static int getMaxSupply(); // Returns the maximum supply of all supply costs that I can make.
+    static void setMaxUnit(const UnitType &ut, const int max); //Sets the maximum number of units to MAX.
 
     static bool testActiveAirProblem(const ResearchInventory & ri, const bool & test_for_self_weakness);  // returns true if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const ResearchInventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 

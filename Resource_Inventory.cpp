@@ -151,7 +151,7 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     StoredUnit eu = StoredUnit(r->first);
                     if (ei.unit_map_.insert({ r->first, eu }).second) {
-                        Diagnostics::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
+                        Diagnostics::DiagnosticWrite("Huh, a geyser IS an enemy. Even the map is against me now...");
                     }
                 }
             }

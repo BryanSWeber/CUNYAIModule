@@ -195,8 +195,8 @@ public:
     //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
     static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     // Same but only checks the map itself.
-    //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const MapInventory & inv );
-    //counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
+    // static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const MapInventory & inv );
+    // counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
     static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     //gets the nearest choke by simple counting along in the direction of the final unit.
     static Position getNearestChoke(const Position & initial, const Position &final, const MapInventory & inv);
@@ -281,6 +281,7 @@ public:
     static int countUnitsInProgress(const UnitType & type);
     // Counts units that can perform a given upgrade (stored phase == none).
     static int countUnitsAvailableToPerform(const UpgradeType & upType);
+    static int countUnitsBenifitingFrom(const UpgradeType & upType);
     // Counts units that can perform a given research (tech) (stored phase == none).
     static int countUnitsAvailableToPerform(const TechType & techType);
     // Counts units that are available of a particular type (stored phase == none).

@@ -136,7 +136,7 @@ void UnitInventory::purgeWorkerRelationsStop(const Unit &unit)
         miner.updateStoredUnit(unit);
     }
     else {
-        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticWrite("Failed to purge worker in inventory.");
     }
 }
 
@@ -159,7 +159,7 @@ void UnitInventory::purgeWorkerRelationsNoStop(const Unit &unit)
         miner.updateStoredUnit(unit);
     }
     else {
-        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticWrite("Failed to purge worker in inventory.");
     }
 }
 
@@ -181,7 +181,7 @@ void UnitInventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventor
         miner.updateStoredUnit(unit);
     }
     else {
-        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticWrite("Failed to purge worker in inventory.");
     }
 }
 
@@ -307,7 +307,7 @@ void StoredUnit::updateStoredUnit(const Unit &unit) {
         count_of_consecutive_predicted_deaths_ = 0;
     }
     else {
-        bool unit_escaped = (burrowed_ || cloaked_) && (!detected_ || !CUNYAIModule::currentMapInventory.isTileDetected(pos_)); // can't still be getting shot if we're setting its assesment to 0.
+        bool unit_escaped = (burrowed_ || cloaked_) && (!detected_ || time_since_last_dmg_ < 6 ); // can't still be getting shot if we're setting its assesment to 0.
         circumference_remaining_ = circumference_;
         if (future_fap_value_ > 0 || unit_escaped) count_of_consecutive_predicted_deaths_ = 0;
         else count_of_consecutive_predicted_deaths_++;

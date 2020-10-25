@@ -136,10 +136,10 @@ void CobbDouglas::storeStocks(int e_army_stock, int e_tech_stock, int e_worker_s
 void CobbDouglas::enemy_mimic(const PlayerModel & enemy, const double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
 
-    Diagnostics::DiagnosticText("We're updating our model to mimic our opponents.");
-    Diagnostics::DiagnosticText("Alpha_army: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_army, alpha_army);
-    Diagnostics::DiagnosticText("Alpha_econ: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_econ, alpha_econ);
-    Diagnostics::DiagnosticText("Alpha_tech: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_tech, alpha_tech);
+    Diagnostics::DiagnosticWrite("We're updating our model to mimic our opponents.");
+    Diagnostics::DiagnosticWrite("Alpha_army: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_army, alpha_army);
+    Diagnostics::DiagnosticWrite("Alpha_econ: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_econ, alpha_econ);
+    Diagnostics::DiagnosticWrite("Alpha_tech: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_tech, alpha_tech);
 
     //Shift alpha towards enemy choices.
     alpha_army += adaptation_rate * (enemy.spending_model_.alpha_army - alpha_army);

@@ -134,7 +134,7 @@ bool TechManager::updateCanMakeTechExpenditures() {
         if (canUpgradeCUNY(potential_up.first)){
             tech_avail_ = true;
             if(Broodwar->getFrameCount() % 24 * 30 == 0)
-                Diagnostics::DiagnosticText("I can make a: %s, gas is important.", potential_up.first.c_str());
+                Diagnostics::DiagnosticWrite("I can make a: %s, gas is important.", potential_up.first.c_str());
             return tech_avail_;
         }
     }
@@ -147,10 +147,10 @@ bool TechManager::updateCanMakeTechExpenditures() {
         if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0)
             continue;
 
-        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.isInReserveSystem(building.first) == 0) {
+        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.isBuildingInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
             if (Broodwar->getFrameCount() % 24 * 30 == 0)
-                Diagnostics::DiagnosticText("I can make a: %s, gas is important.", building.first.c_str());
+                Diagnostics::DiagnosticWrite("I can make a: %s, gas is important.", building.first.c_str());
             return tech_avail_;
         }
     }
@@ -261,12 +261,12 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
         CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
 
     if (busy) {
-        Diagnostics::DiagnosticText("Looks like we wanted to upgrade something. Here's the general inputs I was thinking about:");
-        Diagnostics::DiagnosticText("Slackness: %s", checkResourceSlack() ? "TRUE" : "FALSE");
-        Diagnostics::DiagnosticText("Tech Starved: %s", CUNYAIModule::tech_starved ? "TRUE" : "FALSE");
-        Diagnostics::DiagnosticText("For this %s", building->getType().getName().c_str());
+        Diagnostics::DiagnosticWrite("Looks like we wanted to upgrade something. Here's the general inputs I was thinking about:");
+        Diagnostics::DiagnosticWrite("Slackness: %s", checkResourceSlack() ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticWrite("Tech Starved: %s", CUNYAIModule::tech_starved ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticWrite("For this %s", building->getType().getName().c_str());
         for (auto potential_up : upgrade_cycle_) {
-            Diagnostics::DiagnosticText("Upgrades: %s, %d", potential_up.first.c_str(), potential_up.second);
+            Diagnostics::DiagnosticWrite("Upgrades: %s, %d", potential_up.first.c_str(), potential_up.second);
         }
     }
 
@@ -283,7 +283,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
             morphing_unit.phase_ = StoredUnit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::my_reservation.removeReserveSystem(ups, false);
-            Diagnostics::DiagnosticText("Upgrading %s.", ups.c_str());
+            Diagnostics::DiagnosticWrite("Upgrading %s.", ups.c_str());
             return true;
         }
     }
@@ -299,7 +299,7 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = StoredUnit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
-            Diagnostics::DiagnosticText("Researching %s.", tech.c_str());
+            Diagnostics::DiagnosticWrite("Researching %s.", tech.c_str());
             return true;
         }
     }

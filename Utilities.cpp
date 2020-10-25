@@ -409,8 +409,12 @@ int CUNYAIModule::countUnits( const UnitType &type, const Unitset &unit_set )
 const int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
 {
     int count = 0;
-    for (auto const it : res.getReservedUnits() ) {
+    for (auto const it : res.getReservedBuildings() ) {
         if( it.second == type ) count++;
+    }
+
+    for (auto const it : res.getReservedUnits()) {
+        if (it.second == type) count++;
     }
 
     return count;
@@ -421,9 +425,7 @@ int CUNYAIModule::countUnits(const UnitType &type, bool reservations_included)
 {
     int count = 0;
     if (reservations_included) {
-        for (auto it : CUNYAIModule::my_reservation.getReservedUnits()) {
-            if (it.second == type) count++;
-        }
+        count = countUnits(type, CUNYAIModule::my_reservation);
     }
 
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
@@ -511,6 +513,14 @@ int CUNYAIModule::countUnitsAvailableToPerform(const UpgradeType &upType) {
     int count = 0;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.type_ == upType.whatUpgrades() && u.second.phase_ == StoredUnit::Phase::None) count++;
+    }
+    return count;
+}
+
+int CUNYAIModule::countUnitsBenifitingFrom(const UpgradeType &upType) {
+    int count = 0;
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (std::find(upType.whatUses().begin(), upType.whatUses().end(), u.second.type_) != upType.whatUses().end()) count++;
     }
     return count;
 }

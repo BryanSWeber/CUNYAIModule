@@ -21,7 +21,7 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
 
     if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
-        Diagnostics::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
+        Diagnostics::DiagnosticWrite("We seem to be overzealous with keeping our reserve system clean, sir!");
 
     BWEB::Path newPath;
     newPath.createUnitPath(miner.pos_, Position(miner.intended_build_tile_));
@@ -36,13 +36,13 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
 
     //if we can build it with an offical build order, and it is in the reserve system, do so now.
     if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
-        Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        Diagnostics::DiagnosticWrite("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitPhase(unit, StoredUnit::Building);
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
     else if(has_path && AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
         Mobility(unit).moveTo(unit->getPosition(), Position(miner.intended_build_tile_) + Position(16,16), StoredUnit::Phase::Prebuilding);
-        Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        Diagnostics::DiagnosticWrite("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     else {
@@ -206,10 +206,10 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
         assignment_complete = attachToNearestMine(long_dist_fields, miner); // phase is updated here.
     else if (!overmining_fields.resource_inventory_.empty()) { // if you are still in trouble just... mine *something*.
         assignment_complete = attachToNearestMine(overmining_fields, miner); // phase is updated here.
-        Diagnostics::DiagnosticText("I cannot find a safe place to mine, I'm going to overstack somewhere safe.");
+        Diagnostics::DiagnosticWrite("I cannot find a safe place to mine, I'm going to overstack somewhere safe.");
     }
 
-    //Diagnostics::DiagnosticText("local:%d,distance:%d,overmining:%d", local_fields.resource_inventory_.size(), long_dist_fields.resource_inventory_.size(), overmining_fields.resource_inventory_.size());
+    //Diagnostics::DiagnosticWrite("local:%d,distance:%d,overmining:%d", local_fields.resource_inventory_.size(), long_dist_fields.resource_inventory_.size(), overmining_fields.resource_inventory_.size());
 
     if (!assignment_complete && old_mineral_patch) {
         miner.startMine(old_mineral_patch);
@@ -413,9 +413,9 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_)) {
                 if ((AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_) || miner.intended_build_type_.isRefinery())) {
-                    Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+                    Diagnostics::DiagnosticWrite("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
                     u->build(miner.intended_build_type_, miner.intended_build_tile_);
-                    Diagnostics::DiagnosticText("Trying to build the %s", miner.intended_build_type_.c_str());
+                    Diagnostics::DiagnosticWrite("Trying to build the %s", miner.intended_build_type_.c_str());
                     return CUNYAIModule::updateUnitPhase(u, StoredUnit::Building);
                 }
                 else {

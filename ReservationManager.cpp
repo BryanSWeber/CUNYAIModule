@@ -13,19 +13,19 @@ using namespace std;
 using namespace BWAPI;
 
 Reservation::Reservation() {
-    min_reserve_ = 0;
-    gas_reserve_ = 0;
-    building_timer_ = 0;
-    last_builder_sent_ = 0;
+    minReserve_ = 0;
+    gasReserve_ = 0;
+    supplyReserve_ = 0;
+    lastBuilderSent_ = 0;
 }
 
 bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
-    bool safe = reservation_map_.insert({ pos, type }).second;
+    bool safe = reservationBuildingMap_.insert({ pos, type }).second;
     if (safe) {
-        min_reserve_ += type.mineralPrice();
-        gas_reserve_ += type.gasPrice();
-        building_timer_ = type.buildTime() > building_timer_ ? type.buildTime() : building_timer_;
-        last_builder_sent_ = Broodwar->getFrameCount();
+        minReserve_ += type.mineralPrice();
+        gasReserve_ += type.gasPrice();
+        supplyReserve_ += type.supplyRequired();
+        lastBuilderSent_ = Broodwar->getFrameCount();
         CUNYAIModule::buildorder.updateRemainingBuildOrder(type);
     }
 
@@ -34,91 +34,131 @@ bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
 
 void Reservation::addReserveSystem(UpgradeType up)
 {
-    reserved_upgrades_.push_back(up);
+    reservedUpgrades_.push_back(up);
     int level = Broodwar->self()->getUpgradeLevel(up);
-    min_reserve_ += up.mineralPrice(level);
-    gas_reserve_ += up.gasPrice(level);
-    building_timer_ = up.upgradeTime(level) > building_timer_ ? up.upgradeTime(level) : building_timer_;
+    minReserve_ += up.mineralPrice(level);
+    gasReserve_ += up.gasPrice(level);
     CUNYAIModule::buildorder.updateRemainingBuildOrder(up);
 }
 
+bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
+    bool safe = reservationUnits_.insert({ originUnit, outputUnit }).second;
+    if (safe) {
+        minReserve_ += outputUnit.mineralPrice();
+        gasReserve_ += outputUnit.gasPrice();
+        supplyReserve_ += outputUnit.supplyRequired();
+        CUNYAIModule::buildorder.updateRemainingBuildOrder(outputUnit);
+    }
+
+    return safe;
+}
+
 bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
-    map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
-    if (it != reservation_map_.end() && !reservation_map_.empty()) {
+    map<TilePosition, UnitType>::iterator it = reservationBuildingMap_.find(pos);
+    if (it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty()) {
         if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_building) CUNYAIModule::buildorder.retryBuildOrderElement(type);
-        if (it->second.mineralPrice()) min_reserve_ -= it->second.mineralPrice();
-        if (it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
-        return reservation_map_.erase(pos);
+        if (it->second.mineralPrice()) minReserve_ -= it->second.mineralPrice();
+        if (it->second.gasPrice()) gasReserve_ -= it->second.gasPrice();
+        if (it->second.supplyRequired()) supplyReserve_ -= it->second.supplyRequired();
+        return reservationBuildingMap_.erase(pos);
     }
     return false;
-};
+}
 
 bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
-    auto it = find(reserved_upgrades_.begin(), reserved_upgrades_.end(), up);
-    if (it != reserved_upgrades_.end() && !reserved_upgrades_.empty()) {
+    auto it = find(reservedUpgrades_.begin(), reservedUpgrades_.end(), up);
+    if (it != reservedUpgrades_.end() && !reservedUpgrades_.empty()) {
         if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::buildorder.retryBuildOrderElement(up);
-        if (it->mineralPrice()) min_reserve_ -= it->mineralPrice();
-        if (it->gasPrice()) gas_reserve_ -= it->gasPrice();
-        reserved_upgrades_.erase(it);
+        if (it->mineralPrice()) minReserve_ -= it->mineralPrice();
+        if (it->gasPrice()) gasReserve_ -= it->gasPrice();
+        reservedUpgrades_.erase(it);
         return true;
     }
     return false;
-};
+}
 
-bool Reservation::isInReserveSystem(const UnitType & type) {
-    for (auto reservation : reservation_map_) {
+bool Reservation::removeReserveSystem(UnitType type, bool retry_this_unit = false) {
+    for (auto i = reservationUnits_.begin(); i != reservationUnits_.end(); i++) {
+        if (i->second == type) {
+            if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::buildorder.retryBuildOrderElement(type);
+            if (i->second.mineralPrice()) minReserve_ -= i->second.mineralPrice();
+            if (i->second.gasPrice()) gasReserve_ -= i->second.gasPrice();
+            if (i->second.supplyRequired()) supplyReserve_ -= i->second.supplyRequired();
+            reservationUnits_.erase(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Reservation::isBuildingInReserveSystem(const UnitType & type) {
+    for (auto reservation : reservationBuildingMap_) {
         if (reservation.second == type) return true;
     }
     return false;
-};
+}
 
 bool Reservation::isInReserveSystem(const UpgradeType & up) {
-    return find(reserved_upgrades_.begin(), reserved_upgrades_.end(), up) != reserved_upgrades_.end();
-};
+    return find(reservedUpgrades_.begin(), reservedUpgrades_.end(), up) != reservedUpgrades_.end();
+}
+
+bool Reservation::isUnitInReserveSystem(const UnitType & type)
+{
+    for (auto reservation : reservationUnits_) {
+        if (reservation.second == type) return true;
+    }
+    return false;
+}
 
 int Reservation::countInReserveSystem(const UnitType & type) {
     int count = 0;
-    for (auto reservation : reservation_map_) {
+    for (auto reservation : reservationBuildingMap_) {
+        if (reservation.second == type) count++;
+    }
+    for (auto reservation : reservationUnits_) {
         if (reservation.second == type) count++;
     }
     return count;
-};
-
-void Reservation::decrementReserveTimer() {
-    if (Broodwar->getFrameCount() == 0) {
-        building_timer_ = 0;
-    }
-    else {
-        building_timer_ > 0 ? --building_timer_ : 0;
-    }
 }
 
+
 int Reservation::getExcessMineral() {
-    return max(Broodwar->self()->minerals() - min_reserve_, 0);
+    return max(Broodwar->self()->minerals() - minReserve_, 0);
 }
 
 int Reservation::getExcessGas() {
-    return max(Broodwar->self()->gas() - gas_reserve_, 0);
+    return max(Broodwar->self()->gas() - gasReserve_, 0);
 }
 
-map<TilePosition, UnitType> Reservation::getReservedUnits() const
+int Reservation::getExcessSupply()
 {
-    return reservation_map_;
+    return max(Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed(), 0);
+}
+
+map<TilePosition, UnitType> Reservation::getReservedBuildings() const
+{
+    return reservationBuildingMap_;
 }
 
 vector<UpgradeType> Reservation::getReservedUpgrades() const
 {
-    return reserved_upgrades_;
+    return reservedUpgrades_;
+}
+
+map<Unit,UnitType> Reservation::getReservedUnits() const
+{
+    return reservationUnits_;
 }
 
 bool Reservation::checkExcessIsGreaterThan(const UnitType &type) const {
-    bool okay_on_gas = Broodwar->self()->gas() - gas_reserve_ > type.gasPrice() || type.gasPrice() == 0;
-    bool okay_on_minerals = Broodwar->self()->minerals() > type.mineralPrice() || type.mineralPrice() == 0;
-    return okay_on_gas && okay_on_minerals;
+    bool okay_on_gas = Broodwar->self()->gas() - gasReserve_ > type.gasPrice() || type.gasPrice() == 0;
+    bool okay_on_minerals = Broodwar->self()->minerals() - minReserve_ > type.mineralPrice() || type.mineralPrice() == 0;
+    bool okay_on_supply = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed() - supplyReserve_ > type.supplyRequired() || type.supplyRequired() == 0;
+    return okay_on_gas && okay_on_minerals && okay_on_supply;
 }
 
 bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
-    return Broodwar->self()->gas() - gas_reserve_ > type.gasPrice() && Broodwar->self()->minerals() > type.mineralPrice();
+    return Broodwar->self()->gas() - gasReserve_ > type.gasPrice() && Broodwar->self()->minerals() > type.mineralPrice();
 }
 
 bool Reservation::checkAffordablePurchase(const UnitType type, const int distance) {
@@ -126,58 +166,49 @@ bool Reservation::checkAffordablePurchase(const UnitType type, const int distanc
     double extra_min = 0.046 * static_cast<double>(CUNYAIModule::workermanager.getMinWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames);
     double extra_gas = 0.069 * static_cast<double>(CUNYAIModule::workermanager.getGasWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames); // top speed overestimates drone movement heavily.
 
-    bool min_affordable = ( static_cast<double>(Broodwar->self()->minerals()) + extra_min - static_cast<double>(min_reserve_) >= type.mineralPrice() ) || type.mineralPrice() == 0;
-    bool gas_affordable = ( static_cast<double>(Broodwar->self()->gas()) + extra_gas - static_cast<double>(gas_reserve_) >= type.gasPrice() ) || type.gasPrice() == 0;
-    
+    bool min_affordable = ( static_cast<double>(Broodwar->self()->minerals()) + extra_min - static_cast<double>(minReserve_) >= type.mineralPrice() ) || type.mineralPrice() == 0;
+    bool gas_affordable = ( static_cast<double>(Broodwar->self()->gas()) + extra_gas - static_cast<double>(gasReserve_) >= type.gasPrice() ) || type.gasPrice() == 0;
+    bool supply_affordable = (static_cast<double>(Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed()) - static_cast<double>(supplyReserve_) >= type.supplyRequired()) || type.supplyRequired() == 0;
+
     bool already_making_one = false;
-    for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
+    for (auto it = reservationBuildingMap_.begin(); it != reservationBuildingMap_.end(); it++) {
         if (it->second == type) {
             already_making_one = true;
             break;
         }
     }
-    bool open_reservation = reservation_map_.empty() || !already_making_one;
-    return min_affordable && gas_affordable && open_reservation;
-}
-
-int Reservation::countTimesWeCanAffordPurchase(const UnitType type) {
-    bool affordable = true;
-    int i = 0;
-    bool already_making_one = false;
-    for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
+    for (auto it = reservationUnits_.begin(); it != reservationUnits_.end(); it++) {
         if (it->second == type) {
             already_making_one = true;
             break;
         }
     }
-    bool open_reservation = reservation_map_.empty() || !already_making_one;
 
-    while (affordable) {
-        affordable = Broodwar->self()->minerals() - i * type.mineralPrice() >= min_reserve_ && Broodwar->self()->gas() - i * type.gasPrice() >= gas_reserve_;
-        if (affordable) i++;
-    }
-    return affordable && open_reservation;
+    bool open_building = type.isBuilding() && (reservationBuildingMap_.empty() || !already_making_one);
+    bool open_unitType = !type.isBuilding() && (reservationUnits_.empty() || !already_making_one);
+
+    return min_affordable && gas_affordable && (open_building || open_unitType);
 }
 
 bool Reservation::checkAffordablePurchase(const TechType type) {
-    return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+    return Broodwar->self()->minerals() - minReserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gasReserve_ >= type.gasPrice();
 }
 
 bool Reservation::checkAffordablePurchase(const UpgradeType type) {
-    return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+    return Broodwar->self()->minerals() - minReserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gasReserve_ >= type.gasPrice();
 }
 
 void Reservation::confirmOngoingReservations() {
 
-    min_reserve_ = 0;
-    gas_reserve_ = 0;
+    minReserve_ = 0;
+    gasReserve_ = 0;
 
-    for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); ) {
+    for (auto res_it = reservationBuildingMap_.begin(); res_it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty(); ) {
         bool keep = false;
 
         for (auto unit_it = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); unit_it != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); unit_it++) {
             StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit_it->first); // we will want DETAILED information about this unit.
-            if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first)
+            if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first && CUNYAIModule::assemblymanager.canMakeCUNY(res_it->second, false) ) //If the miner is there and we can still make the object (ignoring costs).
                 keep = true;
 
         } // check if we have a unit building it.
@@ -186,28 +217,52 @@ void Reservation::confirmOngoingReservations() {
             ++res_it;
         }
         else {
-            Diagnostics::DiagnosticText("No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str());
+            Diagnostics::DiagnosticWrite("No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str());
             auto remove_me = res_it;
             res_it++;
             removeReserveSystem(remove_me->first, remove_me->second, true);  // contains an erase.
         }
     }
 
-    for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); res_it++) {
-        min_reserve_ += res_it->second.mineralPrice();
-        gas_reserve_ += res_it->second.gasPrice();
+    for (auto res_it = reservationUnits_.begin(); res_it != reservationUnits_.end() && !reservationUnits_.empty(); ) {
+        bool keep = false;
+
+        for (auto u : Broodwar->self()->getUnits()) {
+            if (u == res_it->first && u->getType() == res_it->second.whatBuilds().first)
+                keep = true;
+        } // check if we have a unit building it.
+
+        if (keep) {
+            ++res_it;
+        }
+        else {
+            Diagnostics::DiagnosticWrite("The intended creator of %s does not exist. Freeing up the funds.", res_it->second.c_str());
+            auto remove_me = res_it;
+            res_it++;
+            removeReserveSystem(remove_me->second, true);  // contains an erase.
+        }
     }
 
-    for (auto res_it = reserved_upgrades_.begin(); res_it != reserved_upgrades_.end() && !reserved_upgrades_.empty(); res_it++) {
-        min_reserve_ += res_it->mineralPrice();
-        gas_reserve_ += res_it->gasPrice();
+    for (auto res_it = reservationBuildingMap_.begin(); res_it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty(); res_it++) {
+        minReserve_ += res_it->second.mineralPrice();
+        gasReserve_ += res_it->second.gasPrice();
     }
 
-    if (!reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
-        Diagnostics::DiagnosticText("...We're stuck, aren't we? Have a friendly nudge.", "");
-        reservation_map_.clear();
-        min_reserve_ = 0;
-        gas_reserve_ = 0;
+    for (auto res_it = reservedUpgrades_.begin(); res_it != reservedUpgrades_.end() && !reservedUpgrades_.empty(); res_it++) {
+        minReserve_ += res_it->mineralPrice();
+        gasReserve_ += res_it->gasPrice();
+    }
+
+    for (auto res_it = reservationUnits_.begin(); res_it != reservationUnits_.end() && !reservationUnits_.empty(); res_it++) {
+        minReserve_ += res_it->second.mineralPrice();
+        gasReserve_ += res_it->second.gasPrice();
+    }
+
+    if (!reservationBuildingMap_.empty() && lastBuilderSent_ < Broodwar->getFrameCount() - 30 * 24) {
+        Diagnostics::DiagnosticWrite("...We're stuck, aren't we? Have a friendly nudge.", "");
+        reservationBuildingMap_.clear();
+        minReserve_ = 0;
+        gasReserve_ = 0;
     }
 }
 

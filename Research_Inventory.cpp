@@ -113,7 +113,7 @@ void ResearchInventory::updateBuildingStock(const Player & player) {
     }
 
     if (player == Broodwar->self()) {
-        for (auto i : CUNYAIModule::my_reservation.getReservedUnits())
+        for (auto i : CUNYAIModule::my_reservation.getReservedBuildings())
             if(isTechBuilding(i.second))
                 temp_building_stock += i.second * StoredUnit(i.second).stock_value_; // include value of drone if race is zerg.
     }
@@ -134,10 +134,10 @@ void ResearchInventory::updateResearch(const Player & player)
     research_stock_ = tech_stock_ + upgrade_stock_ + building_stock_;
 
     if (Broodwar->getFrameCount() % (60 * 24) == 0) {
-        Diagnostics::DiagnosticText("What do we think is happening for researches?");
-        Diagnostics::DiagnosticText("This is the research units of an %s:", player->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
+        Diagnostics::DiagnosticWrite("What do we think is happening for researches?");
+        Diagnostics::DiagnosticWrite("This is the research units of an %s:", player->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
         for (auto ut : tech_buildings_)
-            Diagnostics::DiagnosticText("They have %d of %s", ut.second, ut.first.c_str());
+            Diagnostics::DiagnosticWrite("They have %d of %s", ut.second, ut.first.c_str());
     }
 }
 
@@ -232,10 +232,10 @@ int inferEarliestPossible(const UnitType & ut) {
 
 
 
-    Diagnostics::DiagnosticText("The earliest possible %s is %d frames, by my guess.", ut.c_str(), build_time);
+    Diagnostics::DiagnosticWrite("The earliest possible %s is %d frames, by my guess.", ut.c_str(), build_time);
     for(auto u : unitsOut)
-        Diagnostics::DiagnosticText("I'd have to build a %s, takes %d frames.", u.c_str(), u.buildTime());
-    Diagnostics::DiagnosticText("And you can't really build anything before %d frames.", fastest_possible_pool - UnitTypes::Zerg_Spawning_Pool.buildTime());
+        Diagnostics::DiagnosticWrite("I'd have to build a %s, takes %d frames.", u.c_str(), u.buildTime());
+    Diagnostics::DiagnosticWrite("And you can't really build anything before %d frames.", fastest_possible_pool - UnitTypes::Zerg_Spawning_Pool.buildTime());
 
     return build_time;
 };

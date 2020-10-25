@@ -87,14 +87,9 @@ bool CombatManager::combatScript(const Unit & u)
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
-            bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
+            bool standard_fight_reasons = (fight_looks_good && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) < friend_loc.unit_map_.size()/2) || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
             UnitInventory expanded_friend_loc;
-            bool prepping_attack = !CUNYAIModule::isInDanger(u) &&
-                CUNYAIModule::currentMapInventory.isTileBlind(u->getPosition()) &&
-                my_unit->phase_ != StoredUnit::Phase::Retreating &&
-                !CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)) && //If there is SOMETHING in range, don't surround.
-                //CUNYAIModule::currentMapInventory.getOccupationField(TilePosition(my_unit->pos_)) > 1 &&
-                friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0; // overlords path out and may prevent attacking.
+            bool prepping_attack = !CUNYAIModule::currentMapInventory.isTileVisible(u->getPosition());
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                 expanded_friend_loc.updateUnitInventorySummary();

@@ -10,39 +10,41 @@ class Reservation {
 
 private:
 
-    int min_reserve_; //Minerals needed to build everything in the reservation manager.
-    int gas_reserve_; //Gas needed to build everything in the reservation manager.
-    int building_timer_; //Time (frames) needed to build everything in the reservation manager.
-    int last_builder_sent_; //Time last builder was sent. Used to clear reservations if things seem problematic (30+ seconds of being stuck).
-    map<TilePosition, UnitType> reservation_map_; //Map containing position of building and intended type.
-    vector<UpgradeType> reserved_upgrades_; //Intended upgrades.
+    int minReserve_; //Minerals needed to build everything in the reservation manager.
+    int gasReserve_; //Gas needed to build everything in the reservation manager.
+    int supplyReserve_; //Supply needed to build everything in the reservation manager.
+    int lastBuilderSent_; //Time last builder was sent. Used to clear reservations if things seem problematic (30+ seconds of being stuck).
+    map<TilePosition, UnitType> reservationBuildingMap_; //Map containing position of building and intended type.
+    vector<UpgradeType> reservedUpgrades_; //Intended upgrades.
+    map<Unit, UnitType> reservationUnits_; // map containing unit and number of intended units. Care that the key could become null if the unit is killed.
 
 public:
     Reservation::Reservation(); //Creator method! Don't declare as private!
 
     bool Reservation::addReserveSystem(TilePosition tile, UnitType type);  // Updates mineral, gas, and time reserves for a particular unit. Will return FALSE if it is already present. This functionality is taken advantage of in some cases.
     void Reservation::addReserveSystem(UpgradeType up); //Updates reserves for an upgrade. Does not return anything if it is already present, since a vector can have duplicates.
+    bool Reservation::addReserveSystem(Unit u, UnitType type);  // Updates mineral, gas, and time reserves for a particular unit. Will return FALSE if it is already present. This functionality is taken advantage of in some cases.
 
     bool Reservation::removeReserveSystem(TilePosition tile, UnitType type, bool retry_this_building); // Removes an item from the reserve system. Will return FALSE if it is not there.
-    bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade);     // Removes an item from the reserve system. Will return FALSE if it is not there.
+    bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade);   // Removes an item from the reserve system. Will return FALSE if it is not there.
+    bool Reservation::removeReserveSystem(UnitType type, bool retry_this_unit); // Removes an item from the reserve system. Will return FALSE if it is not there.
 
-    bool isInReserveSystem(const UnitType & type);  // Checks if an item of type is in reserve system.
+    bool isBuildingInReserveSystem(const UnitType & type);  // Checks if an item of type is in reserve system.
     bool isInReserveSystem(const UpgradeType & up); // Checks if an item of type is in reserve system.
+    bool isUnitInReserveSystem(const UnitType & up); // Checks if an item of type is in reserve system.
 
     int countInReserveSystem(const UnitType & type); // Counts the number of units of this type in the reserve system.
 
-
-    void Reservation::decrementReserveTimer(); // Decrements the clock.
-
     int Reservation::getExcessMineral(); //gets minerals we have above the resevation amount.
     int Reservation::getExcessGas(); //gets gas we have above the reservation amount.
+    int Reservation::getExcessSupply(); //gets supply we have above the reservation amount.
 
-    map<TilePosition, UnitType> Reservation::getReservedUnits() const; //Unit getter.
+    map<TilePosition, UnitType> Reservation::getReservedBuildings() const; //Building getter.
     vector<UpgradeType> Reservation::getReservedUpgrades() const; // Upgrade getter.
+    map<Unit, UnitType> Reservation::getReservedUnits() const; // Unit getter.
 
-    bool Reservation::checkExcessIsGreaterThan(const UnitType & type) const;
-    bool Reservation::checkExcessIsGreaterThan(const TechType & type) const;
-
+    bool Reservation::checkExcessIsGreaterThan(const UnitType & type) const; //Depreciated.
+    bool Reservation::checkExcessIsGreaterThan(const TechType & type) const; //Depreciated.
 
     bool Reservation::checkAffordablePurchase(const UnitType type, const int X = 0);     //Checks if a purchase is affordable, imagines that we have a constant income stream X seconds in the future.
     bool Reservation::checkAffordablePurchase(const TechType type);     //Checks if a purchase is affordable.

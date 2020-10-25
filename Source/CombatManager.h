@@ -6,6 +6,7 @@
 
 class CombatManager {
 private:
+
     UnitInventory anti_air_squad_;     //Squad only attacks up.
     UnitInventory anti_ground_squad_;     //Squad only attacks down.
     UnitInventory universal_squad_;     //Squad attacks either.

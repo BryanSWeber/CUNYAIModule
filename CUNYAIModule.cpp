@@ -116,7 +116,7 @@ void CUNYAIModule::onStart()
         // Retrieve you and your enemy's races. enemy() will just return the first enemy.
         // If you wish to deal with multiple enemies then you must use enemies().
         if (Broodwar->enemy()) // First make sure there is an enemy
-            Diagnostics::DiagnosticText(string(string("The matchup is ") + string(Broodwar->self()->getRace().c_str()) + string(" vs ") + string(Broodwar->enemy()->getRace().c_str())).c_str()); // this is pretty ugly.
+            Diagnostics::DiagnosticWrite(string(string("The matchup is ") + string(Broodwar->self()->getRace().c_str()) + string(" vs ") + string(Broodwar->enemy()->getRace().c_str())).c_str()); // this is pretty ugly.
     }
 
     //Initialize state variables
@@ -158,7 +158,7 @@ void CUNYAIModule::onStart()
     adaptation_rate = learned_plan.r_out_t0; //rate of worker growth.
 
     buildorder.getInitialBuildOrder(learned_plan.build_order_t0);  //get initial build order.
-    Diagnostics::DiagnosticText(string("The build order is: " + learned_plan.build_order_t0).c_str());
+    Diagnostics::DiagnosticWrite(string("The build order is: " + learned_plan.build_order_t0).c_str());
 
     //update Map Grids
     currentMapInventory.updateBuildablePos();
@@ -203,9 +203,9 @@ void CUNYAIModule::onStart()
         rename(src.c_str(), dst.c_str());
 
         if (std::filesystem::exists(learned_plan.readDirectory))
-            Diagnostics::DiagnosticText( "We found a READ folder");
+            Diagnostics::DiagnosticWrite( "We found a READ folder");
         if (std::filesystem::exists(learned_plan.writeDirectory))
-            Diagnostics::DiagnosticText( "We found a WRITE folder");
+            Diagnostics::DiagnosticWrite( "We found a WRITE folder");
 
     }
 
@@ -251,10 +251,10 @@ void CUNYAIModule::onEnd(bool isWinner)
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         try {
             std::filesystem::copy(learned_plan.writeDirectory, learned_plan.readDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
-            Diagnostics::DiagnosticText("Successfully copied from WRITE to READ folder.");
+            Diagnostics::DiagnosticWrite("Successfully copied from WRITE to READ folder.");
         }
         catch (...) {
-            Diagnostics::DiagnosticText("Couldn't copy from WRITE to READ folder.");
+            Diagnostics::DiagnosticWrite("Couldn't copy from WRITE to READ folder.");
         }
     }
 
@@ -385,13 +385,14 @@ void CUNYAIModule::onFrame()
     currentMapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(currentMapInventory.getExpoTilePositions().size()) );
     currentMapInventory.updateScreen_Position();
     currentMapInventory.mainCurrentMap();
-    currentMapInventory.createAirThreatField(enemy_player_model);
-    currentMapInventory.createGroundThreatField(enemy_player_model);
-    currentMapInventory.createDetectField(enemy_player_model);
+    //currentMapInventory.createAirThreatField(enemy_player_model);
+    //currentMapInventory.createGroundThreatField(enemy_player_model);
+    //currentMapInventory.createDetectField(enemy_player_model);
     currentMapInventory.createVisionField(enemy_player_model);
     currentMapInventory.createBlindField(enemy_player_model);
     currentMapInventory.createOccupationField(enemy_player_model);
-    currentMapInventory.DiagnosticBlindTiles();
+    currentMapInventory.createSurroundField(enemy_player_model);
+    currentMapInventory.DiagnosticSurroundTiles();
 
     basemanager.updateBases();
 
@@ -422,16 +423,16 @@ void CUNYAIModule::onFrame()
         }
 
         for (auto i : CUNYAIModule::friendly_player_model.getBuildingCartridge())
-            Diagnostics::DiagnosticText("Our Legal Buildings are: %s", i.first.c_str());
+            Diagnostics::DiagnosticWrite("Our Legal Buildings are: %s", i.first.c_str());
 
         for (auto i : CUNYAIModule::friendly_player_model.getCombatUnitCartridge())
-            Diagnostics::DiagnosticText("Our Legal combatants are: %s", i.first.c_str());
+            Diagnostics::DiagnosticWrite("Our Legal combatants are: %s", i.first.c_str());
 
         for (auto i : CUNYAIModule::friendly_player_model.getTechCartridge())
-            Diagnostics::DiagnosticText("Our techs are: %s", i.first.c_str());
+            Diagnostics::DiagnosticWrite("Our techs are: %s", i.first.c_str());
 
         for (auto i : CUNYAIModule::friendly_player_model.getUpgradeCartridge())
-            Diagnostics::DiagnosticText("Our upgrades are: %s", i.first.c_str());
+            Diagnostics::DiagnosticWrite("Our upgrades are: %s", i.first.c_str());
     }
 
     if (t_game % (24 * 60) == 0 && RIP_REPLAY) {
@@ -472,16 +473,15 @@ void CUNYAIModule::onFrame()
 
         bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
-        for (auto r : CUNYAIModule::my_reservation.getReservedUnits()) {
+        for (auto r : CUNYAIModule::my_reservation.getReservedBuildings()) {
             reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
         }
         if (need_gas_now && no_extractor && !reserved_extractor) {
             buildorder.clearRemainingBuildOrder(false);
-            Diagnostics::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
+            Diagnostics::DiagnosticWrite("Uh oh, something's went wrong with building an extractor!");
         }
     }
 
-    my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations();
     Diagnostics::drawReservations(my_reservation, currentMapInventory.screen_position_);
 
@@ -521,7 +521,8 @@ void CUNYAIModule::onFrame()
 
     // Assemble units when needed.
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-    assemblymanager.assignAssemblyRole();
+        assemblymanager.assignAssemblyRole();
+        assemblymanager.morphReservedUnits();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
     larva_time = end_unit_morphs - start_unit_morphs;
 
@@ -713,14 +714,14 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
     }
 
     if (unit->getPlayer()->isEnemy(Broodwar->self()) && !unit->isInvincible()) { // safety check.
-                                                                                             //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
+                                                                                             //Diagnostics::DiagnosticWrite( "I just gained vision of a %s", unit->getType().c_str() );
         StoredUnit eu = StoredUnit(unit);
 
         if (enemy_player_model.units_.unit_map_.insert({ unit, eu }).second) { // if the insertion succeeded
-                                                                               //Diagnostics::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+                                                                               //Diagnostics::DiagnosticWrite( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
         else { // the insertion must have failed
-               //Diagnostics::DiagnosticText( "%s is already at address %p.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.find( unit ) ) ;
+               //Diagnostics::DiagnosticWrite( "%s is already at address %p.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.find( unit ) ) ;
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
@@ -732,7 +733,7 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
     }
 
     if (unit->getPlayer()->isNeutral() && !unit->isInvincible()) { // safety check.
-                                                                                 //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
+                                                                                 //Diagnostics::DiagnosticWrite( "I just gained vision of a %s", unit->getType().c_str() );
         StoredUnit nu = StoredUnit(unit);
         neutral_player_model.units_.addStoredUnit(nu);
 
@@ -759,14 +760,14 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
 void CUNYAIModule::onUnitEvade(BWAPI::Unit unit)
 {
     //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
-    //                                                                //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
+    //                                                                //Diagnostics::DiagnosticWrite( "I just gained vision of a %s", unit->getType().c_str() );
     //    StoredUnit eu = StoredUnit( unit );
 
     //    if ( enemy_player_model.units_.UnitInventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-    //        Diagnostics::DiagnosticText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+    //        Diagnostics::DiagnosticWrite( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
     //    }
     //    else { // the insertion must have failed
-    //        Diagnostics::DiagnosticText( "Insertion of %s failed.", eu.type_.c_str() );
+    //        Diagnostics::DiagnosticWrite( "Insertion of %s failed.", eu.type_.c_str() );
     //    }
     //}
 }
@@ -778,10 +779,10 @@ void CUNYAIModule::onUnitShow(BWAPI::Unit unit)
     //    auto found_ptr = enemy_player_model.units_.UnitInventory_.find( unit );
     //    if ( found_ptr != enemy_player_model.units_.UnitInventory_.end() ) {
     //        enemy_player_model.units_.UnitInventory_.erase( unit );
-    //        Diagnostics::DiagnosticText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+    //        Diagnostics::DiagnosticWrite( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
     //    }
     //    else {
-    //        Diagnostics::DiagnosticText( "Discovered a %s.", unit->getType().c_str() );
+    //        Diagnostics::DiagnosticWrite( "Discovered a %s.", unit->getType().c_str() );
     //    }
     //}
 }
@@ -812,7 +813,7 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
             int seconds = Broodwar->getFrameCount() / 24;
             int minutes = seconds / 60;
             seconds %= 60;
-            Diagnostics::DiagnosticText("%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
+            Diagnostics::DiagnosticWrite("%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
         }
     }
 
@@ -847,7 +848,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             }
             else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
                 buildorder.clearRemainingBuildOrder( false );
-                Diagnostics::DiagnosticText("Uh oh! A drone has died and this means we need to ditch our build order!");
+                Diagnostics::DiagnosticWrite("Uh oh! A drone has died and this means we need to ditch our build order!");
             }
         }
 
@@ -855,10 +856,10 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         if (found_ptr) {
             friendly_player_model.units_.unit_map_.erase(unit);
             friendly_player_model.casualties_.addStoredUnit(unit);
-            //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
         else {
-            //Diagnostics::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
 
         combat_manager.removeScout(unit);
@@ -871,10 +872,10 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             if (found_ptr->type_.isWorker()) enemy_player_model.decrementUnseenWorkers();
             enemy_player_model.units_.unit_map_.erase(unit);
             enemy_player_model.casualties_.addStoredUnit(unit);
-            //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
         else {
-            //Diagnostics::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
     }
 
@@ -908,7 +909,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             }
         }
 
-        Diagnostics::DiagnosticText("A mine is dead!");
+        Diagnostics::DiagnosticWrite("A mine is dead!");
 
 
         // clear it just in case.
@@ -923,10 +924,10 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         auto found_ptr = neutral_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
             neutral_player_model.units_.unit_map_.erase(unit);
-            //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
         else {
-            //Diagnostics::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
+            //Diagnostics::DiagnosticWrite( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
     }
 

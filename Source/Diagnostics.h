@@ -4,7 +4,10 @@
 #include "CUNYAIModule.h"
 
 // Manages various types of important diagnostics and print functions.
-struct Diagnostics {
+class Diagnostics {
+private:
+    bool display = false;
+public:
     static void onFrame();
     static void drawAllVelocities(const UnitInventory ui);
     static void drawAllHitPoints(const UnitInventory ui);
@@ -69,7 +72,7 @@ struct Diagnostics {
     static void DiagnosticWrite(char const *fmt, Ts && ... vals) {
         if constexpr (DIAGNOSTIC_MODE) {
             ofstream output; // prints to brood war file while in the write file.
-            output.open(CUNYAIModule::learned_plan.writeDirectory + "debug.txt", ios_base::app);
+            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
             output << fmt;
             ((output << ',' << std::forward<Ts>(vals)), ...);
             output << endl;

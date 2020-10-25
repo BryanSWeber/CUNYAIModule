@@ -377,13 +377,13 @@ void LearningManager::initializeGeneticLearning() {
 //void LearningManager::initializeRFLearning()
 //{
 //    //Python loading of critical libraries.
-//    Diagnostics::DiagnosticText("Python Initializing");
+//    Diagnostics::DiagnosticWrite("Python Initializing");
 //    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-//    Diagnostics::DiagnosticText("Loading Main");
+//    Diagnostics::DiagnosticWrite("Loading Main");
 //    py::object scope = py::module::import("__main__").attr("__dict__");
 //
 //    //Executing script:
-//    Diagnostics::DiagnosticText("Loading Dictionary Contents");
+//    Diagnostics::DiagnosticWrite("Loading Dictionary Contents");
 //    auto local = py::dict();
 //    bool abort_code = false;
 //    local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
@@ -400,15 +400,15 @@ void LearningManager::initializeGeneticLearning() {
 //    local["build_order_t0"] = build_order_t0 = "Undefined Build Order";
 //    local["attempt_count"] = 0;
 //    local["abort_code_t0"] = abort_code = false;
-//    Diagnostics::DiagnosticText("Evaluating Kiwook.py");
+//    Diagnostics::DiagnosticWrite("Evaluating Kiwook.py");
 //    try {
 //        py::eval_file(".\\kiwook.py", scope, local);
 //    }
 //    catch (py::error_already_set const &pythonErr) { 
-//        Diagnostics::DiagnosticText(pythonErr.what()); 
+//        Diagnostics::DiagnosticWrite(pythonErr.what()); 
 //        local["abort_code_t0"] = true;
 //    }
-//    Diagnostics::DiagnosticText("Evaluation Complete.");
+//    Diagnostics::DiagnosticWrite("Evaluation Complete.");
 //
 //    //Pull the abort code, should be false if we got through, otherwise if true we aborted.
 //    abort_code = py::bool_(local["abort_code_t0"]);
@@ -416,10 +416,10 @@ void LearningManager::initializeGeneticLearning() {
 //    string result = abort_code ? "YES" : "NO";
 //    string print_string = "Did we abort the RF process?: " + result;
 //
-//    Diagnostics::DiagnosticText(print_string.c_str());
+//    Diagnostics::DiagnosticWrite(print_string.c_str());
 //
 //    if (abort_code) {
-//        Diagnostics::DiagnosticText("We will then pick a random opening");
+//        Diagnostics::DiagnosticWrite("We will then pick a random opening");
 //        initializeRandomStart();
 //    }
 //    else {
@@ -472,7 +472,7 @@ void LearningManager::initializeRandomStart(){
 //    py::object scope = py::module::import("__main__").attr("__dict__");
 //
 //    //Executing script:
-//    Diagnostics::DiagnosticText("Loading Dictionary Contents");
+//    Diagnostics::DiagnosticWrite("Loading Dictionary Contents");
 //    auto local = py::dict();
 //    vector<double> passed_unit_weights(BWAPI::UnitTypes::allUnitTypes().size());
 //    for (auto x : passed_unit_weights) {
@@ -484,7 +484,7 @@ void LearningManager::initializeRandomStart(){
 //        py::eval_file(".\\evo_test.py", scope, local);
 //    }
 //    catch (py::error_already_set const &pythonErr) {
-//        Diagnostics::DiagnosticText(pythonErr.what());
+//        Diagnostics::DiagnosticWrite(pythonErr.what());
 //    }
 //
 //
@@ -555,7 +555,7 @@ void LearningManager::initializeGAUnitWeighting()
         }
     }
 
-    Diagnostics::DiagnosticText("%d",matrix_of_unit_weights.size());
+    Diagnostics::DiagnosticWrite("%d",matrix_of_unit_weights.size());
     vector<vector<double>> matrix_of_unit_weights_reversed;
 
     //We only want the N most recent wins, so older genes will "die".

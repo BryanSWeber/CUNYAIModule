@@ -153,6 +153,7 @@ public:
     void DiagnosticVisibleTiles();
     void DiagnosticOccupiedTiles();
     void DiagnosticBlindTiles();
+    void DiagnosticSurroundTiles();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
     //Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
