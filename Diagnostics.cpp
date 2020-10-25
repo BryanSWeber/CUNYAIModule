@@ -429,7 +429,7 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
 
     Broodwar->drawTextScreen(screen_x, screen_y + 40 + another_row_of_printing * 10, "Min: %d", CUNYAIModule::my_reservation.getExcessMineral() );  //
     Broodwar->drawTextScreen(screen_x, screen_y + 50 + another_row_of_printing * 10, "Gas: %d", CUNYAIModule::my_reservation.getExcessGas());  //
-    Broodwar->drawTextScreen(screen_x, screen_y + 60 + another_row_of_printing * 10, "Supply: %d", CUNYAIModule::my_reservation.getExcessSupply());  //
+    Broodwar->drawTextScreen(screen_x, screen_y + 60 + another_row_of_printing * 10, "Supply: %d", CUNYAIModule::my_reservation.getExcessSupply()/2);  // Conver to the human scale.
     Broodwar->drawTextScreen(screen_x, screen_y + 70 + another_row_of_printing * 10, "Larva: %d", CUNYAIModule::my_reservation.getExcessLarva());  //
 
 
