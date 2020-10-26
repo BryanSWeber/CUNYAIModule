@@ -206,8 +206,8 @@ bool TechManager::chooseTech() {
         }
     }
 
-    //If we have not reserved because it is unaffordable now, let us reserve it now.
-    if (canUpgradeCUNY(up_type, false) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
+    //If we have not reserved because it is unaffordable now, let us reserve it now, as long as the resource is not overtapped.
+    if (!CUNYAIModule::my_reservation.requiresOvertappedResource(up_type) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type) && up_type != UpgradeTypes::None) { 
         CUNYAIModule::my_reservation.addReserveSystem(up_type);
     }
 }

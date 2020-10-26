@@ -34,7 +34,7 @@ std::map<UnitType, int> AssemblyManager::assemblyCycle_ = PlayerModel::getCombat
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
     Position unit_pos = unit->getPosition();
-    bool unit_can_morph_intended_target = unit->canMorph(building);
+
     map<int, TilePosition> viable_placements = {};
     TilePosition tileOfClosestBase = tp;
     vector<TilePosition> bases = CUNYAIModule::currentMapInventory.getExpoTilePositions();
@@ -52,8 +52,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
-    if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
+    if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera)) {
         if (CUNYAIModule::my_reservation.addReserveSystem(unit->getTilePosition(), building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object... itself.
+            unit->morph(building);
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             return CUNYAIModule::updateUnitBuildIntent(unit, building, unit->getTilePosition());
         }
@@ -487,37 +488,10 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
 
-    // drop all units types I cannot assemble at this time.
-    auto pt_type = combat_types.begin();
-    while (pt_type != combat_types.end()) {
-        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
-        bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWilling(UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWilling(UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer));
-
-
-        if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta) || CUNYAIModule::my_reservation.isUnitInReserveSystem(pt_type->second)) {
-            //Diagnostics::DiagnosticWrite("Considering morphing a %s", pt_type->first.c_str());
-            pt_type++;
-        }
-        else {
-            combat_types.erase(pt_type++);
-        }
-    }
-
-    //Heuristic classes for building. They are pretty simple combat results from a simulation.
-    bool it_needs_to_shoot_up = false;
-    bool it_needs_to_shoot_down = false;
-    bool it_needs_to_fly = false;
-    bool too_many_scourge = false;
-    bool required = false;
-
-    // Check if unit is even feasible, or the unit already IS that type, or is needed for that type.
+    // Check if unit is even feasible, or the unit already IS that type.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWilling(UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWilling(UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
-        if (CUNYAIModule::checkWilling(potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
+        if (CUNYAIModule::checkWilling(potential_type->first, true) || morph_canidate->getType() == potential_type->first) potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -1361,7 +1335,7 @@ bool AssemblyManager::canMakeCUNY(const UnitType & type, const bool can_afford, 
 
 bool AssemblyManager::checkSlackLarvae()
 {
-    return  CUNYAIModule::my_reservation.getExcessLarva() > 2;
+    return  CUNYAIModule::my_reservation.getExcessLarva() >= 2;
 }
 
 bool AssemblyManager::checkSlackMinerals()
@@ -1451,18 +1425,16 @@ bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, con
      return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding(), unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
 }
 
-bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
-    return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding()) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
-}
+//bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
+//    return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding()) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
+//}
 
-bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
-    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
-}
+//bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
+//    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+//}
 
 bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) {
-     bool value = AssemblyManager::canMakeCUNY(ut, false) && checkOpenToBuild(ut, extra_criteria);
-     if (!value) Broodwar->getLastError();
-     return value;
+     return AssemblyManager::canMakeCUNY(ut, false) && checkOpenToBuild(ut, extra_criteria);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
