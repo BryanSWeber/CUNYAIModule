@@ -81,8 +81,6 @@ public:
     static bool army_starved;
     static bool econ_starved;
     static bool tech_starved;
-    static bool larva_starved;
-    static bool larva_flooded;
     static double adaptation_rate; //Adaptation rate to opponent.
     static double alpha_army_original;
     static double alpha_tech_original;

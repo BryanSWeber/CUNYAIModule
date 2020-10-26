@@ -38,8 +38,7 @@ bool CUNYAIModule::econ_starved = false;
 bool CUNYAIModule::tech_starved = false;
 bool CUNYAIModule::supply_starved = false;
 bool CUNYAIModule::gas_starved = false;
-bool CUNYAIModule::larva_starved = false;
-bool CUNYAIModule::larva_flooded = false;
+
 double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
 double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
 double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
@@ -447,8 +446,6 @@ void CUNYAIModule::onFrame()
         assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 
-    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, friendly_player_model.units_); //If you have 1 larva or less at each hatchery, you could use more. 
-    larva_flooded = 5 * CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, friendly_player_model.units_) >=  CUNYAIModule::countUnits(UnitTypes::Zerg_Drone); //You are flooded with larva and cannot possibly use them all if you have more than 1 hatch per 5 workers (that's the rate that keeps ling spending constant).
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
