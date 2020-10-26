@@ -494,8 +494,8 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer));
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWilling(UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWilling(UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer));
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta) || CUNYAIModule::my_reservation.isUnitInReserveSystem(pt_type->second)) {
@@ -517,9 +517,9 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     // Check if unit is even feasible, or the unit already IS that type, or is needed for that type.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
-        if (CUNYAIModule::checkWillingAndAble(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWilling(UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWilling(UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
+        if (CUNYAIModule::checkWilling(potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -530,8 +530,8 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
 
 
     //A catch for prerequisite build units.
-    bool morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker && morph_canidate->getType() == UnitTypes::Zerg_Larva;
-    bool morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer) && morph_canidate->getType() == UnitTypes::Zerg_Larva;
+    bool morph_into_prerequisite_hydra = CUNYAIModule::checkWilling(UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker && morph_canidate->getType() == UnitTypes::Zerg_Larva;
+    bool morph_into_prerequisite_muta = CUNYAIModule::checkWilling(UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer) && morph_canidate->getType() == UnitTypes::Zerg_Larva;
     if (morph_into_prerequisite_hydra) building_optimal_unit = CUNYAIModule::my_reservation.addReserveSystem(morph_canidate, UnitTypes::Zerg_Hydralisk);
     else if (morph_into_prerequisite_muta) building_optimal_unit = CUNYAIModule::my_reservation.addReserveSystem(morph_canidate, UnitTypes::Zerg_Mutalisk);
 
@@ -756,19 +756,21 @@ UnitType AssemblyManager::refineOptimalUnit(const map<UnitType, int> combat_type
     UnitType build_type = UnitTypes::None;
 
     for (auto &potential_type : combat_types) {
-        if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            best_sim_score = potential_type.second;
-            build_type = potential_type.first;
-            //Diagnostics::DiagnosticWrite("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
-        }
-        else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            bool current_best_flexible = build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None;
-            bool new_best_flexible = potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None;
+        if (!CUNYAIModule::my_reservation.requiresOvertappedResource(potential_type.first)) { // don't consider adding something that's already tapped out our reservations.
+            if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+                best_sim_score = potential_type.second;
+                build_type = potential_type.first;
+                //Diagnostics::DiagnosticWrite("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+            }
+            else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+                bool current_best_flexible = build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None;
+                bool new_best_flexible = potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None;
 
-            if (current_best_flexible && !new_best_flexible) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
-            else if (new_best_flexible && !current_best_flexible) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
-            else if (current_best_flexible == new_best_flexible) build_type = build_type.buildTime() < potential_type.first.buildTime() ? build_type : potential_type.first; // If they both are poor choices or both are good choices, get the faster building one.
-            //Diagnostics::DiagnosticWrite("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
+                if (current_best_flexible && !new_best_flexible) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
+                else if (new_best_flexible && !current_best_flexible) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+                else if (current_best_flexible == new_best_flexible) build_type = build_type.buildTime() < potential_type.first.buildTime() ? build_type : potential_type.first; // If they both are poor choices or both are good choices, get the faster building one.
+                //Diagnostics::DiagnosticWrite("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
+            }
         }
     }
 
@@ -822,8 +824,8 @@ void AssemblyManager::updateOptimalCombatUnit() {
         StoredUnit su = StoredUnit(potential_type.first);
         UnitInventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
-
         remainder_.getReservationCapacity(); //First, let us consider building our units.
+
         for (int i = 0; i <= remainder_.getWaveSize(potential_type.first); i++) {
             friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
@@ -838,7 +840,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
 
         friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        
+
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
 
         //Apply holistic weights.
@@ -847,7 +849,6 @@ void AssemblyManager::updateOptimalCombatUnit() {
         if (assemblyCycle_.find(potential_type.first) == assemblyCycle_.end()) assemblyCycle_[potential_type.first] = score;
         else assemblyCycle_[potential_type.first] = static_cast<int>((23.0 * assemblyCycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
     }
-
 }
 
 

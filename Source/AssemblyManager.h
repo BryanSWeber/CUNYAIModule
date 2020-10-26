@@ -112,7 +112,7 @@ public:
 
     static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.
     static int getMaxSupply(); // Returns the maximum supply of all supply costs that I can make.
-    static void setMaxUnit(const UnitType &ut, const int max); //Sets the maximum number of units to MAX.
+    void setMaxUnit(const UnitType &ut, const int max); //Sets the maximum number of units to MAX.
 
     static bool testActiveAirProblem(const ResearchInventory & ri, const bool & test_for_self_weakness);  // returns true if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const ResearchInventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
