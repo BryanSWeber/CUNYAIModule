@@ -38,12 +38,14 @@ private:
     int buffer = 3; // buffer since our vision estimator is imperfect
 
     //Fields:
-    double pfAirThreat_[256][256] = { 0 }; // which air areas are under threat?
-    double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
-    double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
-    double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
-    double pfBlindness_[256][256] = { 0 }; // The region about 3 tiles out of sight of the opponent's vision. Counts down from 3 to about 0.
+    //double pfAirThreat_[256][256] = { 0 }; // which air areas are under threat?
+    //double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
+    //double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
+    //double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
+    //double pfBlindness_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's vision. Counts down from 2 to 0.
+    double pfThreat_[256][256] = { 0 }; // which areas are visible OR under threat?
     int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
+    double pfThreatBuffer_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
     bool pfSurroundSquare_[256][256] = { 0 }; //Is the square a viable square to move a unit to and improve the surround?
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
@@ -131,19 +133,22 @@ public:
     void mainCurrentMap();
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
-    void createAirThreatField(PlayerModel & enemy_player);
-    void createDetectField(PlayerModel & enemy_player);
-    void createGroundThreatField(PlayerModel & enemy_player);
-    void createVisionField(PlayerModel & enemy_player);
-    void createOccupationField(PlayerModel & enemy_player);
-    void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
-    void createSurroundField(PlayerModel & enemy_player); //Must run after createBlindField
+    //void createAirThreatField(PlayerModel & enemy_player);
+    //void createDetectField(PlayerModel & enemy_player);
+    //void createGroundThreatField(PlayerModel & enemy_player);
+    //void createVisionField(PlayerModel & enemy_player);
+    void createOccupationField(); //Marks all the tiles you have occupied.
+    void createBufferField(PlayerModel & enemy_player);
+    //void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
+    void createThreatField(PlayerModel & enemy_player); // This marks all potentially threatened OR visible squares.
+    void createSurroundField(PlayerModel & enemy_player); //Must run after createBlindField and CreatOccupationField
 
-    const double getAirThreatField(TilePosition &t);
-    const double getGroundThreatField(TilePosition &t);
-    const double getVisionField(TilePosition &t);
+    //const double getAirThreatField(TilePosition &t);
+    //const double getGroundThreatField(TilePosition &t);
+    //const double getVisionField(TilePosition &t);
     const int getOccupationField(TilePosition &t);
-    const double getBlindField(TilePosition &t);
+    const double getBufferField(TilePosition & t);
+    //const double getBlindField(TilePosition &t);
     const bool getSurroundField(TilePosition &t);
     void setSurroundField(TilePosition &t, bool newVal);
 
@@ -177,12 +182,14 @@ public:
     Position getEarlyGameArmyPosition();
     Position getEarlyGameAirPosition();
     Position getDistanceWeightedPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
-    static bool isTileDetected(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
-    static bool isTileAirThreatened(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
-    static bool isTileGroundThreatened(const Position &p);
-    static bool isTileVisible(const Position & p); // Checks if a tile is visible. Inaccurate. Prefer Blindness.
-    static bool isTileBlind(const Position & p); // Checks if a tile is blind for an opponent. Inaccurate.
+    //static bool isTileDetected(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
+    //static bool isTileAirThreatened(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
+    //static bool isTileGroundThreatened(const Position &p);
+    //static bool isTileVisible(const Position & p); // Checks if a tile is visible. Inaccurate. Prefer Blindness.
+    //static bool isTileBlind(const Position & p); // Checks if a tile is blind for an opponent. Inaccurate.
     //Checks if a tile is detected by an enemy. Inaccurate.
+
+    static bool isTileThreatened(const Position & p);
 
     Position getSafeBase();
     Position getEnemyBaseGround();

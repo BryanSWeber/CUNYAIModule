@@ -170,7 +170,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
                     DiveableTargets.addStoredUnit(e->second);
                 }
 
-                if (CUNYAIModule::Can_Fight(e_type, unit_)) {
+                if (CUNYAIModule::checkCanFight(e_type, unit_)) {
                     ThreateningTargets.addStoredUnit(e->second);
                 }
 
@@ -338,10 +338,10 @@ Position Mobility::encircle() {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     TilePosition target_tile = TilePositions::Origin;
-    bool blind_start = CUNYAIModule::currentMapInventory.getBlindField(unit_->getTilePosition());
+    bool bufferedStart = CUNYAIModule::currentMapInventory.getBufferField(unit_->getTilePosition()) > 0;
 
-    //Don't move if you're in their blind spot and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1 && blind_start)
+    //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
+    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1 && bufferedStart)
         return Positions::Origin;
 
     //otherwise, move to a spot that is blind, or
@@ -635,7 +635,7 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
     int target_surviablity = INT_MAX;
     for (auto t : ui.unit_map_) {
         dist_to_enemy = unit_->getDistance(t.second.pos_);
-        bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
+        bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::checkCanFight(u_type_, t.second.type_);
         if (t.second.future_fap_value_ <= target_surviablity && dist_to_enemy <= MaxDiveDistance && baseline_requirement) {
             MaxDiveDistance = dist_to_enemy;
             target_surviablity = t.second.future_fap_value_;  //attack most likely to die, not closest!

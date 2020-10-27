@@ -387,9 +387,11 @@ void CUNYAIModule::onFrame()
     //currentMapInventory.createAirThreatField(enemy_player_model);
     //currentMapInventory.createGroundThreatField(enemy_player_model);
     //currentMapInventory.createDetectField(enemy_player_model);
-    currentMapInventory.createVisionField(enemy_player_model);
-    currentMapInventory.createBlindField(enemy_player_model);
-    currentMapInventory.createOccupationField(enemy_player_model);
+    //currentMapInventory.createVisionField(enemy_player_model);
+    //currentMapInventory.createBlindField(enemy_player_model);
+    currentMapInventory.createThreatField(enemy_player_model);
+    currentMapInventory.createBufferField(enemy_player_model);
+    currentMapInventory.createOccupationField();
     currentMapInventory.createSurroundField(enemy_player_model);
     currentMapInventory.DiagnosticSurroundTiles();
 

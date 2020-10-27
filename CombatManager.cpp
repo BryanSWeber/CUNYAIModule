@@ -89,7 +89,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool worker_time_and_place = false;
             bool standard_fight_reasons = (fight_looks_good && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) < friend_loc.unit_map_.size()/2) || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
             UnitInventory expanded_friend_loc;
-            bool prepping_attack = !CUNYAIModule::currentMapInventory.isTileVisible(u->getPosition());
+            bool prepping_attack = !CUNYAIModule::currentMapInventory.isTileThreatened(u->getPosition());
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                 expanded_friend_loc.updateUnitInventorySummary();

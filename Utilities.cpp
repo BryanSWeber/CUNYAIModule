@@ -273,7 +273,7 @@ void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string labe
 //}
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight(UnitType u_type, UnitType e_type) {
+bool CUNYAIModule::checkCanFight(UnitType u_type, UnitType e_type) {
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
     bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier; // medics do not fight per se.
     bool reaver = u_type == UnitTypes::Protoss_Reaver && !e_type.isFlyer();
@@ -284,36 +284,49 @@ bool CUNYAIModule::Can_Fight(UnitType u_type, UnitType e_type) {
     return e_vunerable; // also if they are cloaked and can attack us.
 }
 
+// Outlines the case where UNIT can attack Anything; 
+bool CUNYAIModule::checkCanFight(UnitType u_type) {
+    bool has_appropriate_weapons = (u_type.airWeapon() != WeaponTypes::None) || (u_type.groundWeapon() != WeaponTypes::None);
+    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier; // medics do not fight per se.
+    bool reaver = u_type == UnitTypes::Protoss_Reaver;
+    bool could_get_spelled = (u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler);
+    bool queen_broodling = u_type == UnitTypes::Zerg_Queen;
+    bool science_irradiate = u_type == UnitTypes::Terran_Science_Vessel;
+    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons || queen_broodling || reaver || science_irradiate || could_get_spelled); // if we cannot attack them.
+    return e_vunerable; // also if they are cloaked and can attack us.
+}
+
+
 // Outlines the case where UNIT can attack ENEMY;
-bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
+bool CUNYAIModule::checkCanFight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
     if (!enemy->isDetected()) return false;
-    return CUNYAIModule::Can_Fight(u_type, e_type);
+    return CUNYAIModule::checkCanFight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight( Unit unit, StoredUnit enemy ) {
+bool CUNYAIModule::checkCanFight( Unit unit, StoredUnit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
-    return CUNYAIModule::Can_Fight(u_type, e_type);
+    return CUNYAIModule::checkCanFight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight(StoredUnit unit, StoredUnit enemy) {
+bool CUNYAIModule::checkCanFight(StoredUnit unit, StoredUnit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
-    return CUNYAIModule::Can_Fight(u_type, e_type);
+    return CUNYAIModule::checkCanFight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight( StoredUnit unit, Unit enemy ) {
+bool CUNYAIModule::checkCanFight( StoredUnit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     if (enemy && !enemy->isDetected()) return false;
-    return CUNYAIModule::Can_Fight(u_type, e_type);
+    return CUNYAIModule::checkCanFight(u_type, e_type);
 }
 
 // Returns True if UnitType UT can attack anything in UnitInventory ENEMY; 
@@ -333,9 +346,9 @@ bool CUNYAIModule::isInPotentialDanger(const UnitType &ut, const UnitInventory e
     return shooting_up || shooting_down || shoots_without_weapons;
 }
 
-bool CUNYAIModule::isInDanger(const Unit &u) {
-    return (u->isFlying() && CUNYAIModule::currentMapInventory.getAirThreatField(u->getTilePosition()) > 0) || (!u->isFlying() && CUNYAIModule::currentMapInventory.getGroundThreatField(u->getTilePosition()) > 0);
-}
+//bool CUNYAIModule::isInDanger(const Unit &u) {
+//    return (u->isFlying() && CUNYAIModule::currentMapInventory.getAirThreatField(u->getTilePosition()) > 0) || (!u->isFlying() && CUNYAIModule::currentMapInventory.getGroundThreatField(u->getTilePosition()) > 0);
+//}
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
 int CUNYAIModule::countUnits( const UnitType &type, const UnitInventory &ui )
@@ -972,7 +985,7 @@ StoredUnit* CUNYAIModule::getClosestAttackableStored(UnitInventory &ui, const Un
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = CUNYAIModule::Can_Fight(unit, e->second);
+            can_attack = CUNYAIModule::checkCanFight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance(unit->getPosition()));
                 if (temp_dist <= min_dist) {
@@ -995,8 +1008,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( UnitInventory &ui, con
 
     if ( !ui.unit_map_.empty() ) {
         for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
-            can_attack = Can_Fight(u_type, e->second.type_) && e->second.bwapi_unit_;
-            can_be_attacked_by = Can_Fight(e->second.type_, u_type);
+            can_attack = checkCanFight(u_type, e->second.type_) && e->second.bwapi_unit_;
+            can_be_attacked_by = checkCanFight(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance( origin ));
                 if ( temp_dist <= min_dist ) {
@@ -1020,8 +1033,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(UnitInventory &ui, cons
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = Can_Fight(unit, e->second);
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_attack = checkCanFight(unit, e->second);
+            can_be_attacked_by = checkCanFight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
@@ -1046,8 +1059,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetExcluding(UnitInventory &ui, c
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = Can_Fight(unit, e->second);
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_attack = checkCanFight(unit, e->second);
+            can_be_attacked_by = checkCanFight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && e->second.type_ != ut) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
@@ -1072,8 +1085,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(UnitInventory &ui
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = Can_Fight(unit, e->second);
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_attack = checkCanFight(unit, e->second);
+            can_be_attacked_by = checkCanFight(e->second, unit);
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
@@ -1096,7 +1109,7 @@ StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const 
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_be_attacked_by = checkCanFight(e->second, unit);
             if (can_be_attacked_by && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
@@ -1119,7 +1132,7 @@ StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = Can_Fight(unit, e->second);
+            can_attack = checkCanFight(unit, e->second);
             if (can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
@@ -1191,7 +1204,7 @@ StoredUnit* CUNYAIModule::getClosestThreatStored(UnitInventory &ui, const Unit &
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_be_attacked_by = checkCanFight(e->second, unit);
 
             if (can_be_attacked_by && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = e->second.pos_.getDistance(origin);
@@ -1217,8 +1230,8 @@ StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(UnitInventory &ui,
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            can_attack = Can_Fight(unit, e->second);
-            can_be_attacked_by = Can_Fight(e->second, unit);
+            can_attack = checkCanFight(unit, e->second);
+            can_be_attacked_by = checkCanFight(e->second, unit);
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 if (we_are_a_flyer) {
                     temp_dist = unit->getDistance(e->second.pos_);
@@ -1243,14 +1256,14 @@ UnitInventory CUNYAIModule::getThreateningUnitInventoryInRadius( const UnitInven
     UnitInventory ui_out;
     if (air_attack) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Overlord)) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && checkCanFight(e->second.type_, UnitTypes::Zerg_Overlord)) {
                 ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
             }
         }
     }
     else {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Drone)) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && checkCanFight(e->second.type_, UnitTypes::Zerg_Drone)) {
                 ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
             }
         }
