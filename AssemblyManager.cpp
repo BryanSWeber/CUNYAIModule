@@ -455,7 +455,7 @@ bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva) || (checkSufficientSlack(UnitTypes::Zerg_Lurker) && is_hydra) || (checkSufficientSlack(UnitTypes::Zerg_Guardian) && is_muta)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Zergling) && is_larva) || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Lurker) && is_hydra) || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Guardian) && is_muta)) {
         is_building = AssemblyManager::reserveOptimalCombatUnit(morph_canidate, assemblyCycle_);
     }
 
@@ -488,10 +488,11 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
 
-    // Check if unit is even feasible, or the unit already IS that type.
+    // Check if unit is even feasible and that the unit does not demand something that we have already reserved for another product.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        if (CUNYAIModule::checkWilling(potential_type->first, true) || morph_canidate->getType() == potential_type->first) potential_type++;
+        if (CUNYAIModule::checkWilling(potential_type->first, true) && !CUNYAIModule::my_reservation.requiresOvertappedResource(potential_type->first)) 
+            potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -728,21 +729,19 @@ UnitType AssemblyManager::refineOptimalUnit(const map<UnitType, int> combat_type
     UnitType build_type = UnitTypes::None;
 
     for (auto &potential_type : combat_types) {
-        if (!CUNYAIModule::my_reservation.requiresOvertappedResource(potential_type.first)) { // don't consider adding something that's already tapped out our reservations.
-            if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-                best_sim_score = potential_type.second;
-                build_type = potential_type.first;
-                //Diagnostics::DiagnosticWrite("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
-            }
-            else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-                bool current_best_flexible = build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None;
-                bool new_best_flexible = potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None;
+        if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+            best_sim_score = potential_type.second;
+            build_type = potential_type.first;
+            //Diagnostics::DiagnosticWrite("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        }
+        else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+            bool current_best_flexible = build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None;
+            bool new_best_flexible = potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None;
 
-                if (current_best_flexible && !new_best_flexible) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
-                else if (new_best_flexible && !current_best_flexible) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
-                else if (current_best_flexible == new_best_flexible) build_type = build_type.buildTime() < potential_type.first.buildTime() ? build_type : potential_type.first; // If they both are poor choices or both are good choices, get the faster building one.
-                //Diagnostics::DiagnosticWrite("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
-            }
+            if (current_best_flexible && !new_best_flexible) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
+            else if (new_best_flexible && !current_best_flexible) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+            else if (current_best_flexible == new_best_flexible) build_type = build_type.buildTime() < potential_type.first.buildTime() ? build_type : potential_type.first; // If they both are poor choices or both are good choices, get the faster building one.
+            //Diagnostics::DiagnosticWrite("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
         }
     }
 
@@ -1084,7 +1083,7 @@ bool AssemblyManager::assignAssemblyRole()
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkExcessSupply();
+            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkSlackSupply();
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
                 larva.first->stop(); // this will larva trick them to the left.
@@ -1351,16 +1350,18 @@ bool AssemblyManager::checkSlackGas()
 bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
 {
     bool test_value;
-    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && !checkSlackLarvae())
+    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && !CUNYAIModule::my_reservation.getExcessLarva())
         return false;
-    if(ut.mineralPrice() > 0 && !checkSlackMinerals())
+    if(ut.mineralPrice() > 0 && !CUNYAIModule::my_reservation.getExcessMineral())
         return false;
-    if(ut.gasPrice() > 0 && !checkSlackGas())
+    if(ut.gasPrice() > 0 && !CUNYAIModule::my_reservation.getExcessGas())
+        return false;
+    if (ut.supplyRequired() > 0 && !CUNYAIModule::my_reservation.getExcessSupply())
         return false;
     return true;
 }
 
-bool AssemblyManager::checkExcessSupply()
+bool AssemblyManager::checkSlackSupply()
 {
     return  CUNYAIModule::my_reservation.getExcessSupply() + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Overlord) * UnitTypes::Zerg_Overlord.supplyProvided() >= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery) * getMaxSupply(); // Note max supply is 400 in this metric (ling = 1 supply each).
 }

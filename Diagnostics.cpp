@@ -271,7 +271,7 @@ void Diagnostics::drawReservations(const Reservation reservations, const Positio
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto const res : reservations.getReservedBuildings()) {
             Position upper_left = Position(res.first);
-            Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
+            Position lower_right = Position(res.first) + Position(32,32) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations! The +32 is because the drawing is off by a tile.
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
                 Broodwar->drawTextMap(upper_left, res.second.c_str());
@@ -432,7 +432,36 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
     Broodwar->drawTextScreen(screen_x, screen_y + 70 + another_row_of_printing * 10, "Supply: %d", CUNYAIModule::my_reservation.getExcessSupply()/2);  // Conver to the human scale.
     Broodwar->drawTextScreen(screen_x, screen_y + 80 + another_row_of_printing * 10, "Larva: %d", CUNYAIModule::my_reservation.getExcessLarva());  //
 
+}
 
+void Diagnostics::writeMacroIssues()
+{
+    if (Broodwar->getFrameCount() % (30 * 24) == 0) {
+        if (Broodwar->self()->minerals() > 300 || Broodwar->self()->gas() > 300 || (Broodwar->self()->supplyUsed() > 40 * 2 && Broodwar->self()->supplyTotal() <= Broodwar->self()->supplyUsed())) {
+            DiagnosticWrite(Broodwar->mapName().c_str());
+            DiagnosticWrite("Frame: %d", Broodwar->getFrameCount());
+            for (int i = 0; i != 229; i++)
+            { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+                int u_count = CUNYAIModule::countUnits(((UnitType)i), CUNYAIModule::my_reservation);
+                if (u_count > 0) {
+                    DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
+                }
+            }
+            for (auto const r : CUNYAIModule::my_reservation.getReservedUpgrades()) {
+                DiagnosticWrite("Reserved Upgrades:");  //
+                DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
+            }
+            DiagnosticWrite("Excess Resources/Current Resources");  //
+            DiagnosticWrite("Min: %d/%d", CUNYAIModule::my_reservation.getExcessMineral(), Broodwar->self()->minerals());  //
+            DiagnosticWrite("Gas: %d/%d", CUNYAIModule::my_reservation.getExcessGas(), Broodwar->self()->gas());  //
+            DiagnosticWrite("Supply: %d/%d", CUNYAIModule::my_reservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
+            DiagnosticWrite("Larva: %d/%d", CUNYAIModule::my_reservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
+
+            DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.econ_derivative);  //
+            DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.army_derivative);  //
+            DiagnosticWrite("Tech : %s, D.Tech:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.tech_derivative);  //
+        }
+    }
 }
 
 void Diagnostics::writePlayerModel(PlayerModel &pmodel)
@@ -445,7 +474,8 @@ void Diagnostics::writePlayerModel(PlayerModel &pmodel)
 void Diagnostics::onFrame()
 {
     //bwemMap.Draw(BWAPI::BroodwarPtr);
-    BWEB::Map::draw();
+    //BWEB::Map::draw();
+    writeMacroIssues();
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
     //Print_Test_Case(0, 50);
@@ -514,16 +544,11 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_has_air_vunerability_ ? "TRUE" : "FALSE"); //
 
     ////vision belongs here.
-    //Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_MapInventory.est_enemy_stock_);
-    //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
-    //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-    Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(CUNYAIModule::enemy_player_model.getEstimatedWorkers()));
-    //Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", CUNYAIModule::enemy_player_model.estimated_resources_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_army_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_tech_per_frame_);
-    Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
-    Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenArmy());  //
-    Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenTech());  //
-    Broodwar->drawTextScreen(375, 100, "Unseen Flyer: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers());  //
-    Broodwar->drawTextScreen(375, 110, "Unseen Ground: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenGround());  //
+    Broodwar->drawTextScreen(375, 30, "E. Army Stock/Est.: %d/%4.2f", CUNYAIModule::enemy_player_model.units_.stock_fighting_total_, CUNYAIModule::enemy_player_model.getEstimatedUnseenArmy());
+    Broodwar->drawTextScreen(375, 40, "E. Tech Stock/Est.: %d/%4.2f", CUNYAIModule::enemy_player_model.researches_.research_stock_, CUNYAIModule::enemy_player_model.getEstimatedUnseenTech());
+    Broodwar->drawTextScreen(375, 50, "E. Workers/Est.: %d/%d", CUNYAIModule::enemy_player_model.units_.worker_count_, static_cast<int>(CUNYAIModule::enemy_player_model.getEstimatedWorkers()));
+    Broodwar->drawTextScreen(375, 70, "Comparative lnY (E/F): %4.2f / %4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
+
 
     ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
     ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //

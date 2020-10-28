@@ -250,7 +250,8 @@ void Reservation::confirmOngoingReservations() {
             ++res_it;
         }
         else {
-            Diagnostics::DiagnosticWrite("The intended creator of %s does not exist. Freeing up the funds.", res_it->second.c_str());
+            if(res_it->second != UnitTypes::None)
+                Diagnostics::DiagnosticWrite("The intended creator of %s does not exist. Freeing up the funds.", res_it->second.c_str()); //Don't broadcast the removal of "None".
             auto remove_me = res_it;
             res_it++;
             removeReserveSystem(remove_me->second, false);  // contains an erase.

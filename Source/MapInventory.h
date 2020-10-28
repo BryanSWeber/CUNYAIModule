@@ -46,6 +46,7 @@ private:
     double pfThreat_[256][256] = { 0 }; // which areas are visible OR under threat?
     int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
     double pfThreatBuffer_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
+    double pfSurroundBuffer_[256][256] = { 0 }; // The region about 4 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
     bool pfSurroundSquare_[256][256] = { 0 }; //Is the square a viable square to move a unit to and improve the surround?
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
@@ -138,7 +139,8 @@ public:
     //void createGroundThreatField(PlayerModel & enemy_player);
     //void createVisionField(PlayerModel & enemy_player);
     void createOccupationField(); //Marks all the tiles you have occupied.
-    void createBufferField(PlayerModel & enemy_player);
+    void createThreatBufferField(PlayerModel & enemy_player);
+    void createSurroundBufferField(PlayerModel & enemy_player);
     //void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
     void createThreatField(PlayerModel & enemy_player); // This marks all potentially threatened OR visible squares.
     void createSurroundField(PlayerModel & enemy_player); //Must run after createBlindField and CreatOccupationField
@@ -148,16 +150,17 @@ public:
     //const double getVisionField(TilePosition &t);
     const int getOccupationField(TilePosition &t);
     const double getBufferField(TilePosition & t);
+    const double getSurroundBufferField(TilePosition &t);
     //const double getBlindField(TilePosition &t);
     const bool getSurroundField(TilePosition &t);
     void setSurroundField(TilePosition &t, bool newVal);
 
     void DiagnosticTile();
-    void DiagnosticAirThreats();
-    void DiagnosticGroundThreats();
-    void DiagnosticVisibleTiles();
+    //void DiagnosticAirThreats();
+    //void DiagnosticGroundThreats();
+    //void DiagnosticVisibleTiles();
     void DiagnosticOccupiedTiles();
-    void DiagnosticBlindTiles();
+    //void DiagnosticBlindTiles();
     void DiagnosticSurroundTiles();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.

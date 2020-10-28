@@ -390,7 +390,7 @@ void CUNYAIModule::onFrame()
     //currentMapInventory.createVisionField(enemy_player_model);
     //currentMapInventory.createBlindField(enemy_player_model);
     currentMapInventory.createThreatField(enemy_player_model);
-    currentMapInventory.createBufferField(enemy_player_model);
+    currentMapInventory.createThreatBufferField(enemy_player_model);
     currentMapInventory.createOccupationField();
     currentMapInventory.createSurroundField(enemy_player_model);
     currentMapInventory.DiagnosticSurroundTiles();

@@ -50,6 +50,8 @@ public:
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
     static void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
 
+    // Writes to file any potential macro problems/concerning realities of the game.
+    static void writeMacroIssues();
     // Dumps most information about a player model to the debug file.
     static void writePlayerModel(PlayerModel &pmodel);
 

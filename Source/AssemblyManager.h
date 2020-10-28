@@ -105,9 +105,9 @@ public:
     //Below are checks to see if an item can be built, if there is sufficent excess resource of a particular time around, and related checks.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr); // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool checkSlackLarvae(); // Checks if there is slack larva (eg 2 floating).
-    static bool checkSlackMinerals(); // Checks if there is slack minerals.
-    static bool checkSlackGas(); // Checks if there is slack gas.
-    static bool checkExcessSupply(); // Checks if there is slack supply. Follows custom heuristic, might not be triggered since GA overrides this to some extent.
+    static bool checkSlackMinerals(); // Checks if there is slack minerals (50 unassigned).
+    static bool checkSlackGas(); // Checks if there is slack gas (50 unassigned).
+    static bool checkSlackSupply(); // Checks if there is slack supply. Follows custom heuristic, might not be triggered since GA overrides this to some extent.
     static bool checkSufficientSlack(const UnitType &ut = UnitTypes::Zerg_Zergling); // Checks if there is sufficient slack to build an XYZ. Defaults to zergling, the minimum unit. 
 
     static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.

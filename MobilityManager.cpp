@@ -46,16 +46,13 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
-        if (CUNYAIModule::combat_manager.isScout(unit_)) {
-            //if (unit_->isFlying()) {
-            //    it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.air_scouting_base_, StoredUnit::Phase::PathingOut);
-            //    target_pos = CUNYAIModule::current_MapInventory.air_scouting_base_;
-            //}
-            //else {
+        if (CUNYAIModule::currentMapInventory.getSurroundBufferField(TilePosition(pos_)) > 0) {
+            return Mobility::surroundLogic();
+        }
+        else if (CUNYAIModule::combat_manager.isScout(unit_)) {
             int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
             it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut);
             target_pos = CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts);
-            //}
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
             it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut);
@@ -92,7 +89,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     return it_worked;
 }
 
-bool Mobility::surroundLogic(const Position & pos)
+bool Mobility::surroundLogic()
 {
     encircle();
     //avoid_edges();//Prototyping

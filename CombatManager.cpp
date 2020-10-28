@@ -122,7 +122,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
                     if (!standard_fight_reasons && !enemy_loc.detector_count_ == 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack && !my_unit->burrowed_) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
-                            return mobility.surroundLogic(e_closest_threat->pos_);
+                            return mobility.surroundLogic();
                         }
                         else {
                             mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
@@ -139,7 +139,7 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Scatter_Logic(overstacked_units->pos_);
                     }
                     else if (!standard_fight_reasons && my_unit->phase_ == StoredUnit::Phase::PathingOut && prepping_attack) {
-                        return mobility.surroundLogic(e_closest_threat->pos_);
+                        return mobility.surroundLogic();
                     }
                     else if (standard_fight_reasons || my_unit->phase_ == StoredUnit::Phase::Attacking) {
                         return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
@@ -148,7 +148,7 @@ bool CombatManager::combatScript(const Unit & u)
                     // Most simple combat units behave like this:
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack) {
-                        return mobility.surroundLogic(e_closest_threat->pos_);
+                        return mobility.surroundLogic();
                     }
                     else if (standard_fight_reasons) {
                         //StoredUnit* e_closest_ground = CUNYAIModule::getClosestGroundStored(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
@@ -185,10 +185,10 @@ bool CombatManager::combatScript(const Unit & u)
             enemy_loc.updateUnitInventorySummary();
             friend_loc.updateUnitInventorySummary();
 
-            bool kiting_in = !u->isFlying() && CUNYAIModule::isRanged(u->getType()) && static_cast<int>(e_closest_target->pos_.getDistance(u->getPosition())) > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
-            if (kiting_in)
-                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_target->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_target->bwapi_unit_), StoredUnit::Phase::Surrounding);
-            else
+            //bool kiting_in = !u->isFlying() && CUNYAIModule::isRanged(u->getType()) && static_cast<int>(e_closest_target->pos_.getDistance(u->getPosition())) > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+            //if (kiting_in)
+            //    return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_target->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_target->bwapi_unit_), StoredUnit::Phase::Surrounding);
+            //else
                 return mobility.Tactical_Logic(*e_closest_target, enemy_loc, friend_loc, search_radius, Colors::White);
         }
 

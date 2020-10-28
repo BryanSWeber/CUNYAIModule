@@ -1304,12 +1304,21 @@ void MapInventory::createOccupationField() {
 //
 //}
 
-void MapInventory::createBufferField(PlayerModel & enemy_player)
+void MapInventory::createThreatBufferField(PlayerModel & enemy_player)
 {
     for (auto i = 0; i < 256; i++)
         std::fill(pfThreatBuffer_[i], pfThreatBuffer_[i] + 256, 0);
 
     overfillField(pfThreat_, pfThreatBuffer_, 2);
+
+}
+
+void MapInventory::createSurroundBufferField(PlayerModel & enemy_player)
+{
+    for (auto i = 0; i < 256; i++)
+        std::fill(pfThreatBuffer_[i], pfThreatBuffer_[i] + 256, 0);
+
+    overfillField(pfThreat_, pfSurroundBuffer_, 5);
 
 }
 
@@ -1371,6 +1380,11 @@ const int MapInventory::getOccupationField(TilePosition & t)
 const double MapInventory::getBufferField(TilePosition & t)
 {
     return pfThreatBuffer_[t.x][t.y];
+}
+
+const double MapInventory::getSurroundBufferField(TilePosition & t)
+{
+    return pfSurroundBuffer_[t.x][t.y];
 }
 
 const bool MapInventory::getSurroundField(TilePosition & t)

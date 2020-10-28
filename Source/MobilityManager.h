@@ -32,8 +32,8 @@ public:
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
 
-    // Surrounds position of choice slowly.
-    bool surroundLogic(const Position & pos);
+    // Surrounds by moving to the surround field.
+    bool surroundLogic();
     // Causes a unit to move away from its neighbors.
     bool isolate();
 
