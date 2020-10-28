@@ -46,10 +46,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
-        if (CUNYAIModule::currentMapInventory.getSurroundBufferField(TilePosition(pos_)) > 0) {
-            return Mobility::surroundLogic();
-        }
-        else if (CUNYAIModule::combat_manager.isScout(unit_)) {
+        if (CUNYAIModule::combat_manager.isScout(unit_)) {
             int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
             it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut);
             target_pos = CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts);

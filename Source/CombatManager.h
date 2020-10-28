@@ -36,6 +36,7 @@ public:
     static bool isScout(const Unit &u);      //Checks if a particular unit is stored in scout.
     static bool isLiability(const Unit & u);      //Checks if a particular unit is stored in liablities.
     static void removeLiablity(const Unit & u);      //Removes from appropriate inventory. May move differently.
+    static bool isPreparingAttack(const UnitInventory &ui); //Checks if you're preparing to attack in a given UI. Tests the % of units pathing out.
 
     static bool isWorkerFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are workers. 
     //static bool isPulledWorkersFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are Workers or Buildings

@@ -1229,23 +1229,23 @@ void MapInventory::overfillField(double pfIn[256][256], double pfOut[256][256], 
 //    completeField(pfAirThreat_, max_range);
 //}
 //
-//void MapInventory::createDetectField(PlayerModel &enemy_player) {
-//
-//    for (auto i = 0; i < 256; i++)
-//        std::fill(pfDetectThreat_[i], pfDetectThreat_[i] + 256, 0);
-//
-//    //set all the nonzero elements to their relevant values.
-//    int max_range = 0;
-//    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-//        if (unit.second.valid_pos_) {
-//            int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())) + buffer; // buildings all detect in a radius of 7, all others are sight range.
-//            pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, static_cast<int>(pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
-//            max_range = max(max_range, detection_range);
-//        }
-//    }
-//    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-//    completeField(pfDetectThreat_, max_range);
-//}
+void MapInventory::createDetectField(PlayerModel &enemy_player) {
+
+    for (auto i = 0; i < 256; i++)
+        std::fill(pfDetectThreat_[i], pfDetectThreat_[i] + 256, 0);
+
+    //set all the nonzero elements to their relevant values.
+    int max_range = 0;
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
+        if (unit.second.valid_pos_) {
+            int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())) + buffer; // buildings all detect in a radius of 7, all others are sight range.
+            pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, static_cast<int>(pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
+            max_range = max(max_range, detection_range);
+        }
+    }
+    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
+    completeField(pfDetectThreat_, max_range);
+}
 //
 //void MapInventory::createGroundThreatField(PlayerModel &enemy_player) {
 //
@@ -1313,12 +1313,12 @@ void MapInventory::createThreatBufferField(PlayerModel & enemy_player)
 
 }
 
-void MapInventory::createSurroundBufferField(PlayerModel & enemy_player)
+void MapInventory::createExtraWideBufferField(PlayerModel & enemy_player)
 {
     for (auto i = 0; i < 256; i++)
-        std::fill(pfThreatBuffer_[i], pfThreatBuffer_[i] + 256, 0);
+        std::fill(pfExtraWideBuffer_[i], pfExtraWideBuffer_[i] + 256, 0);
 
-    overfillField(pfThreat_, pfSurroundBuffer_, 5);
+    overfillField(pfThreat_, pfExtraWideBuffer_, 5);
 
 }
 
@@ -1367,6 +1367,10 @@ void MapInventory::createSurroundField(PlayerModel & enemy_player)
 //    return pfVisible_[t.x][t.y];
 //}
 
+const int MapInventory::getDetectField(TilePosition & t) {
+    return pfDetectThreat_[t.x][t.y];
+}
+
 const int MapInventory::getOccupationField(TilePosition & t)
 {
     return pfOccupation_[t.x][t.y];
@@ -1382,9 +1386,9 @@ const double MapInventory::getBufferField(TilePosition & t)
     return pfThreatBuffer_[t.x][t.y];
 }
 
-const double MapInventory::getSurroundBufferField(TilePosition & t)
+const double MapInventory::getExtraWideBufferField(TilePosition & t)
 {
-    return pfSurroundBuffer_[t.x][t.y];
+    return pfExtraWideBuffer_[t.x][t.y];
 }
 
 const bool MapInventory::getSurroundField(TilePosition & t)
@@ -1472,6 +1476,11 @@ void MapInventory::DiagnosticOccupiedTiles()
     DiagnosticField(pfOccupation_);
 }
 
+void MapInventory::DiagnosticDetectedTiles()
+{
+    DiagnosticField(pfDetectThreat_);
+}
+
 //void MapInventory::DiagnosticBlindTiles()
 //{
 //    DiagnosticField(pfBlindness_);
@@ -1480,6 +1489,11 @@ void MapInventory::DiagnosticOccupiedTiles()
 void MapInventory::DiagnosticSurroundTiles()
 {
     DiagnosticField(pfSurroundSquare_);
+}
+
+void MapInventory::DiagnosticExtraWideBufferTiles()
+{
+    DiagnosticField(pfExtraWideBuffer_);
 }
 
 Position MapInventory::getEarlyGameScoutPosition() {

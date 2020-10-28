@@ -39,14 +39,14 @@ private:
 
     //Fields:
     //double pfAirThreat_[256][256] = { 0 }; // which air areas are under threat?
-    //double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
+    double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
     //double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
     //double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
     //double pfBlindness_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's vision. Counts down from 2 to 0.
     double pfThreat_[256][256] = { 0 }; // which areas are visible OR under threat?
     int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
     double pfThreatBuffer_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
-    double pfSurroundBuffer_[256][256] = { 0 }; // The region about 4 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
+    double pfExtraWideBuffer_[256][256] = { 0 }; // The region about 4 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
     bool pfSurroundSquare_[256][256] = { 0 }; //Is the square a viable square to move a unit to and improve the surround?
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
@@ -135,22 +135,23 @@ public:
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     //void createAirThreatField(PlayerModel & enemy_player);
-    //void createDetectField(PlayerModel & enemy_player);
+    void createDetectField(PlayerModel & enemy_player);
     //void createGroundThreatField(PlayerModel & enemy_player);
     //void createVisionField(PlayerModel & enemy_player);
     void createOccupationField(); //Marks all the tiles you have occupied.
-    void createThreatBufferField(PlayerModel & enemy_player);
-    void createSurroundBufferField(PlayerModel & enemy_player);
+    void createThreatBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField
+    void createExtraWideBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField, this is even wider than the threat buffer field.
     //void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
     void createThreatField(PlayerModel & enemy_player); // This marks all potentially threatened OR visible squares.
-    void createSurroundField(PlayerModel & enemy_player); //Must run after createBlindField and CreatOccupationField
+    void createSurroundField(PlayerModel & enemy_player); //Must run after createThreatBuffer and CreatOccupationField
 
+    const int getDetectField(TilePosition & t);
     //const double getAirThreatField(TilePosition &t);
     //const double getGroundThreatField(TilePosition &t);
     //const double getVisionField(TilePosition &t);
     const int getOccupationField(TilePosition &t);
     const double getBufferField(TilePosition & t);
-    const double getSurroundBufferField(TilePosition &t);
+    const double getExtraWideBufferField(TilePosition &t);
     //const double getBlindField(TilePosition &t);
     const bool getSurroundField(TilePosition &t);
     void setSurroundField(TilePosition &t, bool newVal);
@@ -160,8 +161,10 @@ public:
     //void DiagnosticGroundThreats();
     //void DiagnosticVisibleTiles();
     void DiagnosticOccupiedTiles();
+    void DiagnosticDetectedTiles();
     //void DiagnosticBlindTiles();
     void DiagnosticSurroundTiles();
+    void DiagnosticExtraWideBufferTiles();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
     //Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
