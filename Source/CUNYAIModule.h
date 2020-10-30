@@ -34,7 +34,7 @@ constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring moveme
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
 constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
+constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
 constexpr bool UNIT_WEIGHTING = false; // under development.
 

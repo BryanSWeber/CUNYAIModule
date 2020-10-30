@@ -52,12 +52,10 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
-    if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera)) {
-        if (CUNYAIModule::my_reservation.addReserveSystem(unit->getTilePosition(), building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object... itself.
-            unit->morph(building);
+    if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
+            CUNYAIModule::buildorder.updateRemainingBuildOrder(building); // Remove from reserve systems.
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             return CUNYAIModule::updateUnitBuildIntent(unit, building, unit->getTilePosition());
-        }
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 

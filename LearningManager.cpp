@@ -445,7 +445,7 @@ void LearningManager::initializeTestStart(){
     a_tech_t0 = 0.52895;
     r_out_t0 = 0.5097605;
 
-    build_order_t0 = "12hatch drone drone drone hatch drone drone drone hatch overlord pool";
+    build_order_t0 = "12hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
 }
 
 //Otherwise, use random build order and values from above
