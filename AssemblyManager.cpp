@@ -209,10 +209,10 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafeGroundPath(Position(p)));
     }
 
-    bool buildings_started = false;
+    bool buildings_started = false; // We will go through each possible building in order, and if this is TRUE we've done something.
+
     bool distance_mining = CUNYAIModule::workermanager.getDistanceWorkers() + CUNYAIModule::workermanager.getOverstackedWorkers() > 0; // 1/16 workers LD mining is too much.
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
-    bool upgrade_bool = CUNYAIModule::tech_starved && !checkSlackLarvae();  // upgrade if you're tech starved, and there are no slack larva.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::basemanager.getBaseCount();
     bool can_upgrade_colonies = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
@@ -251,7 +251,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
                                                             (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || !checkSlackLarvae() || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, !checkSlackLarvae() && (macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300) ); // only macrohatch if you are short on larvae and can afford to spend.
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, !checkSlackLarvae() && (macro_hatch_timings || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Hatchery)) ); // only macrohatch if you are short on larvae and can afford to spend.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         !CUNYAIModule::workermanager.checkExcessGasCapacity() && CUNYAIModule::gas_starved &&
@@ -263,7 +263,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Consider an organized build plan.
     if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Evolution_Chamber)) &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
             CUNYAIModule::basemanager.getBaseCount() > 1);
@@ -271,13 +271,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Muta or lurker for main body of units. Short-circuit for lurkers if they have no detection. Build both if hive is present.
     if (prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0) { 
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Hydralisk_Den)) && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) == 0 &&
             CUNYAIModule::basemanager.getBaseCount() >= 2);
     }
 
     if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Spire)) && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             CUNYAIModule::basemanager.getBaseCount() >= 2);
@@ -285,7 +285,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //For getting to hive: See techmanager for hive, it will trigger after queens nest is built!
     if (returnUnitRank(UnitTypes::Zerg_Guardian) == 0 || returnUnitRank(UnitTypes::Zerg_Devourer) == 0 || returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Queens_Nest)) &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
@@ -295,13 +295,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //For your capstone tech:
     for (auto r : { 0,1,2,3,4,5 }) {
         if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == r) {
-            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Ultralisk_Cavern)) && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true) == 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
                 CUNYAIModule::basemanager.getBaseCount() >= 3);
         }
         if (returnUnitRank(UnitTypes::Zerg_Guardian) == r || returnUnitRank(UnitTypes::Zerg_Devourer) == r || returnUnitRank(UnitTypes::Zerg_Mutalisk) == r) {
-            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Spire)) && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
@@ -314,7 +314,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / StoredUnit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
 
     // For extra upgrades:
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Evolution_Chamber)) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         CUNYAIModule::countUnitsAvailable(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
@@ -332,7 +332,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //    CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
     //    CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Queens_Nest)) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) > 0 &&
@@ -345,8 +345,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (buildings_started) {
         Diagnostics::DiagnosticWrite("Looks like we wanted to build something. Here's the general inputs I was thinking about:");
         Diagnostics::DiagnosticWrite("Distance Mining: %s", distance_mining ? "TRUE" : "FALSE");
-        Diagnostics::DiagnosticWrite("Upgrade Time: %s", upgrade_bool ? "TRUE" : "FALSE");
-        Diagnostics::DiagnosticWrite("Enemies Ground: %s", upgrade_bool ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticWrite("Tech Starved: %s", CUNYAIModule::tech_starved ? "TRUE" : "FALSE");
         Diagnostics::DiagnosticWrite("Hydras Preferred: %s", prefer_hydra_den_over_spire ? "TRUE" : "FALSE");
         Diagnostics::DiagnosticWrite("MaxEvos (for ups): %d", number_of_evos_wanted);
         Diagnostics::DiagnosticWrite("MaxSpires (for ups): %d", number_of_spires_wanted);
@@ -453,7 +452,7 @@ bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Zergling) && is_larva) || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Lurker) && is_hydra) || (!CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Guardian) && is_muta)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Zergling) && is_larva) || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Lurker) && is_hydra) || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Guardian) && is_muta)) {
         is_building = AssemblyManager::reserveOptimalCombatUnit(morph_canidate, assemblyCycle_);
     }
 
@@ -489,7 +488,7 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     // Check if unit is even feasible and that the unit does not demand something that we have already reserved for another product.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        if (CUNYAIModule::checkWilling(potential_type->first, true) && !CUNYAIModule::my_reservation.requiresOvertappedResource(potential_type->first)) 
+        if (CUNYAIModule::checkWilling(potential_type->first, true) && CUNYAIModule::my_reservation.canBuildWithExcessResource(potential_type->first))
             potential_type++;
         else combat_types.erase(potential_type++);
     }
@@ -1079,9 +1078,9 @@ bool AssemblyManager::assignAssemblyRole()
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
 
-            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
-            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkSlackSupply();
+            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
+            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool create_supply_buffer = (wasting_larva_soon || !CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Overlord)) && !checkSlackSupply();
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
                 larva.first->stop(); // this will larva trick them to the left.
@@ -1127,19 +1126,19 @@ bool AssemblyManager::assignAssemblyRole()
 
     if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
         for (auto o : overlord_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
+            if (CUNYAIModule::checkWilling(UnitTypes::Zerg_Overlord, true) && CUNYAIModule::my_reservation.addReserveSystem(o.first, UnitTypes::Zerg_Overlord)) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
         for (auto d : immediate_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
+            if (CUNYAIModule::checkWilling(UnitTypes::Zerg_Drone, true) && CUNYAIModule::my_reservation.addReserveSystem(d.first, UnitTypes::Zerg_Drone)) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
         for (auto d : transfer_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
+            if (CUNYAIModule::checkWilling(UnitTypes::Zerg_Drone, true) && CUNYAIModule::my_reservation.addReserveSystem(d.first, UnitTypes::Zerg_Drone)) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
@@ -1343,20 +1342,6 @@ bool AssemblyManager::checkSlackMinerals()
 bool AssemblyManager::checkSlackGas()
 {
     return  CUNYAIModule::my_reservation.getExcessGas() > 50;
-}
-
-bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
-{
-    bool test_value;
-    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && !CUNYAIModule::my_reservation.getExcessLarva())
-        return false;
-    if(ut.mineralPrice() > 0 && !CUNYAIModule::my_reservation.getExcessMineral())
-        return false;
-    if(ut.gasPrice() > 0 && !CUNYAIModule::my_reservation.getExcessGas())
-        return false;
-    if (ut.supplyRequired() > 0 && !CUNYAIModule::my_reservation.getExcessSupply())
-        return false;
-    return true;
 }
 
 bool AssemblyManager::checkSlackSupply()

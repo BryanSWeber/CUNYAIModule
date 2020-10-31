@@ -186,14 +186,13 @@ bool CobbDouglas::evalArmyPossible()
 
     bool can_build_army = false;
 
-    // drop all units types I cannot assemble at this time. 
-    for (auto unit_selection : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
-        for (auto u : unit_selection.first.requiredUnits()) {
-            if (CUNYAIModule::countUnits(u.first) >= u.second) {
-                can_build_army = true;
-                break;
-            }
+    // I can build army if any of these are suitible/viable.
+    for (auto unitPair : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
+        if (CUNYAIModule::checkWilling(unitPair.first, true)) {
+            can_build_army = true;
+            break;
         }
+
     }
 
     return Broodwar->self()->supplyUsed() < 399 && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.

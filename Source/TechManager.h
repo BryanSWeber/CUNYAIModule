@@ -32,7 +32,6 @@ public:
     static bool checkBuildingReady(const TechType tech); // Check if a building is standing by to tech the research TECH.
     static bool checkUpgradeFull(const UpgradeType up);   // Check if I can get another copy of an upgrade, ex. melee damage +1 to +2 or +3.
     static bool checkUpgradeUseable(const UpgradeType up);     // Check if I have a unit that could use this upgrade, ex melee damage with only hydras.
-    static bool checkResourceSlack(); // checks if resources are slack for tech - floating minerals or larva are gone, or buildings can upgrade and are idle.
 
     static bool canUpgradeCUNY(const UpgradeType type, const bool checkAffordable = false, const Unit &builder = nullptr);  // a modification of the BWAPI canUpgrade. Has an option to -exclude- cost. Affordability is min, gas, and supply.
     static bool canResearchCUNY(TechType type, const bool checkAffordable = false, const Unit &builder = nullptr);  // a modification of the BWAPI canResearch. Has an option to -exclude- cost. Affordability is min, gas, and supply.

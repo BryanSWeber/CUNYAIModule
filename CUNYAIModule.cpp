@@ -445,7 +445,7 @@ void CUNYAIModule::onFrame()
     }
 
     techmanager.updateOptimalTech();
-    if(army_starved || assemblymanager.checkSufficientSlack(UnitTypes::Zerg_Zergling)) 
+    if(army_starved || !CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Zergling))
         assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 

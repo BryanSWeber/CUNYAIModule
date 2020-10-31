@@ -156,9 +156,27 @@ bool Reservation::requiresOvertappedResource(const UnitType &ut)
 
 bool Reservation::requiresOvertappedResource(const UpgradeType &ut)
 {
-    if (ut.mineralPrice() > 0 && minReserve_ > 0) return true;
-    if (ut.gasPrice() > 0 && gasReserve_ > 0) return true;
+    if (ut.mineralPrice() > 0 && getExcessMineral() == 0) return true;
+    if (ut.gasPrice() > 0 && getExcessGas() == 0) return true;
     return false;
+}
+
+bool Reservation::requiresOvertappedResource(const TechType &ut)
+{
+    if (ut.mineralPrice() > 0 && getExcessMineral() == 0) return true;
+    if (ut.gasPrice() > 0 && getExcessGas() == 0) return true;
+    return false;
+}
+
+bool Reservation::canBuildWithExcessResource(const UnitType & ut)
+{
+    if (ut.mineralPrice() > getExcessMineral() ) return false;
+    if (ut.gasPrice() > getExcessGas() ) return false;
+    if (ut.supplyRequired() > getExcessSupply() ) return false;
+    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0) return false;
+    //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
+    //if (ut.whatBuilds().first == UnitTypes::Zerg_Mutalisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) == 0) return true;
+    return true;
 }
 
 map<TilePosition, UnitType> Reservation::getReservedBuildings() const

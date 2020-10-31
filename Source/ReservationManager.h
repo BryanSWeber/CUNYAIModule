@@ -42,6 +42,8 @@ public:
     int Reservation::getExcessLarva(); //gets larva we have above the reservation amount.
     bool Reservation::requiresOvertappedResource(const UnitType &ut); //Checks if a unit requires a resource that is overtapped.
     bool Reservation::requiresOvertappedResource(const UpgradeType & ut);  //Checks if a upgrade requires a resource that is overtapped.
+    bool Reservation::requiresOvertappedResource(const TechType & ut); //Checks if a tech type requires a resource that is overtapped.
+    bool Reservation::canBuildWithExcessResource(const UnitType &ut); //Checks if a unit requires a resource that is overtapped.
 
     map<TilePosition, UnitType> Reservation::getReservedBuildings() const; //Building getter.
     vector<UpgradeType> Reservation::getReservedUpgrades() const; // Upgrade getter.
