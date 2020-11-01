@@ -16,16 +16,18 @@ bool WorkerManager::isEmptyWorker(const Unit &unit) {
 }
 bool WorkerManager::workerPrebuild(const Unit & unit)
 {
-    bool has_path = false;
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
+    bool has_path = TilePosition(miner.pos_) == miner.intended_build_tile_; // don't need a path if they are at their finish.
 
     if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
         Diagnostics::DiagnosticWrite("We seem to be overzealous with keeping our reserve system clean, sir!");
 
-    BWEB::Path newPath;
-    newPath.createUnitPath(miner.pos_, Position(miner.intended_build_tile_));
-    has_path = newPath.isReachable() && !newPath.getTiles().empty();
+    if (!has_path) {
+        BWEB::Path newPath;
+        newPath.createUnitPath(miner.pos_, Position(miner.intended_build_tile_));
+        has_path = newPath.isReachable() && !newPath.getTiles().empty();
+    }
 
     //If no JPS path, try CPP paths:
     int plength = 0;
