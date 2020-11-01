@@ -61,12 +61,13 @@ void UnitInventory::updateUnitsControlledBy(const Player &player)
                         break;
                     }
                 }
+
                 if (!present) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
                     Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
-                    if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
+                    if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot)) || (e.second.time_since_last_seen_ > 30 * 24 && !e.second.type_.isBuilding()) || (!e.second.type_.isFlyer() && !Broodwar->isWalkable(WalkPosition(potential_running_spot))) ) {
                         e.second.valid_pos_ = false;
                     }
-                    else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                    else if ( potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) ) {
                         e.second.pos_ = potential_running_spot;
                         e.second.valid_pos_ = true;
                     }
