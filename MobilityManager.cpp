@@ -476,79 +476,79 @@ public:
     }
 };
 
-Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const {
-    Position return_vector = Positions::Origin;
-    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
-    int temp_x = 0;
-    int temp_y = 0;
-    int current_best = INT_MAX;
-    double theta = 0;
-
-    SpiralOut spiral; // don't really need to spiral out here anymore
-
-    // we need to spiral out from the center, stopping if we hit an object.
-    TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
-    for (int i = 0; i <= 64; i++) {
-        spiral.goNext();
-        int centralize_x = TilePosition(pos_).x + spiral.x;
-        int centralize_y = TilePosition(pos_).y + spiral.y;
-
-        if (centralize_x < map_dim.x &&
-            centralize_y < map_dim.y &&
-            centralize_x > 0 &&
-            centralize_y > 0
-            ) // Is the spot acceptable?
-        {
-            if (field[centralize_x][centralize_y] > my_spot) {
-                temp_x += spiral.x;
-                temp_y += spiral.y;
-            }
-        }
-    }
-
-    if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y, temp_x);
-        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
-    }
-    return  return_vector;
-}
-
-Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
-    Position return_vector = Positions::Origin;
-    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
-    int temp_x = 0;
-    int temp_y = 0;
-    int current_best = INT_MAX;
-    double theta = 0;
-
-    SpiralOut spiral; // don't really need to spiral out here anymore
-
-                      // we need to spiral out from the center, stopping if we hit an object.
-    TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
-    for (int i = 0; i <= 9; i++) {
-        spiral.goNext();
-        int centralize_x = TilePosition(pos_).x + spiral.x;
-        int centralize_y = TilePosition(pos_).y + spiral.y;
-
-        if (centralize_x < map_dim.x &&
-            centralize_y < map_dim.y &&
-            centralize_x > 0 &&
-            centralize_y > 0
-            ) // Is the spot acceptable?
-        {
-            if (field[centralize_x][centralize_y] < my_spot) {
-                temp_x += spiral.x;
-                temp_y += spiral.y;
-            }
-        }
-    }
-
-    if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y, temp_x);
-        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
-    }
-    return  return_vector;
-}
+//Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const {
+//    Position return_vector = Positions::Origin;
+//    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
+//    int temp_x = 0;
+//    int temp_y = 0;
+//    int current_best = INT_MAX;
+//    double theta = 0;
+//
+//    SpiralOut spiral; // don't really need to spiral out here anymore
+//
+//    // we need to spiral out from the center, stopping if we hit an object.
+//    TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
+//    for (int i = 0; i <= 64; i++) {
+//        spiral.goNext();
+//        int centralize_x = TilePosition(pos_).x + spiral.x;
+//        int centralize_y = TilePosition(pos_).y + spiral.y;
+//
+//        if (centralize_x < map_dim.x &&
+//            centralize_y < map_dim.y &&
+//            centralize_x > 0 &&
+//            centralize_y > 0
+//            ) // Is the spot acceptable?
+//        {
+//            if (field[centralize_x][centralize_y] > my_spot) {
+//                temp_x += spiral.x;
+//                temp_y += spiral.y;
+//            }
+//        }
+//    }
+//
+//    if (temp_y != 0 || temp_x != 0) {
+//        theta = atan2(temp_y, temp_x);
+//        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+//    }
+//    return  return_vector;
+//}
+//
+//Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
+//    Position return_vector = Positions::Origin;
+//    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
+//    int temp_x = 0;
+//    int temp_y = 0;
+//    int current_best = INT_MAX;
+//    double theta = 0;
+//
+//    SpiralOut spiral; // don't really need to spiral out here anymore
+//
+//                      // we need to spiral out from the center, stopping if we hit an object.
+//    TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
+//    for (int i = 0; i <= 9; i++) {
+//        spiral.goNext();
+//        int centralize_x = TilePosition(pos_).x + spiral.x;
+//        int centralize_y = TilePosition(pos_).y + spiral.y;
+//
+//        if (centralize_x < map_dim.x &&
+//            centralize_y < map_dim.y &&
+//            centralize_x > 0 &&
+//            centralize_y > 0
+//            ) // Is the spot acceptable?
+//        {
+//            if (field[centralize_x][centralize_y] < my_spot) {
+//                temp_x += spiral.x;
+//                temp_y += spiral.y;
+//            }
+//        }
+//    }
+//
+//    if (temp_y != 0 || temp_x != 0) {
+//        theta = atan2(temp_y, temp_x);
+//        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+//    }
+//    return  return_vector;
+//}
 
 bool Mobility::moveTo(const Position &start, const Position &finish, const StoredUnit::Phase phase)
 {
