@@ -370,7 +370,7 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
     //Need to consider placement of Geysers.
 
     // Modifies BWEB's isPlaceable()
-    if (isOccupiedBuildLocation(type, location))
+    if (isOccupiedBuildLocation(type, location, true)) // Added true here to reject building on squares that are occupied by enemies.
         return false;
 
     const auto creepCheck = type.requiresCreep() ? true : false;
@@ -397,27 +397,27 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
         }
     }
 
-    if (type.isResourceDepot() && !Broodwar->canBuildHere(location, type))
-        return false;
+    //if (type.isResourceDepot() && !Broodwar->canBuildHere(location, type)) //Don't need to check if resource depots can be built here anymore, we have BWEB to determine that.
+    //    return false;
     
-    for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
-        for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
-            const TilePosition tile(x, y);
-            if (!tile.isValid()
-                || !Broodwar->isBuildable(tile)
-                || !Broodwar->isWalkable(WalkPosition(tile))
-                || BWEB::Map::isUsed(tile) != UnitTypes::None)
-                return false;
-        }
-    }
+//    for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
+//        for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
+//            const TilePosition tile(x, y);
+//            if (!tile.isValid()
+//                || !Broodwar->isBuildable(tile) 
+//                || BWEB::Map::isUsed(tile) != UnitTypes::None //Removed so that units (other than buildings) no longer cause this to return FALSE.
+//                || !Broodwar->isWalkable(WalkPosition(tile)))
+//                return false;
+//        }
+//    }
     return true;
 }
 
-bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePosition &location) {
+bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePosition &location, bool checkEnemy) {
     auto units_in_area = Broodwar->getUnitsInRectangle(Position(location), Position(location) + Position(type.width(), type.height()));
     if (!units_in_area.empty()) {
         for (auto u : units_in_area) {
-            if (!u->getType().canMove())
+            if (!u->getType().canMove() || (u->getPlayer()->isEnemy(Broodwar->self()) && checkEnemy))
                 return true;
         }
     }
