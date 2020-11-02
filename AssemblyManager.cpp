@@ -548,8 +548,9 @@ void AssemblyManager::applyWeightsFor(const UnitType & unit)
         weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 50);
         break;
     case UnitTypes::Zerg_Mutalisk:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, 25);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) +
-                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -50);
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, 50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Shuttle, CUNYAIModule::enemy_player_model.units_) +
                       CUNYAIModule::countUnits(UnitTypes::Protoss_Reaver, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
         break;
@@ -559,8 +560,8 @@ void AssemblyManager::applyWeightsFor(const UnitType & unit)
         break;
     case UnitTypes::Zerg_Guardian:
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 5, unit, 0.75);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 5, unit, 75);
         break;
     }
     //Consider all units you have legal ability to build, but weight them as such):
