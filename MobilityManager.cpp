@@ -25,20 +25,20 @@ bool Mobility::local_pathing(const Position &e_pos, const StoredUnit::Phase phas
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
     }
 
-    UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
-    friendly_blocks.updateUnitInventorySummary();
+    //UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
+    //friendly_blocks.updateUnitInventorySummary();
     //bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
     //if (has_a_blocking_item && !unit_->isFlying())
     //    encircle();
 
     approach(e_pos);
-    if (unit_->move(pos_ + attract_vector_ + encircle_vector_)) {
-        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Blue);//Run around an obstacle.
+    if (unit_->move(pos_ + attract_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
+
 }
 
 bool Mobility::BWEM_Movement(const bool &forward_movement) {
@@ -271,8 +271,7 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
         approach(CUNYAIModule::currentMapInventory.getSafeBase());
-        //encircle();
-        moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, StoredUnit::Phase::Retreating);
+        moveTo(pos_, pos_ + attract_vector_, StoredUnit::Phase::Retreating);
     }
     else {
         moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
@@ -339,8 +338,8 @@ Position Mobility::encircle() {
         return Positions::Origin;
 
     //otherwise, move to a spot that is blind, or
-    for (auto x = -8; x < 8; x++) {
-        for (auto y = -8; y < 8; y++) {
+    for (auto x = -10; x < 10; x++) {
+        for (auto y = -10; y < 10; y++) {
             TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
             if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && dis(gen) > 0.5){ // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
                 CUNYAIModule::currentMapInventory.setSurroundField(target_tile, false);

@@ -1347,7 +1347,7 @@ void MapInventory::createSurroundField(PlayerModel & enemy_player)
 
     for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
         for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
-            pfSurroundSquare_[tile_x][tile_y] = pfThreatBuffer_[tile_x][tile_y] > 0 && pfOccupation_[tile_x][tile_y] == 0;
+            pfSurroundSquare_[tile_x][tile_y] = pfThreatBuffer_[tile_x][tile_y] > 0.0 && pfOccupation_[tile_x][tile_y] == 0;
         }
     }
 }
@@ -1486,10 +1486,16 @@ void MapInventory::DiagnosticDetectedTiles()
 //    DiagnosticField(pfBlindness_);
 //}
 
+void MapInventory::DiagnosticThreatTiles()
+{
+    DiagnosticField(pfThreat_);
+}
+
 void MapInventory::DiagnosticSurroundTiles()
 {
     DiagnosticField(pfSurroundSquare_);
 }
+
 
 void MapInventory::DiagnosticExtraWideBufferTiles()
 {

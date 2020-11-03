@@ -164,6 +164,7 @@ public:
     void DiagnosticDetectedTiles();
     //void DiagnosticBlindTiles();
     void DiagnosticSurroundTiles();
+    void DiagnosticThreatTiles();
     void DiagnosticExtraWideBufferTiles();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
