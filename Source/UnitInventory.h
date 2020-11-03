@@ -229,6 +229,7 @@ struct UnitInventory {
     void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, MapInventory & inv, Reservation & res);
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
+    void drawAllLastSeens() const;
     void drawAllMisplacedGroundUnits() const;
     UnitInventory getInventoryAtArea(const int areaID) const;
     UnitInventory getCombatInventoryAtArea(const int areaID) const;

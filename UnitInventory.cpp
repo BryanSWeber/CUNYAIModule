@@ -63,14 +63,15 @@ void UnitInventory::updateUnitsControlledBy(const Player &player)
                 }
 
                 if (!present) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
-                    Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
-                    if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot)) || (e.second.time_since_last_seen_ > 30 * 24 && !e.second.type_.isBuilding()) || (!e.second.type_.isFlyer() && !Broodwar->isWalkable(WalkPosition(potential_running_spot))) ) {
-                        e.second.valid_pos_ = false;
-                    }
-                    else if ( potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) ) {
-                        e.second.pos_ = potential_running_spot;
-                        e.second.valid_pos_ = true;
-                    }
+                    e.second.valid_pos_ = false;
+                }
+            }
+            else { //If you can't see their position, then... assume they continue on their merry way.
+                Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
+                if(potential_running_spot.isValid() && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) // if you haven't seen them, then assume they kept moving the same direction untill they disappeared.
+                    e.second.pos_ = potential_running_spot; 
+                if (e.second.time_since_last_seen_ > 30 * 24 && !e.second.type_.isBuilding()) { // if you haven't seen them for 30 seconds and they're not buildings, they're gone.
+                    e.second.valid_pos_ = false;
                 }
             }
         }
@@ -223,6 +224,14 @@ void UnitInventory::drawAllLocations() const
 
     }
 
+}
+
+// Blue if invalid position (lost and can't find), red if valid.
+void UnitInventory::drawAllLastSeens() const
+{
+    for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
+        Diagnostics::writeMap(e->second.pos_,std::to_string(e->second.time_since_last_seen_));
+    }
 }
 
 //Marks as red if it's on a minitile that ground units should not be at.

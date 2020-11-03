@@ -21,6 +21,7 @@ void Diagnostics::drawTiles(const Position &screen_pos, Color col = Colors::Whit
         for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x += 2) {
             for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y += 2) {
                 Broodwar->drawTextMap(Position(TilePosition(x, y)), "(%d,%d)", x, y);
+                break;
             }
         }
     }
@@ -277,6 +278,14 @@ void Diagnostics::drawReservations(const Reservation reservations, const Positio
                 Broodwar->drawTextMap(upper_left, res.second.c_str());
             }
         }
+    }
+}
+
+void Diagnostics::writeMap(Position pos, string s)
+{
+    if constexpr (DIAGNOSTIC_MODE) {
+        if (CUNYAIModule::isOnScreen(pos, Broodwar->getScreenPosition()))
+            Broodwar->drawTextMap(pos, s.c_str());
     }
 }
 

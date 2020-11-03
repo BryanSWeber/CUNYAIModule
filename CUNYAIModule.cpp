@@ -316,6 +316,7 @@ void CUNYAIModule::onFrame()
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
     //enemy_player_model.units_.drawAllHitPoints(current_MapInventory);
     enemy_player_model.units_.drawAllLocations();
+    enemy_player_model.units_.drawAllLastSeens();
 
     //Update neutral units
     Player* neutral_player;
