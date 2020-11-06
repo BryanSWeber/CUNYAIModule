@@ -68,7 +68,7 @@ void UnitInventory::updateUnitsControlledBy(const Player &player)
             }
             else { //If you can't see their position, then... assume they continue on their merry way.
                 Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
-                if(potential_running_spot.isValid() && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) // if you haven't seen them, then assume they kept moving the same direction untill they disappeared.
+                if( potential_running_spot.isValid() && e.second.type_.canMove() && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot))) ) // if you haven't seen them, then assume they kept moving the same direction untill they disappeared.
                     e.second.pos_ = potential_running_spot; 
                 if (e.second.time_since_last_seen_ > 30 * 24 && !e.second.type_.isBuilding()) { // if you haven't seen them for 30 seconds and they're not buildings, they're gone.
                     e.second.valid_pos_ = false;
