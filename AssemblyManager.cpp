@@ -76,7 +76,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
         Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
-        if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_) {
+        if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_ && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera)) {
             TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
             if (CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -210,15 +210,11 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     bool buildings_started = false; // We will go through each possible building in order, and if this is TRUE we've done something.
-
+    bool canDumpLings = CUNYAIModule::workermanager.getMinWorkers() / 5 >= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_); //True if you have enough income to pump lings from all hatcheries continually.
     bool distance_mining = CUNYAIModule::workermanager.getDistanceWorkers() + CUNYAIModule::workermanager.getOverstackedWorkers() > 0; // 1/16 workers LD mining is too much.
-    bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
-    bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
+    bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || 
+                               (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::basemanager.getBaseCount();
-    bool can_upgrade_colonies = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
-        (CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
-    bool nearby_enemy = CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
-    bool drone_death = false;
     bool prefer_hydra_den_over_spire = max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) }) ||
         CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0;
     int number_of_evos_wanted =
@@ -247,11 +243,11 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //Macro-related Buildings.
     bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.isBuildingInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
     bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.getPlayer()->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
-    if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
+    if (!buildings_started) buildings_started = Expo(drone, canDumpLings &&
                                                             (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || !checkSlackLarvae() || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, !checkSlackLarvae() && (macro_hatch_timings || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Hatchery)) ); // only macrohatch if you are short on larvae and can afford to spend.
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, canDumpLings && (!checkSlackLarvae() || macro_hatch_timings) ); // only macrohatch if you are short on larvae and floating a lot.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         !CUNYAIModule::workermanager.checkExcessGasCapacity() && CUNYAIModule::gas_starved &&
