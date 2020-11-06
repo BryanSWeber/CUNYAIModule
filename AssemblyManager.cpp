@@ -76,9 +76,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
         Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
-        if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_ && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera)) {
+        if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_){
             TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-            if (CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
+            if (CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
                 unit->stop();
                 return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);

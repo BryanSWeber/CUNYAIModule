@@ -42,7 +42,7 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
         return CUNYAIModule::updateUnitPhase(unit, StoredUnit::Building);
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
-    else if(has_path && AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
+    else if( (has_path && AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) || miner.intended_build_type_.isRefinery()) { // no path to refinery buildings, they're inside an unwalkable zone.
         Mobility(unit).moveTo(unit->getPosition(), Position(miner.intended_build_tile_) + Position(16,16), StoredUnit::Phase::Prebuilding);
         if(Broodwar->getFrameCount() % 5 == 0)
             Diagnostics::DiagnosticWrite("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
