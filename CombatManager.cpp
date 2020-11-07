@@ -74,7 +74,7 @@ bool CombatManager::combatScript(const Unit & u)
             return false;
 
         // if you are in the extra wide buffer and not in the narrow buffer, surround while preparing for an attack. Should lead to smoother entry/exit.
-        if (CUNYAIModule::currentMapInventory.getExtraWideBufferField(TilePosition(u->getPosition())) > 0 && CUNYAIModule::currentMapInventory.getBufferField(TilePosition(u->getPosition())) == 0 && isPreparingAttack(friend_loc)) { 
+        if (CUNYAIModule::currentMapInventory.getExtraWideBufferField(TilePosition(u->getPosition())) > 0 && CUNYAIModule::currentMapInventory.getBufferField(TilePosition(u->getPosition())) == 0 && isCollectingForces(friend_loc)) { 
             return mobility.surroundLogic();
         }
 
@@ -97,9 +97,9 @@ bool CombatManager::combatScript(const Unit & u)
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
-            bool standard_fight_reasons = (fight_looks_good && !isPreparingAttack(friend_loc)) || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
             UnitInventory expanded_friend_loc;
-            bool prepping_attack = CUNYAIModule::currentMapInventory.getExtraWideBufferField(TilePosition(u->getPosition())) > 0.0;
+            bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
+            bool positionedForAttack = CUNYAIModule::currentMapInventory.getExtraWideBufferField(TilePosition(u->getPosition())) > 0.0;
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                 expanded_friend_loc.updateUnitInventorySummary();
@@ -129,26 +129,22 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if (!standard_fight_reasons && CUNYAIModule::currentMapInventory.getDetectField(u->getTilePosition()) > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack && !my_unit->burrowed_) {
+                    if (isCollectingForces(friend_loc) && positionedForAttack && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surroundLogic();
                         }
                         else {
-                            CUNYAIModule::currentMapInventory.getDetectField(u->getTilePosition()) > 0;
                             mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
                             return true; // now the lurker should be burrowed.
                         }
                     }
-                    else if (standard_fight_reasons || CUNYAIModule::currentMapInventory.getDetectField(u->getTilePosition()) > 0) {
+                    else if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
                         return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran:
-                    if ((my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding) && overstacked_units) {
-                        return mobility.Scatter_Logic(overstacked_units->pos_);
-                    }
-                    else if (!standard_fight_reasons && my_unit->phase_ == StoredUnit::Phase::PathingOut && prepping_attack) {
+                     if (isCollectingForces(friend_loc) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
                         return mobility.surroundLogic();
                     }
                     else if (standard_fight_reasons || my_unit->phase_ == StoredUnit::Phase::Attacking) {
@@ -157,7 +153,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                     // Most simple combat units behave like this:
                 default:
-                    if (!standard_fight_reasons && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack) {
+                    if (isCollectingForces(friend_loc) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
                         return mobility.surroundLogic();
                     }
                     else if (standard_fight_reasons) {
@@ -347,9 +343,9 @@ void CombatManager::removeLiablity(const Unit & u)
     liabilities_squad_.updateUnitInventorySummary();
 }
 
-bool CombatManager::isPreparingAttack(const UnitInventory & ui)
+bool CombatManager::isCollectingForces(const UnitInventory & ui)
 {
-    return ui.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > ui.unit_map_.size() / 5 && ui.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0;
+    return ui.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > ui.unit_map_.size() / 5;
 }
 
 bool CombatManager::isWorkerFight(const UnitInventory & friendly, const UnitInventory & enemy)

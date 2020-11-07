@@ -395,8 +395,8 @@ void CUNYAIModule::onFrame()
     currentMapInventory.createExtraWideBufferField(enemy_player_model);
     currentMapInventory.createOccupationField();
     currentMapInventory.createSurroundField(enemy_player_model);
-    currentMapInventory.DiagnosticSurroundTiles();
-    currentMapInventory.DiagnosticThreatTiles();
+    //currentMapInventory.DiagnosticSurroundTiles();
+    currentMapInventory.DiagnosticExtraWideBufferTiles();
 
     basemanager.updateBases();
 

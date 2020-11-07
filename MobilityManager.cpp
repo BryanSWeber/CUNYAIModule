@@ -222,7 +222,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
                 permenent_target.circumference_remaining_ -= widest_dim;
                 if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) && permenent_target.type_.isBuilding()) {
                         unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
-                    return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Surrounding);
+                    return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
                 }
             }
             if (target->exists())
@@ -262,7 +262,7 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
-    if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
+    if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) ) {
         approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
     }
@@ -331,17 +331,16 @@ Position Mobility::encircle() {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     TilePosition target_tile = TilePositions::Origin;
-    bool bufferedStart = CUNYAIModule::currentMapInventory.getBufferField(unit_->getTilePosition()) > 0;
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1 && bufferedStart)
+    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1)
         return Positions::Origin;
 
     //otherwise, move to a spot that is blind, or
-    for (auto x = -10; x < 10; x++) {
-        for (auto y = -10; y < 10; y++) {
+    for (auto x = -5; x < 5; x++) {
+        for (auto y = -5; y < 5; y++) {
             target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
-            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && dis(gen) > 0.5){ // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && max(CUNYAIModule::currentMapInventory.getOccupationField(target_tile), 1) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
                 CUNYAIModule::currentMapInventory.setSurroundField(target_tile, false);
                 break;
             }
