@@ -565,7 +565,7 @@ void AssemblyManager::applyWeightsFor(const UnitType & unit)
 
 bool AssemblyManager::checkNewUnitWithinMaximum(const UnitType &unit)
 {
-    return maxUnits_.find(unit) != maxUnits_.end() && maxUnits_[unit] >= CUNYAIModule::countUnits(unit) + CUNYAIModule::countUnitsInProgress(unit);
+    return maxUnits_.find(unit) != maxUnits_.end() && maxUnits_[unit] > CUNYAIModule::countUnits(unit) + CUNYAIModule::countUnitsInProgress(unit) + CUNYAIModule::my_reservation.countInReserveSystem(unit);
 }
 
 map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building, const TilePosition &tp)
