@@ -658,7 +658,7 @@ void Diagnostics::onFrame()
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
     drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
     //Diagnostic_Watch_Expos();
-    if (Broodwar->getFrameCount() % 60 == 0) {
+    if (Broodwar->getFrameCount() % (24 * 60) == 0) {
         DiagnosticWrite("Game Frame is: %d", Broodwar->getFrameCount());
         writePlayerModel(CUNYAIModule::enemy_player_model);
     }
@@ -776,3 +776,137 @@ void Diagnostics::showForces()
 }
 
 
+void Diagnostics::printUnitEventDetails(BWAPI::Event e)
+{
+    if constexpr (DIAGNOSTIC_MODE) {
+        std::ofstream fout;  // Create Object of Ofstream
+        std::ifstream fin;
+        std::string filename = prettyRepName() + static_cast<std::string>("-Events") + static_cast<std::string>(".csv");
+
+        fin.open(filename);
+        std::string line;
+        int csv_length = 0;
+        while (getline(fin, line)) {
+            ++csv_length;
+        }
+        fin.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+        if (csv_length < 1) {
+            fout.open(filename, std::ios::app); // Append mode
+            fout << "EventType" << ","
+                << "X.Pos" << "," << "Y.Pos" << ","
+                << "EventOwner" << ","
+                << "UnitType" << ","
+                << "UnitOwner" << ","
+                << "UnitX.Pos" << "," << "UnitY.Pos" << ","
+                << "FrameCount" << ","
+                << "UnitID" << "\n";
+            fin.close();
+        }
+
+
+        fin.open(filename);
+        fout.open(filename, std::ios::app); // Append mode
+        if (fin.is_open())
+            fout << EventString(e) << ","
+            << e.getPosition().x << "," << e.getPosition().y << ","
+            << (e.getPlayer() ? e.getPlayer()->getName().c_str() : "No Player") << ","
+            << (e.getUnit() ? e.getUnit()->getType().c_str() : "No Unit") << ","
+            << (e.getUnit() && e.getUnit()->getPlayer() && e.getUnit()->getPlayer()->getName().c_str() ? e.getUnit()->getPlayer()->getName().c_str() : "No Player") << ","
+            << (e.getUnit() ? std::to_string(e.getUnit()->getPosition().x).c_str() : "No X") << "," << (e.getUnit() ? std::to_string(e.getUnit()->getPosition().y).c_str() : "No Y") << ","
+            << Broodwar->getFrameCount() << "\n"; // Writing data to file
+        fin.close();
+        fout.close(); // Closing the file
+    }
+}
+
+std::string Diagnostics::prettyRepName() {
+    std::string body = Broodwar->mapFileName().c_str();
+    std::string clean = body.substr(0, body.find("."));
+    return clean;
+}
+
+std::string Diagnostics::EventString(BWAPI::Event e)
+{
+    const char* s = 0;
+    switch (e.getType()) {
+    case EventType::MatchStart:
+        s = "MatchStart";
+        break;
+
+    case EventType::MatchEnd:
+        s = "MatchEnd";
+        break;
+
+    case EventType::MatchFrame:
+        s = "MatchFrame";
+        break;
+
+    case EventType::MenuFrame:
+        s = "MenuFrame";
+        break;
+
+    case EventType::SendText:
+        s = "SendText";
+        break;
+
+    case EventType::ReceiveText:
+        s = "ReceiveText";
+        break;
+
+    case EventType::PlayerLeft:
+        s = "PlayerLeft";
+        break;
+
+    case EventType::NukeDetect:
+        s = "NukeDetect";
+        break;
+
+    case EventType::UnitDiscover:
+        s = "UnitDiscover";
+        break;
+
+    case EventType::UnitEvade:
+        s = "UnitEvade";
+        break;
+
+    case EventType::UnitShow:
+        s = "UnitShow";
+        break;
+
+    case EventType::UnitHide:
+        s = "UnitHide";
+        break;
+
+    case EventType::UnitCreate:
+        s = "UnitCreate";
+        break;
+
+    case EventType::UnitDestroy:
+        s = "UnitDestroy";
+        break;
+
+    case EventType::UnitMorph:
+        s = "UnitMorph";
+        break;
+
+    case EventType::UnitRenegade:
+        s = "UnitRenegade";
+        break;
+
+    case EventType::SaveGame:
+        s = "SaveGame";
+        break;
+
+    case EventType::UnitComplete:
+        s = "UnitComplete";
+        break;
+
+        //TriggerAction,
+    case EventType::None:
+        s = "None";
+        break;
+
+    }
+    return s;
+}

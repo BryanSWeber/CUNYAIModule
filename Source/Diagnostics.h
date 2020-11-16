@@ -56,6 +56,12 @@ public:
     // Dumps most information about a player model to the debug file.
     static void writePlayerModel(PlayerModel &pmodel);
 
+    //Prints discription of an event to file.
+    static void printUnitEventDetails(BWAPI::Event e);
+    //Makes a short name for us to see what the map is called
+    static std::string prettyRepName();
+    //Makes a unique string for each event type.
+    static std::string EventString(BWAPI::Event e);
 
     //Sends a diagnostic text message, accepts another argument..
     template<typename ...Ts>

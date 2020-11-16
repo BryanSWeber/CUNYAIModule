@@ -23,6 +23,7 @@ Reservation::Reservation() {
 bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
     bool safe = reservationBuildingMap_.insert({ pos, type }).second;
     if (safe) {
+        Diagnostics::DiagnosticWrite("Reserving a %s.", type.c_str());
         minReserve_ += type.mineralPrice();
         gasReserve_ += type.gasPrice();
         supplyReserve_ += type.supplyRequired();
@@ -36,6 +37,7 @@ bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
 void Reservation::addReserveSystem(UpgradeType up)
 {
     reservedUpgrades_.push_back(up);
+    Diagnostics::DiagnosticWrite("Reserving a %s.", up.c_str());
     int level = Broodwar->self()->getUpgradeLevel(up);
     minReserve_ += up.mineralPrice(level);
     gasReserve_ += up.gasPrice(level);
@@ -45,6 +47,7 @@ void Reservation::addReserveSystem(UpgradeType up)
 bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
     bool safe = reservationUnits_.insert({ originUnit, outputUnit }).second;
     if (safe) {
+        Diagnostics::DiagnosticWrite("Reserving a %s.", outputUnit.c_str());
         minReserve_ += outputUnit.mineralPrice();
         gasReserve_ += outputUnit.gasPrice();
         supplyReserve_ += outputUnit.supplyRequired();
