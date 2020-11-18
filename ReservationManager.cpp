@@ -111,10 +111,10 @@ bool Reservation::isUnitInReserveSystem(const UnitType & type)
 int Reservation::countInReserveSystem(const UnitType & type) {
     int count = 0;
     for (auto reservation : reservationBuildingMap_) {
-        if (reservation.second == type) count++;
+        if (reservation.second == type) count += 1 + type.isTwoUnitsInOneEgg();
     }
     for (auto reservation : reservationUnits_) {
-        if (reservation.second == type) count++;
+        if (reservation.second == type) count += 1 + type.isTwoUnitsInOneEgg();
     }
     return count;
 }
