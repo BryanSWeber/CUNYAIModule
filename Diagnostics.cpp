@@ -488,7 +488,7 @@ void Diagnostics::onFrame()
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
     //Print_Test_Case(0, 50);
-    Print_Reservations(250, 190, CUNYAIModule::my_reservation);
+    Print_Reservations(0, 190, CUNYAIModule::my_reservation);
     //enemy_player_model.Print_Average_CD(500, 170);
     if (CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         CUNYAIModule::assemblymanager.Print_Assembly_FAP_Cycle(500, 170);
