@@ -144,7 +144,7 @@ bool TechManager::updateCanMakeTechExpenditures() {
             continue;
         if (building.first == UnitTypes::Zerg_Evolution_Chamber && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) >= 0) // Evo is not worth considering unless lair is done.
             continue;
-        if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0)
+        if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0) //Spawning pool, sunkens, spores, creep colonies all go under here and no other potential tech buildings. The hatch and extractor go under eco buildings.
             continue;
 
         if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.isBuildingInReserveSystem(building.first) == 0) {

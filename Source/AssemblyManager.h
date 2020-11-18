@@ -27,10 +27,10 @@ private:
                                                         { UnitTypes::Zerg_Scourge, 12 },
                                                         { UnitTypes::Zerg_Hydralisk, 36 },
                                                         { UnitTypes::Zerg_Zergling , 36 },
-                                                        { UnitTypes::Zerg_Lurker, 12 } ,
+                                                        { UnitTypes::Zerg_Lurker, 8 } ,
                                                         { UnitTypes::Zerg_Guardian, 12 } ,
                                                         { UnitTypes::Zerg_Devourer, 12 },
-                                                        { UnitTypes::Zerg_Drone , 85 },
+                                                        { UnitTypes::Zerg_Drone , 65 },
                                                         { UnitTypes::Zerg_Hatchery , 25 },
                                                         { UnitTypes::Zerg_Overlord , 30 },
                                                         { UnitTypes::Zerg_Extractor, 15 },
@@ -69,7 +69,6 @@ public:
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
     static bool checkNewUnitWithinMaximum(const UnitType &unit); // Returns TRUE if a new copy of this unit would not exeed our predetermined maximum. Returns FALSE if a new unit would exeed our maximums.
 
-
     //Unit assembly functions.
     bool assignAssemblyRole(); // Assigns units to appropriate bank and builds them when needed.
     void morphReservedUnits(); // Build units that have been reserved.
@@ -88,7 +87,6 @@ public:
     static map<int, TilePosition> addClosestBlockWithSizeOrLargerWithinWall(const UnitType & building, const TilePosition & tp); 
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
     static void planDefensiveWalls(); // Creates a Z-sim city at the natural.
-
 
     //Building assembly functions
     static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
