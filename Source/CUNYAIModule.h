@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -43,7 +43,6 @@ constexpr bool MAP_REVEAL = false; // just types in black sheep wall for local t
 constexpr bool NEVER_DIE = false; // just types in power overwhelming for local testing.
 constexpr bool INF_MONEY = false; // just types in show me the money for local testing.
 constexpr bool INSTANT_WIN = false; // just types in there is no cow level for local testing.
-
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -130,7 +129,7 @@ public:
     static bool checkInCartridge(const UnitType & ut);
     static bool checkInCartridge(const UpgradeType & ut);
     static bool checkInCartridge(const TechType & ut);
-    static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.  Checks if new unit exceeds my listed maximums.
+    static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.  Checks if new unit exceeds my listed maximums, or uses an already reserved resource.
     static bool checkOpenToUpgrade(const UpgradeType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
     static bool checkWillingAndAble(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0); // checks if UT is willing and able to be built next by unit. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
  //   static bool checkWillingAndAble(const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);  // checks if UT is willing and able to be built in general by player. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
