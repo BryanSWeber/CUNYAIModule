@@ -57,7 +57,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             return CUNYAIModule::updateUnitBuildIntent(unit, building, unit->getTilePosition());
     }
-    else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
+    else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically. Checks willing and able within loop.
 
         //Do the nearest wall if it is for ground.
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
@@ -120,10 +120,10 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 return true;
     }
 
-    if (CUNYAIModule::buildorder.checkBuildingNextInBO(building)) {
+    //if (CUNYAIModule::buildorder.checkBuildingNextInBO(building)) {
         //Diagnostics::DiagnosticWrite("I can't place a %s for you. Freeze here please!...", building.c_str());
         //buildorder.updateRemainingBuildOrder(building); // skips the building.
-    }
+    //}
 
     return false;
 }
@@ -259,7 +259,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Consider an organized build plan.
     if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Evolution_Chamber)) &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, CUNYAIModule::tech_starved &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
             CUNYAIModule::basemanager.getBaseCount() > 1);
@@ -267,13 +267,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Muta or lurker for main body of units. Short-circuit for lurkers if they have no detection. Build both if hive is present.
     if (prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0) { 
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Hydralisk_Den)) && one_tech_per_base &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, CUNYAIModule::tech_starved && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) == 0 &&
             CUNYAIModule::basemanager.getBaseCount() >= 2);
     }
 
     if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Spire)) && one_tech_per_base &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, CUNYAIModule::tech_starved && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             CUNYAIModule::basemanager.getBaseCount() >= 2);
@@ -281,7 +281,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //For getting to hive: See techmanager for hive, it will trigger after queens nest is built!
     if (returnUnitRank(UnitTypes::Zerg_Guardian) == 0 || returnUnitRank(UnitTypes::Zerg_Devourer) == 0 || returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Queens_Nest)) &&
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, CUNYAIModule::tech_starved &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
@@ -291,13 +291,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //For your capstone tech:
     for (auto r : { 0,1,2,3,4,5 }) {
         if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == r) {
-            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Ultralisk_Cavern)) && one_tech_per_base &&
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, CUNYAIModule::tech_starved && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true) == 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
                 CUNYAIModule::basemanager.getBaseCount() >= 3);
         }
         if (returnUnitRank(UnitTypes::Zerg_Guardian) == r || returnUnitRank(UnitTypes::Zerg_Devourer) == r || returnUnitRank(UnitTypes::Zerg_Mutalisk) == r) {
-            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Spire)) && one_tech_per_base &&
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, CUNYAIModule::tech_starved && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
@@ -310,7 +310,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / StoredUnit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
 
     // For extra upgrades:
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Evolution_Chamber)) &&
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, CUNYAIModule::tech_starved &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         CUNYAIModule::countUnitsAvailable(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
@@ -328,7 +328,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //    CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
     //    CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Queens_Nest)) &&
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, CUNYAIModule::tech_starved &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) > 0 &&
@@ -544,9 +544,9 @@ void AssemblyManager::applyWeightsFor(const UnitType & unit)
         weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 50);
         break;
     case UnitTypes::Zerg_Mutalisk:
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, 25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) +
-                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, 50);
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 1, unit, 50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Shuttle, CUNYAIModule::enemy_player_model.units_) +
                       CUNYAIModule::countUnits(UnitTypes::Protoss_Reaver, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
         break;
@@ -1020,8 +1020,8 @@ bool AssemblyManager::assignAssemblyRole()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    subgoalArmy_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative;
-    subgoalEcon_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative < CUNYAIModule::friendly_player_model.spending_model_.econ_derivative; // they're complimentrary but I'd like them positively defined, negations can confuse.
+    subgoalArmy_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();
+    subgoalEcon_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() < CUNYAIModule::friendly_player_model.spending_model_.econ_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
     bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
     bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;
@@ -1073,7 +1073,7 @@ bool AssemblyManager::assignAssemblyRole()
                 minerals_on_left = checkSameDirection(centroid - hatch_spot, left_of_base - hatch_spot);
             }
 
-            bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
+            bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || !CUNYAIModule::assemblymanager.checkNewUnitWithinMaximum(UnitTypes::Zerg_Drone);
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
@@ -1395,7 +1395,7 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 }
 
 bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && !my_reservation.requiresOvertappedResource(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {

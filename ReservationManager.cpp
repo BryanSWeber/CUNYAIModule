@@ -45,27 +45,25 @@ void Reservation::addReserveSystem(UpgradeType up)
 }
 
 bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
-    bool safe = reservationUnits_.insert({ originUnit, outputUnit }).second;
-    if (safe) {
+    bool inserted = reservationUnits_.insert({ originUnit, outputUnit }).second;
+    if (inserted) {
         Diagnostics::DiagnosticWrite("Reserving a %s.", outputUnit.c_str());
         minReserve_ += outputUnit.mineralPrice();
         gasReserve_ += outputUnit.gasPrice();
         supplyReserve_ += outputUnit.supplyRequired();
-        larvaReserve_ += outputUnit.whatBuilds().first == UnitTypes::Zerg_Larva;
+        larvaReserve_ += originUnit->getType() == UnitTypes::Zerg_Larva;
         CUNYAIModule::buildorder.updateRemainingBuildOrder(outputUnit);
     }
 
-    return safe;
+    return inserted;
 }
 
 bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservationBuildingMap_.find(pos);
     if (it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty()) {
         if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_building) CUNYAIModule::buildorder.retryBuildOrderElement(type);
-        if (it->second.mineralPrice()) minReserve_ -= it->second.mineralPrice();
-        if (it->second.gasPrice()) gasReserve_ -= it->second.gasPrice();
-        if (it->second.supplyRequired()) supplyReserve_ -= it->second.supplyRequired();
-        return reservationBuildingMap_.erase(pos);
+        reservationBuildingMap_.erase(pos);
+        return true;
     }
     return false;
 }
@@ -74,8 +72,6 @@ bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
     auto it = find(reservedUpgrades_.begin(), reservedUpgrades_.end(), up);
     if (it != reservedUpgrades_.end() && !reservedUpgrades_.empty()) {
         if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::buildorder.retryBuildOrderElement(up);
-        if (it->mineralPrice()) minReserve_ -= it->mineralPrice();
-        if (it->gasPrice()) gasReserve_ -= it->gasPrice();
         reservedUpgrades_.erase(it);
         return true;
     }
@@ -86,10 +82,6 @@ bool Reservation::removeReserveSystem(UnitType type, bool retry_this_unit = fals
     for (auto i = reservationUnits_.begin(); i != reservationUnits_.end(); i++) {
         if (i->second == type) {
             if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::buildorder.retryBuildOrderElement(type);
-            if (i->second.mineralPrice()) minReserve_ -= i->second.mineralPrice();
-            if (i->second.gasPrice()) gasReserve_ -= i->second.gasPrice();
-            if (i->second.supplyRequired()) supplyReserve_ -= i->second.supplyRequired();
-            if (i->second.whatBuilds().first == UnitTypes::Zerg_Larva) larvaReserve_--;
             reservationUnits_.erase(i);
             return true;
         }
@@ -148,10 +140,10 @@ int Reservation::getExcessLarva()
 
 bool Reservation::requiresOvertappedResource(const UnitType &ut)
 {
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0) return true;
-    if (ut.supplyRequired() > 0 && getExcessSupply() == 0) return true;
-    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0) return true;
+    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
+    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
+    if (ut.supplyRequired() > 0 && getExcessSupply() == 0 && supplyReserve_ > 0) return true;
+    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0 && larvaReserve_ > 0) return true;
     //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
     //if (ut.whatBuilds().first == UnitTypes::Zerg_Mutalisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) == 0) return true;
     return false;
@@ -159,15 +151,15 @@ bool Reservation::requiresOvertappedResource(const UnitType &ut)
 
 bool Reservation::requiresOvertappedResource(const UpgradeType &ut)
 {
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0) return true;
+    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
+    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
     return false;
 }
 
 bool Reservation::requiresOvertappedResource(const TechType &ut)
 {
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0) return true;
+    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
+    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
     return false;
 }
 
@@ -253,9 +245,7 @@ void Reservation::confirmOngoingReservations() {
         }
         else {
             Diagnostics::DiagnosticWrite("No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str());
-            auto remove_me = res_it;
-            res_it++;
-            removeReserveSystem(remove_me->first, remove_me->second, true);  // contains an erase.
+            reservationBuildingMap_.erase(res_it++);  // contains an erase.
         }
     }
 
@@ -265,17 +255,14 @@ void Reservation::confirmOngoingReservations() {
         for (auto u : Broodwar->self()->getUnits()) {
             if (u == res_it->first && u->getType() == res_it->second.whatBuilds().first)
                 keep = true;
-        } // check if we have a unit building it.
+        } // check if we have the intended builder and a unit building it.
 
         if (keep) {
             ++res_it;
         }
         else {
-            if(res_it->second != UnitTypes::None)
-                Diagnostics::DiagnosticWrite("The intended creator of %s does not exist. Freeing up the funds.", res_it->second.c_str()); //Don't broadcast the removal of "None".
-            auto remove_me = res_it;
-            res_it++;
-            removeReserveSystem(remove_me->second, false);  // contains an erase.
+            Diagnostics::DiagnosticWrite("The intended creator of %s does not exist. Freeing up the funds.", res_it->second.c_str()); //Don't broadcast the removal of "None".
+            reservationUnits_.erase(res_it++);
         }
     }
     
@@ -302,16 +289,16 @@ void Reservation::confirmOngoingReservations() {
         larvaReserve_ += res_it->first->getType() == UnitTypes::Zerg_Larva;
     }
 
-    if (!reservationBuildingMap_.empty() && lastBuilderSent_ < Broodwar->getFrameCount() - 30 * 24) {
-        Diagnostics::DiagnosticWrite("...We're stuck, aren't we? Have a friendly nudge.", "");
-        reservationBuildingMap_.clear();
-        reservationUnits_.clear();
-        reservedUpgrades_.clear();
-        minReserve_ = 0;
-        gasReserve_ = 0;
-        supplyReserve_ = 0;
-        larvaReserve_ = 0;
-    }
+    //if (!reservationBuildingMap_.empty() && lastBuilderSent_ < Broodwar->getFrameCount() - 30 * 24) {
+    //    Diagnostics::DiagnosticWrite("...We're stuck, aren't we? Have a friendly nudge.", "");
+    //    reservationBuildingMap_.clear();
+    //    reservationUnits_.clear();
+    //    reservedUpgrades_.clear();
+    //    minReserve_ = 0;
+    //    gasReserve_ = 0;
+    //    supplyReserve_ = 0;
+    //    larvaReserve_ = 0;
+    //}
 }
 
 RemainderTracker::RemainderTracker()
