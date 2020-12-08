@@ -22,11 +22,11 @@ public:
     };
 
     // Basic retreat logic
-    bool Retreat_Logic(const StoredUnit &su);
+    bool Retreat_Logic();
     // Scatter (from given position, or if blank, any present storms or spells)
     bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
-    bool Tactical_Logic(const StoredUnit &e_unit, UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
+    bool Tactical_Logic(UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     bool local_pathing(const Position &e_pos, const StoredUnit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.

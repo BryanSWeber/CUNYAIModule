@@ -120,7 +120,7 @@ bool Mobility::isolate()
 }
 
 // This is basic combat logic for nonspellcasting units.
-bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const UnitInventory &ui, const int &passed_distance, const Color &color = Colors::White)
+bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const int &passed_distance, const Color &color = Colors::White)
 
 {
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
@@ -237,13 +237,12 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
     //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     //}
 
-    if (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Egg, ei) < ei.unit_map_.size()) {
-        Diagnostics::DiagnosticWrite("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
-        Diagnostics::DiagnosticWrite("This is the passed unit map");
-        for (auto u : ei.unit_map_) {
-            Diagnostics::DiagnosticWrite("%s", u.second.type_.c_str());
-        }
-    }
+    //if (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Egg, ei) < ei.unit_map_.size()) {
+    //    Diagnostics::DiagnosticWrite("This is the passed unit map");
+    //    for (auto u : ei.unit_map_) {
+    //        Diagnostics::DiagnosticWrite("%s", u.second.type_.c_str());
+    //    }
+    //}
     return false; // no target, we got a falsehood.
 }
 
@@ -252,7 +251,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
 //}
 
 // Basic retreat logic
-bool Mobility::Retreat_Logic(const StoredUnit &e) {
+bool Mobility::Retreat_Logic() {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
@@ -260,11 +259,11 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
-    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
+    //Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
-    if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) ) {
-        approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
-        moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
+    if (CUNYAIModule::currentMapInventory.getBufferField(TilePosition(pos_))) {
+        encircle();
+        moveTo(pos_, pos_ + encircle_vector_, StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
@@ -330,24 +329,30 @@ Position Mobility::encircle() {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    TilePosition target_tile = TilePositions::Origin;
+    TilePosition bestTile = TilePositions::Origin;
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1)
+    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2)
         return Positions::Origin;
+    double squaredRelativeDistance = INT_MAX;
 
     //otherwise, move to a spot that is blind, or
-    for (auto x = -5; x < 5; x++) {
-        for (auto y = -5; y < 5; y++) {
-            target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
-            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && max(CUNYAIModule::currentMapInventory.getOccupationField(target_tile), 1) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
-                CUNYAIModule::currentMapInventory.setSurroundField(target_tile, false);
-                break;
+    for (auto x = -6; x < 6; x++) {
+        for (auto y = -6; y < 6; y++) {
+            TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
+            // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
+            bool is_more_open = max(CUNYAIModule::currentMapInventory.getOccupationField(target_tile), static_cast<int>(2 - unit_->getType().size() == UnitSizeTypes::Small)) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition());  
+            bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
+            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+                bestTile = target_tile;
+                squaredRelativeDistance = (pow(x, 2) + pow(y, 2));
             }
         }
     }
 
-    return encircle_vector_ = target_tile != TilePositions::Origin ? getVectorToDestination(Position(target_tile) + Position(16,16)) : Positions::Origin; // shift to surround, move to the center of the tile and not to the corners or something strange.
+    CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
+
+    return encircle_vector_ = bestTile != TilePositions::Origin ? getVectorToDestination(Position(bestTile) + Position(16,16)) : Positions::Origin; // shift to surround, move to the center of the tile and not to the corners or something strange.
 }
 
 Position Mobility::avoid_edges() {

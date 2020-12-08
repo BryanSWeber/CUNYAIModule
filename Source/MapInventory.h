@@ -149,7 +149,7 @@ public:
     //const double getAirThreatField(TilePosition &t);
     //const double getGroundThreatField(TilePosition &t);
     //const double getVisionField(TilePosition &t);
-    const int getOccupationField(TilePosition &t);
+    const int getOccupationField(TilePosition &t); // returns 1 for occupation by small units, 2 for larger units, and the sum for more.
     const double getBufferField(TilePosition & t);
     const double getExtraWideBufferField(TilePosition &t);
     //const double getBlindField(TilePosition &t);

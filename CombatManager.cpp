@@ -61,7 +61,7 @@ bool CombatManager::combatScript(const Unit & u)
 
         Mobility mobility = Mobility(u);
         int search_radius = max({ u->isFlying() ? CUNYAIModule::enemy_player_model.units_.max_range_air_ : CUNYAIModule::enemy_player_model.units_.max_range_ground_, u->isFlying() ? CUNYAIModule::enemy_player_model.casualties_.max_range_air_ : CUNYAIModule::enemy_player_model.casualties_.max_range_ground_ , CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
-        StoredUnit* e_closest_threat = CUNYAIModule::getClosestThreatWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        StoredUnit* e_closest_threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         StoredUnit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = (my_unit->phase_ == StoredUnit::Phase::Building) || (my_unit->phase_ == StoredUnit::Phase::Prebuilding);
 
@@ -90,9 +90,6 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            //Collect information determinine what kind of fight it is, and if we want to fight.
-            int distance_to_threat = e_closest_threat->pos_.getDistance(u->getPosition());
-
             //bool unit_death_in_moments = StoredUnit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
@@ -117,15 +114,15 @@ bool CombatManager::combatScript(const Unit & u)
                     if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.resource_inventory_.empty()) {
                         bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
                         if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
-                            return mobility.Retreat_Logic(*e_closest_threat);// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
+                            return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
-                            return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
+                            return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     // Too many workers are fighting, or you are not suitable for fighting, so continue your task. Otherwise, run.
                     if (my_unit->phase_ != StoredUnit::Phase::Attacking && my_unit->phase_ != StoredUnit::Phase::Retreating)
                         return false;
                     else {
-                        return mobility.Retreat_Logic(*e_closest_threat);// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
+                        return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
@@ -139,7 +136,7 @@ bool CombatManager::combatScript(const Unit & u)
                         }
                     }
                     else if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
-                        return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
+                        return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 case UnitTypes::Zerg_Scourge: // Suicide Units
@@ -148,7 +145,7 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.surroundLogic();
                     }
                     else if (standard_fight_reasons || my_unit->phase_ == StoredUnit::Phase::Attacking) {
-                        return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
+                        return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                     // Most simple combat units behave like this:
@@ -171,19 +168,19 @@ bool CombatManager::combatScript(const Unit & u)
                         if (kiting_away)
                             break; // if kiting, just exit and we will retreat.
                         else
-                            return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
+                            return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 }
             }
 
-            return mobility.Retreat_Logic(*e_closest_threat);
+            return mobility.Retreat_Logic();
         }
 
         //If there are no threats, let's smash stuff under these conditions.
         StoredUnit* e_closest_target = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         if (e_closest_target) {
-            return mobility.Tactical_Logic(*e_closest_target, enemy_loc, friend_loc, search_radius, Colors::White);
+            return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
         }
     }
     return false;
@@ -202,7 +199,7 @@ bool CombatManager::scoutScript(const Unit & u)
                 return pathingScript(u);
             }
             else {
-                return mobility.Retreat_Logic(*e_closest);
+                return mobility.Retreat_Logic();
             }
         }
     }
