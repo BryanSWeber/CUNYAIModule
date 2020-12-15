@@ -483,7 +483,7 @@ void Diagnostics::writePlayerModel(PlayerModel &pmodel)
 void Diagnostics::onFrame()
 {
     //bwemMap.Draw(BWAPI::BroodwarPtr);
-    //BWEB::Map::draw();
+    BWEB::Map::draw();
     writeMacroIssues();
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);

@@ -138,41 +138,55 @@ int Reservation::getExcessLarva()
     return max(CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) - larvaReserve_, 0);
 }
 
-bool Reservation::requiresOvertappedResource(const UnitType &ut)
+bool Reservation::canReserveWithExcessResource(const UnitType & ut)
 {
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
-    if (ut.supplyRequired() > 0 && getExcessSupply() == 0 && supplyReserve_ > 0) return true;
-    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0 && larvaReserve_ > 0) return true;
-    //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
-    //if (ut.whatBuilds().first == UnitTypes::Zerg_Mutalisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) == 0) return true;
-    return false;
-}
-
-bool Reservation::requiresOvertappedResource(const UpgradeType &ut)
-{
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
-    return false;
-}
-
-bool Reservation::requiresOvertappedResource(const TechType &ut)
-{
-    if (ut.mineralPrice() > 0 && getExcessMineral() == 0 && minReserve_ > 0) return true;
-    if (ut.gasPrice() > 0 && getExcessGas() == 0 && gasReserve_ > 0) return true;
-    return false;
-}
-
-bool Reservation::canBuildWithExcessResource(const UnitType & ut)
-{
-    if (ut.mineralPrice() > getExcessMineral() ) return false;
-    if (ut.gasPrice() > getExcessGas() ) return false;
-    if (ut.supplyRequired() > getExcessSupply() ) return false;
-    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0) return false;
+    if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    if (ut.supplyRequired() > getExcessSupply() && supplyReserve_ > 0) return false;
+    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0 && larvaReserve_ > 0) return false;
     //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
     //if (ut.whatBuilds().first == UnitTypes::Zerg_Mutalisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) == 0) return true;
     return true;
 }
+
+bool Reservation::canReserveWithExcessResource(const TechType & ut)
+{
+    if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    return true;
+}
+
+bool Reservation::canReserveWithExcessResource(const UpgradeType & ut)
+{
+    if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    return true;
+}
+
+//bool Reservation::canBuildWithExcessResource(const UnitType & ut)
+//{
+//    if (ut.mineralPrice() > getExcessMineral() ) return false;
+//    if (ut.gasPrice() > getExcessGas() ) return false;
+//    if (ut.supplyRequired() > getExcessSupply() ) return false;
+//    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0) return false;
+//    //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
+//    //if (ut.whatBuilds().first == UnitTypes::Zerg_Mutalisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) == 0) return true;
+//    return true;
+//}
+//
+//bool Reservation::canBuildWithExcessResource(const TechType & ut)
+//{
+//    if (ut.mineralPrice() > getExcessMineral()) return false;
+//    if (ut.gasPrice() > getExcessGas()) return false;
+//    return true;
+//}
+//
+//bool Reservation::canBuildWithExcessResource(const UpgradeType & ut)
+//{
+//    if (ut.mineralPrice() > getExcessMineral()) return false;
+//    if (ut.gasPrice() > getExcessGas()) return false;
+//    return true;
+//}
 
 map<TilePosition, UnitType> Reservation::getReservedBuildings() const
 {

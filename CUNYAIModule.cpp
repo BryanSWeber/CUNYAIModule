@@ -449,7 +449,7 @@ void CUNYAIModule::onFrame()
     techmanager.updateCanMakeTechExpenditures();
     techmanager.updateOptimalTech();
 
-    if(army_starved || !CUNYAIModule::my_reservation.requiresOvertappedResource(UnitTypes::Zerg_Zergling))
+    if(army_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling))
         assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 

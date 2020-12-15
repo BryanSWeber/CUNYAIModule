@@ -448,7 +448,7 @@ bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Zergling) && is_larva) || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Lurker) && is_hydra) || (CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Guardian) && is_muta)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling) && is_larva) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Lurker) && is_hydra) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Guardian) && is_muta)) {
         is_building = AssemblyManager::reserveOptimalCombatUnit(morph_canidate, assemblyCycle_);
     }
 
@@ -484,7 +484,7 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     // Check if unit is even feasible and that the unit does not demand something that we have already reserved for another product.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        if (CUNYAIModule::checkWilling(potential_type->first, true) && CUNYAIModule::my_reservation.canBuildWithExcessResource(potential_type->first))
+        if (CUNYAIModule::checkWilling(potential_type->first, true) && CUNYAIModule::my_reservation.canReserveWithExcessResource(potential_type->first))
             potential_type++;
         else combat_types.erase(potential_type++);
     }
@@ -1075,9 +1075,9 @@ bool AssemblyManager::assignAssemblyRole()
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || !CUNYAIModule::assemblymanager.checkNewUnitWithinMaximum(UnitTypes::Zerg_Drone);
 
-            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
-            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (!CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool create_supply_buffer = (wasting_larva_soon || !CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Overlord)) && !checkSlackSupply();
+            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && hatch_wants_drones;
+            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Drone) && subgoalEcon_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool create_supply_buffer = (wasting_larva_soon || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Overlord)) && !checkSlackSupply();
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
                 larva.first->stop(); // this will larva trick them to the left.
@@ -1143,29 +1143,38 @@ bool AssemblyManager::assignAssemblyRole()
     }
 
     //We will fall through to this case if resources remain.
-    for (auto c : combat_creators_muta.unit_map_) {
-        if (buildCombatUnit(c.first)) {
-            if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
-            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+    if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12) {
+        for (auto c : combat_creators_muta.unit_map_) {
+            if (buildCombatUnit(c.first)) {
+                //if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) 
+                last_frame_of_muta_morph_command = Broodwar->getFrameCount();
+                //if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
                 return true;
+            }
         }
     }
 
     //We will fall through to this case if resources remain.
-    for (auto c : combat_creators_hydra.unit_map_) {
-        if (buildCombatUnit(c.first)) {
-            if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
-            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
-                return true;
+    if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12) {
+        for (auto c : combat_creators_hydra.unit_map_) {
+            if (buildCombatUnit(c.first)) {
+               //if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) 
+                    last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
+                //if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+                    return true;
+            }
         }
     }
 
     //We will fall through to this case if resources remain.
-    for (auto c : combat_creators_larva.unit_map_) {
-        if (buildCombatUnit(c.first)) {
-            if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+    if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
+        for (auto c : combat_creators_larva.unit_map_) {
+            if (buildCombatUnit(c.first)) {
+                //if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) 
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                //if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
                 return true;
+            }
         }
     }
 
@@ -1395,7 +1404,7 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 }
 
 bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && !my_reservation.requiresOvertappedResource(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && my_reservation.canReserveWithExcessResource(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {

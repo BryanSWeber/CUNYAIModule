@@ -267,10 +267,10 @@ void PlayerModel::evaluatePotentialUnitExpenditures() {
     }
 
 
-    //consider how the production of the enemy you can see.
+    //consider the production of the enemy you can see.
     considerUnseenProducts(units_);
     considerWorkerUnseenProducts(units_);
-    //consider how the production of the enemy you imagine.
+    //consider the production of the enemy you imagine.
     considerUnseenProducts(unseen_units_);
     considerWorkerUnseenProducts(unseen_units_);
 

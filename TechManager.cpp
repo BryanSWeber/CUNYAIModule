@@ -207,7 +207,7 @@ bool TechManager::chooseTech() {
     }
 
     //If we have not reserved because it is unaffordable now, let us reserve it now, as long as the resource is not overtapped.
-    if (!CUNYAIModule::my_reservation.requiresOvertappedResource(up_type) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type) && up_type != UpgradeTypes::None) { 
+    if (CUNYAIModule::my_reservation.canReserveWithExcessResource(up_type) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type) && up_type != UpgradeTypes::None) {
         CUNYAIModule::my_reservation.addReserveSystem(up_type);
     }
 }
@@ -218,7 +218,7 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
     bool busy = false;
 
     // Researchs, not upgrades per se:
-    bool reasons_to_get_lurkers = ((CUNYAIModule::tech_starved || !CUNYAIModule::my_reservation.requiresOvertappedResource(TechTypes::Lurker_Aspect)) || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0 || CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Lurker) > CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Hydralisk)) &&
+    bool reasons_to_get_lurkers = ((CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(TechTypes::Lurker_Aspect)) || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0 || CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Lurker) > CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Hydralisk)) &&
                                   (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0);
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, reasons_to_get_lurkers);
 
@@ -233,19 +233,19 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
     //if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Antennae, building, CUNYAIModule::tech_starved && have_hive); //This upgrade is terrible, thus last. It's actually been removed in the cartridge, since it's so distracting. This will stop it from upgrading, but the logic is best I have so far.
 
     //should auto upgrade if there is a build order requirement for any of these three types.
-    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Lair, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Lair)) &&
+    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Lair, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Lair)) &&
         (CUNYAIModule::basemanager.getBaseCount() > 1) && // This is often too early - we either have 2bases (or the hydra den so that we can do lurkers, see steamhammer), or we have seveeral sunkens and are being forced to one-base.
         CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
         building->getType() == UnitTypes::Zerg_Hatchery);
 
-    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Hive, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Hive)) &&
+    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Hive, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Hive)) &&
         CUNYAIModule::basemanager.getBaseCount() > 2 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Queens_Nest) > 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
 
-    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canBuildWithExcessResource(UnitTypes::Zerg_Greater_Spire)) &&
+    if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, (CUNYAIModule::tech_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Greater_Spire)) &&
         CUNYAIModule::basemanager.getBaseCount() >= 3 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hive) > 0 &&
         building->getType() == UnitTypes::Zerg_Spire &&

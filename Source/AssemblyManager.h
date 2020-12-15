@@ -65,6 +65,7 @@ private:
     RemainderTracker remainder_;
 
 public:
+
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
     static bool checkNewUnitWithinMaximum(const UnitType &unit); // Returns TRUE if a new copy of this unit would not exeed our predetermined maximum. Returns FALSE if a new unit would exeed our maximums.

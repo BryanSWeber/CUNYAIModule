@@ -1291,7 +1291,7 @@ void MapInventory::createOccupationField() {
     for (auto unit : CUNYAIModule::friendly_player_model.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         for (auto x = TilePosition(unit.second.pos_).x; x <= TilePosition(unit.second.pos_).x + unit.second.type_.tileWidth(); x++)
             for (auto y = TilePosition(unit.second.pos_).y; y <= TilePosition(unit.second.pos_).y + unit.second.type_.tileHeight(); y++)
-                pfOccupation_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]++;
+                pfOccupation_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]+= 2 - 1 * (unit.second.type_.size() == UnitSizeTypes::Small);
     }
 }
 
@@ -1347,7 +1347,7 @@ void MapInventory::createSurroundField(PlayerModel & enemy_player)
 
     for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
         for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
-            pfSurroundSquare_[tile_x][tile_y] = pfThreatBuffer_[tile_x][tile_y] > 0.0 && pfOccupation_[tile_x][tile_y] == 0;
+            pfSurroundSquare_[tile_x][tile_y] = pfThreatBuffer_[tile_x][tile_y] > 0.0 && pfOccupation_[tile_x][tile_y] <= 1;
         }
     }
 }
