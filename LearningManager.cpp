@@ -110,7 +110,7 @@ void LearningManager::initializeGeneticLearning() {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
     int population_size = e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()) ? 3 : build_order_list.size(); // default size of "breeding population". Typically, larger sizes are better to ensure a maximum but smaller sizes converge faster. ZvZ has fewer viable openings.
 
-    double gas_proportion_out = dis(gen);
+    double gas_proportion_out = dis(gen) * 0.75;
     double supply_ratio_out = dis(gen) * 0.4 + 0.5; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
 
     // the values below will be normalized to 1.
