@@ -110,3 +110,6 @@ Position getEnemyUnitaryVector(Unit e);
 bool checkSameDirection(const Position vector_a, const Position vector_b);
 // returns true if the angles are within 90 degrees of each other (0.5*pi)
 bool checkAngleSimilar(double angle1, double angle2);
+
+//returns the center of a tile rather than the top right corner.
+Position getCenterTile(const TilePosition tpos);

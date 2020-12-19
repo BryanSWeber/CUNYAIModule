@@ -571,7 +571,20 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                 return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
             }
             else {
-                unit_sent = unit_->move(Position(newPath.getTiles()[0]) + Position(16, 16));
+                int i = 0;
+                while (newPath.getTiles().size() > 2 && i < newPath.getTiles().size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
+                    bool too_close = start.getDistance(getCenterTile(newPath.getTiles()[i])) < 32 * 5;
+
+                    if (too_close)
+                        i++;
+                    else {
+                        unit_->move(getCenterTile(newPath.getTiles()[i]));
+                        break;
+                    }
+                }
+
+                unit_sent = unit_->move(getCenterTile(newPath.getTiles()[0]));
+
             }
         }
 
@@ -695,4 +708,9 @@ bool checkSameDirection(const Position vector_a, const Position vector_b) {
 bool checkAngleSimilar(double angle1, double angle2) {
     double diff = min({ abs(angle1 - angle2), abs(angle1 - angle2 - 2 * 3.1415), abs(angle1 - angle2 + 2 * 3.1415) } );
     return diff < 0.50 * 3.1415;
+}
+
+Position getCenterTile(const TilePosition tpos)
+{
+    return Position(tpos) + Position(16, 16);
 }
