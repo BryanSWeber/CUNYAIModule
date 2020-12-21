@@ -163,12 +163,11 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
         // Let's build at the safest close canidate position.
         if (safe_worker) {
             for (auto &p : inv.getExpoTilePositions()) {
-                //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
-
                 safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 newPath.createUnitPath(unit->getPosition(), Position(p));
 
-                score_temp = inv.getRadialDistanceOutFromEnemy(Position(p)) - inv.getRadialDistanceOutFromHome(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
+
+                score_temp = inv.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
                 min_plength = min(static_cast<int>(newPath.getDistance()), 500 * CUNYAIModule::basemanager.getBaseCount());
 
                 can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, Broodwar->self()->getRace().getResourceDepot(), extra_critera, min_plength); // cap travel distance for expo reservation funds.

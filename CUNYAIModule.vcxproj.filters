@@ -108,7 +108,6 @@
     <ClInclude Include="Source\BaseManager.h" />
     <ClInclude Include="Source\MapInventory.h" />
     <ClInclude Include="Source\UnitInventory.h" />
-    <ClInclude Include="StrategySelector.h" />
     <ClInclude Include="Source\ResearchInventory.h" />
     <ClInclude Include="Source\ReservationManager.h" />
   </ItemGroup>

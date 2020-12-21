@@ -26,6 +26,7 @@ private:
     Player bwapi_player_ = Player();
     Race player_race_; // stored race, will replace once race is identified.
 
+    double estimated_larvae_ = 0; // prototyping.
     double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
     double estimated_cumulative_worth_ = 0; // prototyping.
     double estimated_net_worth_ = 0; // prototyping.

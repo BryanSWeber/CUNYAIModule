@@ -332,23 +332,27 @@ Position Mobility::encircle() {
     TilePosition bestTile = TilePositions::Origin;
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2)
+    if ( CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2 && CUNYAIModule::currentMapInventory.getBufferField(unit_->getTilePosition()) > 0 )
         return Positions::Origin;
-    double squaredRelativeDistance = INT_MAX;
 
+    //double squaredRelativeDistance = INT_MAX;
     //otherwise, move to a spot that is blind, or
-    for (auto x = -6; x < 6; x++) {
-        for (auto y = -6; y < 6; y++) {
-            TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
-            // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
-            bool is_more_open = max(CUNYAIModule::currentMapInventory.getOccupationField(target_tile), static_cast<int>(2 - unit_->getType().size() == UnitSizeTypes::Small)) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition());  
-            bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
-            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
-                bestTile = target_tile;
-                squaredRelativeDistance = (pow(x, 2) + pow(y, 2));
-            }
+    SpiralOut spiral;
+
+    for (int i = 0; i <= 81; i++) {
+        spiral.goNext();
+        int x = TilePosition(pos_).x + spiral.x;
+        int y = TilePosition(pos_).y + spiral.y;
+        TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
+        // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
+        bool is_more_open = max(CUNYAIModule::currentMapInventory.getOccupationField(target_tile), static_cast<int>(2 - unit_->getType().size() == UnitSizeTypes::Small)) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition());
+        //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
+        if (CUNYAIModule::currentMapInventory.getSurroundField(target_tile) /*&& is_more_open*/ && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+            bestTile = target_tile;
+            //squaredRelativeDistance = (pow(x, 2) + pow(y, 2));
         }
     }
+    
 
     CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
 
@@ -461,23 +465,6 @@ bool Mobility::prepareLurkerToAttack(const Position position_of_target) {
 
     return false;
 }
-
-class SpiralOut { // from SO
-protected:
-    unsigned layer;
-    unsigned leg;
-public:
-    int x, y; //read these as output from next, do not modify.
-    SpiralOut() :layer(1), leg(0), x(0), y(0) {}
-    void goNext() {
-        switch (leg) {
-        case 0: ++x; if (x == layer)  ++leg;                break;
-        case 1: ++y; if (y == layer)  ++leg;                break;
-        case 2: --x; if (-x == layer)  ++leg;                break;
-        case 3: --y; if (-y == layer) { leg = 0; ++layer; }   break;
-        }
-    }
-};
 
 //Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const {
 //    Position return_vector = Positions::Origin;

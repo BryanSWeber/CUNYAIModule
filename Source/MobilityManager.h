@@ -113,3 +113,20 @@ bool checkAngleSimilar(double angle1, double angle2);
 
 //returns the center of a tile rather than the top right corner.
 Position getCenterTile(const TilePosition tpos);
+
+class SpiralOut { // from SO
+protected:
+    unsigned layer;
+    unsigned leg;
+public:
+    int x, y; //read these as output from next, do not modify.
+    SpiralOut() :layer(1), leg(0), x(0), y(0) {}
+    void goNext() {
+        switch (leg) {
+        case 0: ++x; if (x == layer)  ++leg;                break;
+        case 1: ++y; if (y == layer)  ++leg;                break;
+        case 2: --x; if (-x == layer)  ++leg;                break;
+        case 3: --y; if (-y == layer) { leg = 0; ++layer; }   break;
+        }
+    }
+};

@@ -6,7 +6,6 @@
 #include "Resource_Inventory.h"
 #include "PlayerModelManager.h"
 
-
 using namespace std;
 using namespace BWAPI;
 
@@ -197,6 +196,8 @@ public:
     //Checks if a tile is detected by an enemy. Inaccurate.
 
     static bool isTileThreatened(const Position & p);
+
+    static int getExpoPositionScore(const Position &p);
 
     Position getSafeBase();
     Position getEnemyBaseGround();
