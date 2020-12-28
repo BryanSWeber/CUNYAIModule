@@ -239,11 +239,11 @@ void BaseManager::displayBaseData()
             Broodwar->drawTextMap(b.first + Position(5, 40), "Air Dist: %d", b.second.distance_to_air_);
             Broodwar->drawTextMap(b.first + Position(5, 60), "Sunkens: %s", b.second.emergency_sunken_ ? "TRUE":"FALSE" );
             Broodwar->drawTextMap(b.first + Position(5, 70), "Spores: %s", b.second.emergency_spore_ ? "TRUE" : "FALSE");
-            Broodwar->drawTextMap(b.first + Position(5, 80), "BaseDistance: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b.first)));
+            Broodwar->drawTextMap(b.first + Position(5, 80), "BaseScore: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b.first)));
         }
 
         for (auto b : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
-            Broodwar->drawTextMap(Position(b) + Position(5, 80), "BaseDistance: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b)));
+            Broodwar->drawTextMap(Position(b) + Position(5, 80), "BaseScore: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b)));
         }
     }
 }
