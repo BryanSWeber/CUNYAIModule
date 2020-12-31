@@ -84,7 +84,7 @@ public:
     static void applyWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
 
-    static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
+    map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     //static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
     map<int, TilePosition> addClosestBlockWithSizeOrLargerWithinWall(const UnitType & building, const TilePosition & tp); 
     map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
@@ -114,7 +114,7 @@ public:
     static int getMaxSupply(); // Returns the maximum supply of all supply costs that I can make.
     int getMaxTravelDistance(); //Returns the most pixels a drone will travel to build an expo.
     int getBuildingRelatedGroundDistance(const Position & A, const Position & B); // Returns ground distance, tries JPS first then falls back to CPP.
-    int getNonBuildingRelatedGroundDistance(const Position & A, const Position & B);
+    int getUnbuiltSpaceGroundDistance(const Position & A, const Position & B);
     TilePosition getExpoPosition(); // retreive stored expo position, if it's set to origin, then recalculate it (1x).
 
     void setMaxUnit(const UnitType &ut, const int max); //Sets the maximum number of units to MAX.

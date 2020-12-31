@@ -148,8 +148,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
         // Let's build at the safest close canidate position.
         if (safe_worker) {
             safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(getExpoPosition())) || CUNYAIModule::basemanager.getBaseCount() < 2;
-            newPath.createUnitPath(unit->getPosition(), Position(getExpoPosition()));
-            int travel_distance = min(static_cast<int>(newPath.getDistance()), getMaxTravelDistance());
+            int travel_distance = min(static_cast<int>(getUnbuiltSpaceGroundDistance(unit->getPosition(), Position(getExpoPosition()))), getMaxTravelDistance());
             can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, Broodwar->self()->getRace().getResourceDepot(), extra_critera, travel_distance); // cap travel distance for expo reservation funds.
             if (safe_path_available_or_needed && can_afford_with_travel)
                 base_expo = getExpoPosition();
@@ -549,10 +548,9 @@ map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building,
             placements = closest_wall->getLargeTiles();
         if (!placements.empty()) {
             for (auto &tile : placements) {
-                BWEB::Path newPath;
-                newPath.createUnitPath(Position(tp), Position(tile));
-                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
-                    viable_placements.insert({ newPath.getDistance(), tile });
+                int walkDist = getUnbuiltSpaceGroundDistance(Position(tp), Position(tile));
+                if (walkDist > 0)
+                    viable_placements.insert({ walkDist, tile });
             }
         }
     }
@@ -569,7 +567,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
 
     if (wall) {
         Position wall_pos = Position(wall->getCentroid());
-        auto cpp = BWEM::Map::Instance().GetPath(wall_pos, start_pos, &baseToWallDist);
+        baseToWallDist = getBuildingRelatedGroundDistance(wall_pos, start_pos);
         if (baseToWallDist == 0) {
             Diagnostics::DiagnosticWrite("I can't figure out how far the main is from the wall.");
             return viable_placements;
@@ -598,31 +596,27 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
     // If there's a good placement, let's use it.
     if (!placements.empty()) {
         for (auto tile : placements) {
-            BWEB::Path newPath;
-            newPath.createUnitPath(Position(tp), Position(tile));
-            int plength = 0;
-            auto cpp = BWEM::Map::Instance().GetPath(start_pos, Position(tile), &plength);
+            int unitWalk = getUnbuiltSpaceGroundDistance(Position(tp), Position(tile));
+            int plength = getBuildingRelatedGroundDistance(start_pos, Position(tile));
             if (plength == 0) {
                 Diagnostics::DiagnosticWrite("I can't figure out how far the block is from the start postion.");
                 return viable_placements;
             }
-            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && plength < baseToWallDist)
-                viable_placements.insert({ newPath.getDistance(), tile });
+            if (unitWalk > 0 && plength < baseToWallDist)
+                viable_placements.insert({ unitWalk, tile });
         }
     }
     // Otherwise, let's fall back on the backup placements
     if (!backup_placements.empty()) {
         for (auto tile : backup_placements) {
-            BWEB::Path newPath;
-            newPath.createUnitPath(Position(tp), Position(tile));
-            int plength = 0;
-            auto cpp = BWEM::Map::Instance().GetPath(start_pos, Position(tile), &plength);
+            int unitWalk = getUnbuiltSpaceGroundDistance(Position(tp), Position(tile));
+            int plength = getBuildingRelatedGroundDistance(start_pos, Position(tile));
             if (plength == 0) {
                 Diagnostics::DiagnosticWrite("I can't figure out how far the block is from the start postion.");
                 return viable_placements;
             }
-            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && plength < baseToWallDist)
-                viable_placements.insert({ newPath.getDistance(), tile });
+            if (unitWalk > 0 && plength < baseToWallDist)
+                viable_placements.insert({ unitWalk, tile });
         }
     }
 
@@ -638,10 +632,9 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     if (closest_station) {
         int i = 0;
         for (auto &tile : closest_station->getDefenseLocations()) {
-            BWEB::Path newPath;
-            newPath.createUnitPath(Position(tp), Position(tile));
-            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
-                viable_placements.insert({ newPath.getDistance(), tile });
+            int walkDistance = getUnbuiltSpaceGroundDistance(Position(tp), Position(tile));
+            if (walkDistance > 0)
+                viable_placements.insert({ walkDistance, tile });
         }
     }
 
@@ -654,7 +647,7 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
     for (auto good_block = placements.begin(); good_block != placements.end(); good_block++) { // should automatically search by distance.
         int min_plength;
 
-        min_plength = min({ cap_distance,  getBuildingRelatedGroundDistance(u->getPosition(), Position(good_block->second)) }); //use the minimum of cap or the walking distance.
+        min_plength = min({ cap_distance,  getUnbuiltSpaceGroundDistance(u->getPosition(), Position(good_block->second)) }); //use the minimum of cap or the walking distance.
 
         if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block->second) &&  CUNYAIModule::my_reservation.addReserveSystem(good_block->second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -1375,7 +1368,7 @@ int AssemblyManager::getBuildingRelatedGroundDistance(const Position & A, const 
         return plength;
 }
 
-int AssemblyManager::getNonBuildingRelatedGroundDistance(const Position & A, const Position & B) {
+int AssemblyManager::getUnbuiltSpaceGroundDistance(const Position & A, const Position & B) {
     BWEB::Path newPath;
     //Try JPS pathing.
     newPath.createUnitPath(A, B);
@@ -1383,7 +1376,7 @@ int AssemblyManager::getNonBuildingRelatedGroundDistance(const Position & A, con
     if (newPath.isReachable() && newPath.getDistance() > 0)
         return static_cast<int>(newPath.getDistance());
     else
-        return NULL;
+        return 0;
 }
 
 TilePosition AssemblyManager::getExpoPosition()
