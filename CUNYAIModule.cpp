@@ -396,7 +396,7 @@ void CUNYAIModule::onFrame()
     currentMapInventory.createOccupationField();
     currentMapInventory.createSurroundField(enemy_player_model);
     //currentMapInventory.DiagnosticSurroundTiles();
-    currentMapInventory.DiagnosticExtraWideBufferTiles();
+    currentMapInventory.DiagnosticThreatTiles();
 
     basemanager.updateBases();
 
@@ -527,6 +527,8 @@ void CUNYAIModule::onFrame()
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
         assemblymanager.assignAssemblyRole();
         assemblymanager.morphReservedUnits();
+        assemblymanager.updateExpoPosition();
+        Diagnostics::drawExpo();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
     larva_time = end_unit_morphs - start_unit_morphs;
 

@@ -35,6 +35,8 @@ public:
     static void printLastOrder(const StoredUnit unit, const Position & screen_pos);
     static void printPhase(const StoredUnit unit, const Position & screen_pos);
     static void drawReservations(const Reservation reservations, const Position & screen_pos);
+    static void drawExpo();
+    static void drawMousePosition();
     static void writeMap(Position pos, string s);
     static void DiagnosticTrack(const Unit & u);
     static void DiagnosticTrack(const Position & p);

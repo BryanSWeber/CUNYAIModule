@@ -1904,35 +1904,13 @@ int CUNYAIModule::getExactRange(const Unit u) {
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
 
-    int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
-
-    if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
-        base_range += convertTileDistanceToPixelDistance(1);
-    }
-    else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
-        base_range += convertTileDistanceToPixelDistance(2);
-    }
-    else if (u_type == UnitTypes::Protoss_Reaver) {
-        base_range += convertTileDistanceToPixelDistance(8);
-    }
-    else if (u_type == UnitTypes::Protoss_Carrier) {
-        base_range += convertTileDistanceToPixelDistance(8);
-    }
-    else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
-        base_range += convertTileDistanceToPixelDistance(1);
-    }
-    else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
-        base_range += convertTileDistanceToPixelDistance(3);
-    }
-    else if ( u_type == UnitTypes::Terran_Barracks ) {
-        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + convertTileDistanceToPixelDistance(1) + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * convertTileDistanceToPixelDistance(1);
-    }
-
-    return base_range;
+    return getExactRange(u_type, owner);
 }
 
 int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
+
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
         base_range += convertTileDistanceToPixelDistance(1);
     }

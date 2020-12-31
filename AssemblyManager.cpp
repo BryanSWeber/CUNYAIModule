@@ -36,20 +36,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     Position unit_pos = unit->getPosition();
 
     map<int, TilePosition> viable_placements = {};
-    TilePosition tileOfClosestBase = tp;
-    vector<TilePosition> bases = CUNYAIModule::currentMapInventory.getExpoTilePositions();
 
     if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
         return false;
-
-    if (tileOfClosestBase == TilePositions::Origin) {
-        if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
-            tileOfClosestBase = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_->getTilePosition();
-        }
-        else {
-            tileOfClosestBase = unit->getTilePosition();
-        }
-    }
 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
     if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
@@ -60,14 +49,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically. Checks willing and able within loop.
 
         //Do the nearest wall if it is for ground.
-        map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+        map<int, TilePosition> wall_spots = addClosestWall(building, unit->getTilePosition());
         if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
         //simply attempt the nearest station if the previous did not find.
-        map<int, TilePosition> station_spots = addClosestStation(building, tileOfClosestBase);
+        map<int, TilePosition> station_spots = addClosestStation(building, unit->getTilePosition());
         if (!station_spots.empty())
             viable_placements.insert(station_spots.begin(), station_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
@@ -91,13 +80,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         //auto cpp = BWEM::Map::Instance().GetPath(BWEB::Map::getMainPosition(), BWEB::Map::getNaturalPosition(), &base_walk);
 
         //walls are catagorically better than macro hatches.
-        map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+        map<int, TilePosition> wall_spots = addClosestWall(building, unit->getTilePosition());
         if (!wall_spots.empty() && CUNYAIModule::basemanager.getBaseCount() >= 2) // don't build at the wall if you have 1 base.
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 96))
             return true;
 
-        map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, tileOfClosestBase);
+        map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, unit->getTilePosition());
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 96))
@@ -106,14 +95,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
     else if (canMakeCUNY(building, false, unit) && !building.whatBuilds().first.isBuilding() ) { // We do not want to have drones reserving hives or greater spire locations anywhere. Hatcheries are specially built above.
             // We want walls first before anywhere else.
-            map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+            map<int, TilePosition> wall_spots = addClosestWall(building, unit->getTilePosition());
             if (!wall_spots.empty())
                 viable_placements.insert(wall_spots.begin(), wall_spots.end());
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
                 return true;
 
             // Then try a block,
-            map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, tileOfClosestBase);
+            map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, unit->getTilePosition());
             if (!block_spots.empty())
                 viable_placements.insert(block_spots.begin(), block_spots.end());
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
@@ -146,48 +135,30 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv) {
 
-        int score_temp, min_plength, expo_score = INT_MIN;
-        bool safe_path_available_or_needed, can_afford_with_travel;
-        BWEB::Path newPath;
         TilePosition base_expo = TilePositions::Origin; // if we find no replacement position, we will know this null postion is never a good build canidate.
 
-        //bool safe_worker = CUNYAIModule::enemy_player_model.units_.UnitInventory_.empty() ||
-        //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500) == nullptr ||
-        //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500)->type_.isWorker();
+        Mobility drone_pathing_options = Mobility(unit);
 
         int worker_areaID = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
+        BWEB::Path newPath;
 
         bool safe_worker = CUNYAIModule::enemy_player_model.units_.getCombatInventoryAtArea(worker_areaID).unit_map_.empty();
-        Mobility drone_pathing_options = Mobility(unit);
+        bool safe_path_available_or_needed, can_afford_with_travel = false;
 
         // Let's build at the safest close canidate position.
         if (safe_worker) {
-            for (auto &p : inv.getExpoTilePositions()) {
-                safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
-                newPath.createUnitPath(unit->getPosition(), Position(p));
-
-
-                score_temp = inv.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
-                min_plength = min(static_cast<int>(newPath.getDistance()), 500 * CUNYAIModule::basemanager.getBaseCount());
-
-                can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, Broodwar->self()->getRace().getResourceDepot(), extra_critera, min_plength); // cap travel distance for expo reservation funds.
-
-                bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
-                bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
-
-                bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
-
-                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel && meets_gas_requirements) {
-                    expo_score = score_temp;
-                    base_expo = p;
-                }
-            }
+            safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(getExpoPosition())) || CUNYAIModule::basemanager.getBaseCount() < 2;
+            newPath.createUnitPath(unit->getPosition(), Position(getExpoPosition()));
+            int travel_distance = min(static_cast<int>(newPath.getDistance()), getMaxTravelDistance());
+            can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, Broodwar->self()->getRace().getResourceDepot(), extra_critera, travel_distance); // cap travel distance for expo reservation funds.
+            if (safe_path_available_or_needed && can_afford_with_travel)
+                base_expo = getExpoPosition();
         }
         else {
             return false;  // If there's nothing, give up.
         }
 
-        // If we found -something-
+        // If we found a viable base.
         if (base_expo != TilePositions::Origin) {
             if (CUNYAIModule::my_reservation.addReserveSystem(base_expo, Broodwar->self()->getRace().getResourceDepot())) {
                 CUNYAIModule::buildorder.announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
@@ -200,13 +171,6 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
 //Creates a new building with DRONE. Does not create units that morph from other buildings: Lairs, Hives, Greater Spires, or sunken/spores.
 bool AssemblyManager::buildBuilding(const Unit &drone) {
     // will send it to do the LAST thing on this list that it can build.
-    Mobility drone_pathing_options = Mobility(drone);
-    bool path_available = false;
-
-    // Check if worker has any path to an expo.
-    for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
-        path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafeGroundPath(Position(p)));
-    }
 
     bool buildings_started = false; // We will go through each possible building in order, and if this is TRUE we've done something.
     bool canDumpLings = CUNYAIModule::workermanager.getMinWorkers() / 5 >= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_); //True if you have enough income to pump lings from all hatcheries continually.
@@ -243,7 +207,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.isBuildingInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
     bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.getPlayer()->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
     if (!buildings_started) buildings_started = Expo(drone, canDumpLings &&
-                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || !checkSlackLarvae() || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
+                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || !checkSlackLarvae() || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, canDumpLings && (!checkSlackLarvae() || macro_hatch_timings) ); // only macrohatch if you are short on larvae and floating a lot.
@@ -633,7 +597,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
 
     // If there's a good placement, let's use it.
     if (!placements.empty()) {
-        for (auto &tile : placements) {
+        for (auto tile : placements) {
             BWEB::Path newPath;
             newPath.createUnitPath(Position(tp), Position(tile));
             int plength = 0;
@@ -648,7 +612,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
     }
     // Otherwise, let's fall back on the backup placements
     if (!backup_placements.empty()) {
-        for (auto &tile : backup_placements) {
+        for (auto tile : backup_placements) {
             BWEB::Path newPath;
             newPath.createUnitPath(Position(tp), Position(tile));
             int plength = 0;
@@ -684,29 +648,18 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     return viable_placements;
 }
 
-bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera, const int cap_distance)
+bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
-    int plength;
-    int min_plength;
-    BWEB::Path newPath;
 
-    for (auto good_block : placements) { // should automatically search by distance.
-        plength = INT_MIN;
+    for (auto good_block = placements.begin(); good_block != placements.end(); good_block++) { // should automatically search by distance.
+        int min_plength;
 
-        //Try JPS pathing.
-        newPath.createUnitPath(u->getPosition(), Position(good_block.second));
+        min_plength = min({ cap_distance,  getBuildingRelatedGroundDistance(u->getPosition(), Position(good_block->second)) }); //use the minimum of cap or the walking distance.
 
-        //Otherwise try CPP pathing.
-        if (!newPath.isReachable()) {
-            auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
-        }
-
-        min_plength = min({ cap_distance, newPath.isReachable() ? static_cast<int>(newPath.getDistance()) : plength }); //use the minimum of cap or the walking distance.
-
-        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
+        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block->second) &&  CUNYAIModule::my_reservation.addReserveSystem(good_block->second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();
-            return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
+            return CUNYAIModule::updateUnitBuildIntent(u, building, good_block->second);
         }
     }
 
@@ -1376,6 +1329,69 @@ int AssemblyManager::getMaxSupply()
         if (canMakeCUNY(u.first) && u.first) max_supply = max(max_supply, u.first.supplyRequired());
     }
     return max_supply;
+}
+
+TilePosition AssemblyManager::updateExpoPosition()
+{
+    int score_temp, min_plength, expo_score = INT_MIN;
+    TilePosition base_expo = TilePositions::Origin;
+    Unit mainBase = CUNYAIModule::basemanager.getClosestBaseGround(Position(Broodwar->self()->getStartLocation())).unit_; // This is a long way of specifying the base closest to the start position.
+    Mobility mobile = Mobility(mainBase);
+
+    for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
+
+        score_temp = CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelevant.
+
+        bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
+        bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
+
+        bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
+
+        if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && mobile.checkSafeEscapePath(Position(p)) && meets_gas_requirements) {
+            expo_score = score_temp;
+            base_expo = p;
+        }
+    }
+    expo_spot_ = base_expo; // update variable of interest.
+    return expo_spot_;
+}
+
+int AssemblyManager::getMaxTravelDistance()
+{
+    if (CUNYAIModule::basemanager.getBaseCount() == 0)
+        return INT_MAX;
+    if (CUNYAIModule::basemanager.getBaseCount() == 1)
+        return getBuildingRelatedGroundDistance(BWEB::Map::getMainPosition(), BWEB::Map::getNaturalPosition()); // give them the distance to the natural and then some extra tiles.
+    else
+        return getBuildingRelatedGroundDistance(BWEB::Map::getMainPosition(), BWEM::Map::Instance().Center()) ; // give them the distance to the map center.
+}
+
+int AssemblyManager::getBuildingRelatedGroundDistance(const Position & A, const Position & B)
+{
+    int plength = INT_MIN;
+
+    //Try CPP pathing.
+        auto cpp = BWEM::Map::Instance().GetPath(A, B, &plength);
+        return plength;
+}
+
+int AssemblyManager::getNonBuildingRelatedGroundDistance(const Position & A, const Position & B) {
+    BWEB::Path newPath;
+    //Try JPS pathing.
+    newPath.createUnitPath(A, B);
+
+    if (newPath.isReachable() && newPath.getDistance() > 0)
+        return static_cast<int>(newPath.getDistance());
+    else
+        return NULL;
+}
+
+TilePosition AssemblyManager::getExpoPosition()
+{
+    if (!expo_spot_ || expo_spot_ == TilePositions::Origin)
+        return updateExpoPosition(); // being safe.
+    else
+        return expo_spot_;
 }
 
 void AssemblyManager::setMaxUnit(const UnitType & ut, const int max)

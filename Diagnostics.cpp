@@ -281,6 +281,29 @@ void Diagnostics::drawReservations(const Reservation reservations, const Positio
     }
 }
 
+void Diagnostics::drawExpo()
+{
+    Position pos = Position(CUNYAIModule::assemblymanager.getExpoPosition());
+    if constexpr (DIAGNOSTIC_MODE) {
+        Position upper_left = pos;
+        Position lower_right = pos + Position(32, 32) + Position(Broodwar->self()->getRace().getResourceDepot().width(), Broodwar->self()->getRace().getResourceDepot().height()); //thank goodness I overloaded the + operator for the pathing operations! The +32 is because the drawing is off by a tile.
+        if (CUNYAIModule::isOnScreen(upper_left, Broodwar->getScreenPosition())) {
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
+            Broodwar->drawTextMap(upper_left, Broodwar->self()->getRace().getResourceDepot().c_str());
+        }
+    }
+}
+
+void Diagnostics::drawMousePosition()
+{
+    if constexpr (DIAGNOSTIC_MODE) {
+            Position p = Broodwar->getMousePosition() + Broodwar->getScreenPosition();
+            Broodwar->drawTextMap(p, "T: %d, %d", TilePosition(p).x, TilePosition(p).y);
+            Broodwar->drawTextMap(p + Position(0, 10), "P: %d, %d", p.x, p.y);
+
+    }
+}
+
 void Diagnostics::writeMap(Position pos, string s)
 {
     if constexpr (DIAGNOSTIC_MODE) {
@@ -483,6 +506,7 @@ void Diagnostics::writePlayerModel(PlayerModel &pmodel)
 void Diagnostics::onFrame()
 {
     //bwemMap.Draw(BWAPI::BroodwarPtr);
+    drawMousePosition();
     BWEB::Map::draw();
     writeMacroIssues();
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
@@ -657,6 +681,7 @@ void Diagnostics::onFrame()
 
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
     drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
+
     //Diagnostic_Watch_Expos();
     if (Broodwar->getFrameCount() % (24 * 60) == 0) {
         DiagnosticWrite("Game Frame is: %d", Broodwar->getFrameCount());

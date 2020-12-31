@@ -42,7 +42,7 @@ private:
     //double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
     //double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
     //double pfBlindness_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's vision. Counts down from 2 to 0.
-    double pfThreat_[256][256] = { 0 }; // which areas are visible OR under threat?
+    double pfThreat_[256][256] = { 0 }; // which areas are under threat? Consider that melee units can MOVE so give a buffer around melee units.
     int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
     double pfThreatBuffer_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
     double pfExtraWideBuffer_[256][256] = { 0 }; // The region about 4 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
