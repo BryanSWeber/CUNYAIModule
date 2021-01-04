@@ -141,7 +141,7 @@ int Reservation::getExcessLarva()
 bool Reservation::canReserveWithExcessResource(const UnitType & ut)
 {
     if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
-    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && (gasReserve_ > 0 || CUNYAIModule::countUnits(ut.getRace().getRefinery()) == 0)) return false;
     if (ut.supplyRequired() > getExcessSupply() && supplyReserve_ > 0) return false;
     if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && getExcessLarva() == 0 && larvaReserve_ > 0) return false;
     //if (ut.whatBuilds().first == UnitTypes::Zerg_Hydralisk && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) return true;
@@ -151,7 +151,7 @@ bool Reservation::canReserveWithExcessResource(const UnitType & ut)
 
 bool Reservation::canReserveWithExcessResource(const TechType & ut)
 {
-    if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
+    if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0 ) return false;
     if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
     return true;
 }
@@ -159,7 +159,7 @@ bool Reservation::canReserveWithExcessResource(const TechType & ut)
 bool Reservation::canReserveWithExcessResource(const UpgradeType & ut)
 {
     if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0) return false;
-    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && (gasReserve_ > 0 || CUNYAIModule::countUnits(ut.getRace().getRefinery()) == 0)) return false;
     return true;
 }
 
