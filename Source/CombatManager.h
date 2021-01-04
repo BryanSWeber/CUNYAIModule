@@ -18,7 +18,7 @@ private:
 public:
     bool grandStrategyScript(const Unit & u);     // Runs all movement script for nonworker units. Priortizes combat when needed and pathing otherwise.
 
-    static bool combatScript(const Unit &u);   // Runs basic combat script, and if there is no combat, it returns false.
+    bool combatScript(const Unit &u);   // Runs basic combat script, and if there is no combat, it returns false.
     static bool scoutScript(const Unit &u);       // Runs a basic scouting script, primarily for overlords but valid for non-overlords.
     static int scoutCount(); //  How many scouts do we have?
     static int scoutPosition(const Unit & u); // is this the 1st scout or second, etc?  Will return an out of bounds value if it is not in there.
@@ -37,9 +37,10 @@ public:
     static bool isLiability(const Unit & u);      //Checks if a particular unit is stored in liablities.
     static void removeLiablity(const Unit & u);      //Removes from appropriate inventory. May move differently.
     static bool isCollectingForces(const UnitInventory &ui); //Checks if you're preparing to attack in a given UI. Tests the % of units pathing out.
-
+    
     static bool isWorkerFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are workers. 
     //static bool isPulledWorkersFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are Workers or Buildings
 
-    void updateReadiness();  // Updating advance/retreat conditions:
+    int getSearchRadius(const Unit &u); //Returns the number of pixels we should search for targets.
+    void updateMacroCombatReadiness();  // Updating advance/retreat conditions.
 };

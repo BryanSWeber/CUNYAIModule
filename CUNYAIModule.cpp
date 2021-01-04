@@ -359,7 +359,7 @@ void CUNYAIModule::onFrame()
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
-    combat_manager.updateReadiness();
+    combat_manager.updateMacroCombatReadiness();
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
     playermodel_time = end_playermodel - start_playermodel;

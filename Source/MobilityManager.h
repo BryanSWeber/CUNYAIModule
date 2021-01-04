@@ -6,6 +6,24 @@
 
 //Movement and Combat Functions
 class Mobility {
+private:
+    Position pos_;
+    Unit unit_;
+    StoredUnit* stored_unit_;
+    UnitType u_type_;
+    double distance_metric_;
+    Position stutter_vector_ = Positions::Origin;
+    Position attune_vector_ = Positions::Origin;
+    Position cohesion_vector_ = Positions::Origin;
+    Position centralization_vector_ = Positions::Origin;
+    Position seperation_vector_ = Positions::Origin;
+    Position attract_vector_ = Positions::Origin;
+    Position repulse_vector_ = Positions::Origin;
+    Position retreat_vector_ = Positions::Origin;
+    Position walkability_vector_ = Positions::Origin;
+    Position encircle_vector_ = Positions::Origin;
+
+    int rng_direction_; // send unit in a random tilt direction if blocked
 
 public:
     //When we think about moving a unit, don't do it yourself, use the mobility wrapper.
@@ -15,9 +33,9 @@ public:
         u_type_ = unit->getType();
         distance_metric_ = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
 
-        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit);
-        if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-            stored_unit_ = &found_item->second;
+        auto found_item = CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit);
+        if (found_item) {
+            stored_unit_ = found_item;
         }
     };
 
@@ -28,15 +46,15 @@ public:
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
     bool Tactical_Logic(UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool local_pathing(const Position &e_pos, const StoredUnit::Phase phase);
+    bool simplePathing(const Position &e_pos, const StoredUnit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
 
     // Surrounds by moving to the surround field.
     bool surroundLogic();
-    // Causes a unit to move away from its neighbors.
-    bool isolate();
 
+    // Causes a unit to move away from its neighbors.
+    Position isolate();
     // causes a unit to move into a sight-obscured location outside of enemy vision.
     Position encircle();
     // causes a unit to avoid low-altitude areas.
@@ -57,8 +75,7 @@ public:
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase);
-    //Gets the next waypoint the unit would move to if using the moveTo command.
-    Position getNextWaypoint(const Position & start, const Position & finish);
+
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 
@@ -76,26 +93,6 @@ public:
     Position getVectorToDestination(Position &p);
     Position getVectorToEnemyDestination(Unit e);
     Position getVectorToBeyondEnemy(Unit e);
-
-private:
-    Position pos_;
-    Unit unit_;
-    StoredUnit* stored_unit_;
-    UnitType u_type_;
-    double distance_metric_;
-    Position stutter_vector_ = Positions::Origin;
-    Position attune_vector_ = Positions::Origin;
-    Position cohesion_vector_ = Positions::Origin;
-    Position centralization_vector_ = Positions::Origin;
-    Position seperation_vector_ = Positions::Origin;
-    Position attract_vector_ = Positions::Origin;
-    Position repulse_vector_ = Positions::Origin;
-    Position retreat_vector_ = Positions::Origin;
-    Position walkability_vector_ = Positions::Origin;
-    Position encircle_vector_ = Positions::Origin;
-
-    int rng_direction_; // send unit in a random tilt direction if blocked
-
 };
 
 // returns the total, nondirected speed of an enemy unit. Highly variable.
@@ -103,9 +100,6 @@ double getEnemySpeed(Unit e);
 
 //returns the vector of an enemy unit.
 Position getEnemyVector(Unit e);
-
-// returns the a 32-pixel vector in the direction of an enemy unit.
-Position getEnemyUnitaryVector(Unit e);
 
 bool checkSameDirection(const Position vector_a, const Position vector_b);
 // returns true if the angles are within 90 degrees of each other (0.5*pi)

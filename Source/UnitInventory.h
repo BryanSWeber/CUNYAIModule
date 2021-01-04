@@ -217,6 +217,7 @@ struct UnitInventory {
     //Removes units
     void removeStoredUnit(Unit unit);
 
+
     //Updates summary of inventory, stored here.
     int countRecentAdditions(int frames);
     void updateUnitInventorySummary();
@@ -249,9 +250,9 @@ struct UnitInventory {
 
     void pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
-    // Pass pointers
-    StoredUnit* getStoredUnit(const Unit &unit);
-    // Passing values for const-safety.
+    //Gets a pointer to a stored unit when provided the unit pointer.
+    StoredUnit* getStoredUnit(const Unit & u);
+    // Passing a copy of the stored unit for safety and const-compatibility.
     StoredUnit getStoredUnitValue(const Unit & unit) const;
 
     Position getMeanLocation() const;

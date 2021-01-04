@@ -699,12 +699,7 @@ Unitset CUNYAIModule::getUnit_Set( const UnitInventory &ui, const Position &orig
     return e_set;
 }
 
-StoredUnit * CUNYAIModule::getStoredUnit(const UnitInventory & ui, const Unit & u)
-{
-	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-	bool found = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end();
-	if (found) return &found_item->second;
-}
+
 
 //Gets pointer to closest unit to point in UnitInventory. Checks range. Careful about visiblity.
 StoredUnit* CUNYAIModule::getClosestStored( UnitInventory &ui, const Position &origin, const int &dist = 999999 ) {
@@ -2293,25 +2288,24 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
 }
 
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const StoredUnit::Phase phase) {
-    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-        StoredUnit& morphing_unit = found_item->second;
-        morphing_unit.phase_ = phase;
-        morphing_unit.updateStoredUnit(u);
+
+    auto found_item = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u);
+    if (found_item) {
+        found_item->phase_ = phase;
+        found_item->updateStoredUnit(u);
         return true;
     }
     return false;
 }
 
 bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type, const TilePosition &intended_build_tile) {
-    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-        StoredUnit& morphing_unit = found_item->second;
-        morphing_unit.stopMine();
-        morphing_unit.phase_ = StoredUnit::Prebuilding;
-        morphing_unit.intended_build_type_ = intended_build_type;
-        morphing_unit.intended_build_tile_ = intended_build_tile;
-        morphing_unit.updateStoredUnit(u);
+    auto found_item = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u);
+    if (found_item) {
+        found_item->stopMine();
+        found_item->phase_ = StoredUnit::Prebuilding;
+        found_item->intended_build_type_ = intended_build_type;
+        found_item->intended_build_tile_ = intended_build_tile;
+        found_item->updateStoredUnit(u);
         return true;
     }
     return false;

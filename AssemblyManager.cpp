@@ -1326,9 +1326,9 @@ int AssemblyManager::getMaxSupply()
 
 TilePosition AssemblyManager::updateExpoPosition()
 {
-    int score_temp, min_plength, expo_score = INT_MIN;
+    int score_temp, expo_score = INT_MIN;
     TilePosition base_expo = TilePositions::Origin;
-    Unit mainBase = CUNYAIModule::basemanager.getClosestBaseGround(Position(Broodwar->self()->getStartLocation())).unit_; // This is a long way of specifying the base closest to the start position.
+    Unit mainBase = CUNYAIModule::basemanager.getClosestBaseGround(Position(Broodwar->self()->getStartLocation())).unit_; // This is a long way of specifying the base closest to the start position
     Mobility mobile = Mobility(mainBase);
 
     for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {

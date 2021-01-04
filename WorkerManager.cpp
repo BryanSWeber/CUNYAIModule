@@ -29,12 +29,12 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
         has_path = newPath.isReachable() && !newPath.getTiles().empty();
     }
 
-    //If no JPS path, try CPP paths:
-    int plength = 0;
-    if (!has_path) {
-        auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, Position(miner.intended_build_tile_), &plength);
-        has_path = has_path || plength > 0;
-    }
+    ////If no JPS path, try CPP paths:
+    //int plength = 0;
+    //if (!has_path) {
+    //    auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, Position(miner.intended_build_tile_), &plength);
+    //    has_path = has_path || plength > 0;
+    //}
 
     //if we can build it with an offical build order, and it is in the reserve system, do so now.
     if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
@@ -43,7 +43,7 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
     else if( (has_path && AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) || miner.intended_build_type_.isRefinery()) { // no path to refinery buildings, they're inside an unwalkable zone.
-        Mobility(unit).moveTo(unit->getPosition(), Position(miner.intended_build_tile_) + Position(16,16), StoredUnit::Phase::Prebuilding);
+        Mobility(unit).moveTo(unit->getPosition(), getCenterTile(miner.intended_build_tile_), StoredUnit::Phase::Prebuilding);
         if(Broodwar->getFrameCount() % 5 == 0)
             Diagnostics::DiagnosticWrite("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
@@ -368,7 +368,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case StoredUnit::Prebuilding:
         //Diagnostics::DiagnosticTrack(u);
-        if (CUNYAIModule::spamGuard(u, 14) /*&& u->isIdle()*/) {
+        if (CUNYAIModule::spamGuard(u, 10) /*&& u->isIdle()*/) {
             task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         }
         break;

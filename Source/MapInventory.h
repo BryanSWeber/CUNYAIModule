@@ -195,7 +195,7 @@ public:
     //static bool isTileBlind(const Position & p); // Checks if a tile is blind for an opponent. Inaccurate.
     //Checks if a tile is detected by an enemy. Inaccurate.
 
-    static bool isTileThreatened(const Position & p);
+    static bool isTileThreatened(const TilePosition & tp);
 
     static int getExpoPositionScore(const Position &p);
 

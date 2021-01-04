@@ -159,7 +159,7 @@ bool TechManager::updateCanMakeTechExpenditures() {
     return tech_avail_;
 }
 
-bool TechManager::chooseTech() {
+UpgradeType TechManager::chooseTech() {
     UpgradeType up_type = UpgradeTypes::None;
     std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
     int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
@@ -209,7 +209,10 @@ bool TechManager::chooseTech() {
     //If we have not reserved because it is unaffordable now, let us reserve it now, as long as the resource is not overtapped.
     if (CUNYAIModule::my_reservation.canReserveWithExcessResource(up_type) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type) && up_type != UpgradeTypes::None) {
         CUNYAIModule::my_reservation.addReserveSystem(up_type);
+        return up_type;
     }
+    else
+        return UpgradeTypes::None;
 }
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.

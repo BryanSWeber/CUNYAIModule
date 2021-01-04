@@ -141,12 +141,8 @@ public:
     static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);     // checks if up is required and can be built by unit at this time.
     static bool checkFeasibleRequirement(const UpgradeType & up);   //checks if up is required and can be built.
 
-
-    //Forces selected unit (drone, hopefully!) to expo:
-    static bool Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv);
-
     // Utility Functions
-        // Prints unit's last error directly onto it.
+    // Prints unit's last error directly onto it.
     void PrintError_Unit(const Unit &unit);
     // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
     bool isActiveWorker(const Unit &unit);
@@ -203,8 +199,7 @@ public:
     static const char * noRaceName(const char *name);
     //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
     Unitset getUnit_Set(const UnitInventory & ui, const Position & origin, const int & dist);
-    // Directly looks up unit in Unitinventory. Returns null if it is not found.
-    static StoredUnit * getStoredUnit(const UnitInventory & ui, const Unit & u);
+
     //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
     static StoredUnit* getClosestStored(UnitInventory & ui, const Position & origin, const int & dist);
     static StoredUnit* getClosestStored(UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
