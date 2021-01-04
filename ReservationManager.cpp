@@ -152,7 +152,7 @@ bool Reservation::canReserveWithExcessResource(const UnitType & ut)
 bool Reservation::canReserveWithExcessResource(const TechType & ut)
 {
     if (ut.mineralPrice() > getExcessMineral() && minReserve_ > 0 ) return false;
-    if (ut.gasPrice() > getExcessGas() && gasReserve_ > 0) return false;
+    if (ut.gasPrice() > getExcessGas() && (gasReserve_ > 0 || CUNYAIModule::countUnits(ut.getRace().getRefinery()) == 0)) return false;
     return true;
 }
 
