@@ -289,7 +289,7 @@ Position Mobility::encircle() {
     TilePosition bestTile = TilePositions::Origin;
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if ( CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2 && CUNYAIModule::currentMapInventory.getBufferField(unit_->getTilePosition()) > 0 )
+    if ( CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(unit_->getTilePosition()) )
         return Positions::Origin;
 
     //double squaredRelativeDistance = INT_MAX;
@@ -315,7 +315,7 @@ Position Mobility::encircle() {
             is_more_open = (CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 && BWEB::Map::isWalkable(target_tile)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
 
         //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
-        if (CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.

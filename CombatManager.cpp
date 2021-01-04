@@ -74,7 +74,7 @@ bool CombatManager::combatScript(const Unit & u)
             return false;
 
         // if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
-        if (isCollectingForces(friend_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.getExtraWideBufferField(u->getTilePosition()) > 0 /*&& CUNYAIModule::currentMapInventory.getBufferField(u->getTilePosition()) == 0*/ && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
+        if (isCollectingForces(friend_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInExtraWideBufferField(u->getTilePosition()) > 0 /*&& CUNYAIModule::currentMapInventory.getBufferField(u->getTilePosition()) == 0*/ && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
             return mobility.surroundLogic();
 
         //If there are potential targets, must fight.
@@ -97,7 +97,7 @@ bool CombatManager::combatScript(const Unit & u)
                 //bool worker_time_and_place = false;
                 UnitInventory expanded_friend_loc = friend_loc;
                 bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
-                bool positionedForAttack = CUNYAIModule::currentMapInventory.getExtraWideBufferField(TilePosition(u->getPosition())) > 0.0;
+                bool positionedForAttack = CUNYAIModule::currentMapInventory.isInExtraWideBufferField(TilePosition(u->getPosition())) > 0.0;
                 if (e_closest_threat && e_closest_threat->type_.isWorker()) {
                     expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                     expanded_friend_loc.updateUnitInventorySummary();
@@ -146,16 +146,15 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 default: // Most simple combat units behave like this:
                     if (standard_fight_reasons) {
-                        StoredUnit* e_closest_ground_threat = CUNYAIModule::getClosestGroundWithPriority(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
+                        StoredUnit* e_closest_melee_threat = CUNYAIModule::getClosestMeleeThreatStored(enemy_loc, u, 450); // maximum sight distance of 352, siege tanks in siege mode are about 382
                         int distance_to_ground_threat = 0;
-                        if (e_closest_ground_threat) {
-                            distance_to_ground_threat = e_closest_ground_threat->pos_.getDistance(u->getPosition());
-                            bool kiting_away = e_closest_ground_threat->bwapi_unit_ && !e_closest_ground_threat->type_.isBuilding() && !CUNYAIModule::isRanged(e_closest_ground_threat->type_) && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat < 64;  // only kite if he's in range,
+                        if (e_closest_melee_threat) {
+                            distance_to_ground_threat = e_closest_melee_threat->pos_.getDistance(u->getPosition());
+                            bool kiting_away = e_closest_melee_threat->bwapi_unit_ && !e_closest_melee_threat->type_.isBuilding() && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat < 64;  // only kite if he's in range,
                             if (kiting_away)
                                 return mobility.Retreat_Logic(); // if kiting, retreat.
-                            else
-                                return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                         }
+                        return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 }
@@ -337,9 +336,9 @@ int CombatManager::getSearchRadius(const Unit & u)
 {
     int totalSearchRadius = 0;
     if (u->isFlying())
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_air_;
+        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_air_ + CUNYAIModule::convertTileDistanceToPixelDistance(2);
     else
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_ground_;
+        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_ground_ + CUNYAIModule::convertTileDistanceToPixelDistance(2); //Units have size/mass. Largest shooting unit has size 2 tiles.
 
     totalSearchRadius = max({ CUNYAIModule::friendly_player_model.units_.max_range_, 192, totalSearchRadius });
 

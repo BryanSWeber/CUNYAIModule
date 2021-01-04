@@ -34,7 +34,7 @@ constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring moveme
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
 constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
+constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
 constexpr bool UNIT_WEIGHTING = false; // under development.
 
@@ -221,6 +221,7 @@ public:
     //Gets pointer to closest threat or target to unit in UnitInventory. Checks range. Careful about visiblity.
     static StoredUnit * getClosestThreatOrTargetStored(UnitInventory & ui, const UnitType & u_type, const Position & origin, const int & dist);
     static StoredUnit * getClosestThreatOrTargetStored(UnitInventory & ui, const Unit & unit, const int & dist = 999999);
+    static StoredUnit * getClosestMeleeThreatStored(UnitInventory & ui, const Unit & unit, const int & dist);
     static StoredUnit * getClosestThreatOrTargetExcluding(UnitInventory & ui, const UnitType ut, const Unit & unit, const int & dist);
     static StoredUnit * getClosestThreatOrTargetWithPriority(UnitInventory & ui, const Unit & unit, const int & dist);
     static StoredUnit * getClosestThreatWithPriority(UnitInventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).

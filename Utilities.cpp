@@ -1018,7 +1018,7 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( UnitInventory &ui, con
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+//Gets pointer to closest threat or target unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
@@ -1032,6 +1032,31 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(UnitInventory &ui, cons
             can_be_attacked_by = checkCanFight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest melee threat. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestMeleeThreatStored(UnitInventory &ui, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    int temp_dist = 999999;
+    StoredUnit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            can_be_attacked_by = checkCanFight(e->second, unit);
+
+            if (can_be_attacked_by && !CUNYAIModule::isRanged(e->second.type_) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;

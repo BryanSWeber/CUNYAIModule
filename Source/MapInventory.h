@@ -149,10 +149,10 @@ public:
     //const double getGroundThreatField(TilePosition &t);
     //const double getVisionField(TilePosition &t);
     const int getOccupationField(TilePosition &t); // returns 1 for occupation by small units, 2 for larger units, and the sum for more.
-    const double getBufferField(TilePosition & t);
-    const double getExtraWideBufferField(TilePosition &t);
+    const bool isInBufferField(TilePosition & t);
+    const bool isInExtraWideBufferField(TilePosition &t);
     //const double getBlindField(TilePosition &t);
-    const bool getSurroundField(TilePosition &t);
+    const bool isInSurroundField(TilePosition &t);
     void setSurroundField(TilePosition &t, bool newVal);
 
     void DiagnosticTile();

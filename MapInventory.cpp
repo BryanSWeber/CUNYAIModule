@@ -1382,17 +1382,17 @@ const int MapInventory::getOccupationField(TilePosition & t)
 //    return pfBlindness_[t.x][t.y];
 //}
 
-const double MapInventory::getBufferField(TilePosition & t)
+const bool MapInventory::isInBufferField(TilePosition & t)
 {
-    return pfThreatBuffer_[t.x][t.y];
+    return pfThreatBuffer_[t.x][t.y] > 0.0;
 }
 
-const double MapInventory::getExtraWideBufferField(TilePosition & t)
+const bool MapInventory::isInExtraWideBufferField(TilePosition & t)
 {
-    return pfExtraWideBuffer_[t.x][t.y];
+    return pfExtraWideBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::getSurroundField(TilePosition & t)
+const bool MapInventory::isInSurroundField(TilePosition & t)
 {
     return pfSurroundSquare_[t.x][t.y];
 }
