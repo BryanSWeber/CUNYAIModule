@@ -55,8 +55,10 @@ public:
 
     // Causes a unit to move away from its neighbors.
     Position isolate();
-    // causes a unit to move into a sight-obscured location outside of enemy vision.
+    // causes a unit to move into a peremiter outside of enemy threat that is lower occupied.
     Position encircle();
+    // Causes a unit to move into a location outside of enemy threat, perimieter nonwithstanding.
+    Position escape();
     // causes a unit to avoid low-altitude areas.
     Position avoid_edges();
     // causes a unit to move towards a position.

@@ -221,7 +221,7 @@ bool Mobility::Retreat_Logic() {
     //Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
     if (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_))) {
-        return moveTo(pos_, pos_ + encircle(), StoredUnit::Phase::Retreating);
+        return moveTo(pos_, pos_ + escape(), StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
@@ -310,12 +310,45 @@ Position Mobility::encircle() {
         bool is_more_open = false;
         // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
         if(unit_->getType().size() == UnitSizeTypes::Small)
-            is_more_open = CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition());
+            is_more_open = (CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) && BWEB::Map::isWalkable(target_tile)) || unit_->getType().isFlyer() ;
         else
-            is_more_open = CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1; //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
+            is_more_open = (CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 && BWEB::Map::isWalkable(target_tile)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
 
         //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
         if (CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+            bestTile = target_tile;
+            CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
+            encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            return encircle_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
+        }
+    }
+
+    return Positions::Origin;
+}
+
+Position Mobility::escape() {
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+
+    TilePosition bestTile = TilePositions::Origin;
+
+    //double squaredRelativeDistance = INT_MAX;
+    //otherwise, move to a spot that is blind, or
+    SpiralOut spiral;
+    int n = 15; // how far in one direction should we search for a tile?
+    for (int i = 0; i <= pow(2 * n, 2); i++) {
+        //Consider the tile of interest
+        spiral.goNext();
+        int x = unit_->getTilePosition().x + spiral.x;
+        int y = unit_->getTilePosition().y + spiral.y;
+        TilePosition target_tile = TilePosition(x, y);
+        if (!target_tile.isValid()) {
+            continue;
+        }
+
+        //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
+        if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile)) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
@@ -366,7 +399,8 @@ Position Mobility::avoid_edges() {
 Position Mobility::approach(const Position & p) {
     Position vector_to = p - pos_;
     double theta = atan2(vector_to.y, vector_to.x);
-    Position approach_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    int shorter_order = min(p.getDistance(pos_), distance_metric_);
+    Position approach_vector = Position(static_cast<int>(cos(theta) * shorter_order), static_cast<int>(sin(theta) * shorter_order)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
 
     return attract_vector_ = approach_vector; // only one direction for now.
 }
