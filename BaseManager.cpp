@@ -21,6 +21,7 @@ Base::Base() {
     mineral_patches_ = 0;
     gas_refinery_ = 0;
     gas_geysers_ = 0;
+    unit_ = nullptr;
 };
 
 Base::Base(const Unit & u)

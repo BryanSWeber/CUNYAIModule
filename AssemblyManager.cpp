@@ -1328,25 +1328,35 @@ TilePosition AssemblyManager::updateExpoPosition()
 {
     int score_temp, expo_score = INT_MIN;
     TilePosition base_expo = TilePositions::Origin;
-    Unit mainBase = CUNYAIModule::basemanager.getClosestBaseGround(Position(Broodwar->self()->getStartLocation())).unit_; // This is a long way of specifying the base closest to the start position
-    Mobility mobile = Mobility(mainBase);
+    Base mainBase = CUNYAIModule::basemanager.getClosestBaseGround(Position(Broodwar->self()->getStartLocation())); // This is a long way of specifying the base closest to the start position
 
-    for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
+    if (mainBase.unit_ && mainBase.unit_->exists()) {
+        Mobility mobile = Mobility(mainBase.unit_);
 
-        score_temp = CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelevant.
+        for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
 
-        bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
-        bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
+            score_temp = CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelevant.
 
-        bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
+            bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
+            bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
 
-        if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && mobile.checkSafeEscapePath(Position(p)) && meets_gas_requirements) {
-            expo_score = score_temp;
-            base_expo = p;
+            bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
+
+            if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && mobile.checkSafeEscapePath(Position(p)) && meets_gas_requirements) {
+                expo_score = score_temp;
+                base_expo = p;
+            }
         }
+        expo_spot_ = base_expo; // update variable of interest.
+        return expo_spot_;
     }
-    expo_spot_ = base_expo; // update variable of interest.
-    return expo_spot_;
+    else {  // if you've got no main base, we have ... trouble.
+        if constexpr (RESIGN_MODE) {
+            Broodwar->leaveGame();
+        }
+        expo_spot_ = base_expo;
+        return base_expo;
+    }
 }
 
 int AssemblyManager::getMaxTravelDistance()

@@ -751,13 +751,6 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
         land_inventory.addStored_Resource(*ru);
     }
 
-    //update maps, requires up-to date enemy inventories.
-    if (unit->getType().isBuilding()) {
-        //if (unit->getPlayer() == Broodwar->enemy()) {
-        //    //update maps, requires up-to date enemy inventories.
-        //    inventory.veins_out_need_updating = true;
-        //}
-    }
 
     BWEB::Map::onUnitDiscover(unit);
 
@@ -765,32 +758,12 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
 
 void CUNYAIModule::onUnitEvade(BWAPI::Unit unit)
 {
-    //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
-    //                                                                //Diagnostics::DiagnosticWrite( "I just gained vision of a %s", unit->getType().c_str() );
-    //    StoredUnit eu = StoredUnit( unit );
 
-    //    if ( enemy_player_model.units_.UnitInventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-    //        Diagnostics::DiagnosticWrite( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
-    //    }
-    //    else { // the insertion must have failed
-    //        Diagnostics::DiagnosticWrite( "Insertion of %s failed.", eu.type_.c_str() );
-    //    }
-    //}
 }
 
 void CUNYAIModule::onUnitShow(BWAPI::Unit unit)
 {
-    //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
-    //    StoredUnit eu = StoredUnit( unit );
-    //    auto found_ptr = enemy_player_model.units_.UnitInventory_.find( unit );
-    //    if ( found_ptr != enemy_player_model.units_.UnitInventory_.end() ) {
-    //        enemy_player_model.units_.UnitInventory_.erase( unit );
-    //        Diagnostics::DiagnosticWrite( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );
-    //    }
-    //    else {
-    //        Diagnostics::DiagnosticWrite( "Discovered a %s.", unit->getType().c_str() );
-    //    }
-    //}
+
 }
 
 void CUNYAIModule::onUnitHide(BWAPI::Unit unit)
