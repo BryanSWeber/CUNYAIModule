@@ -150,7 +150,7 @@ int ResearchInventory::countResearchBuildings(const UnitType & ut)
 }
 
 bool ResearchInventory::isTechBuilding(const UnitType &u) {
-    return (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u.buildsWhat().empty() && !u.isResourceDepot();
+    return (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && !u.isResourceDepot();
 }
 
 map<UpgradeType, int> ResearchInventory::getUpgrades() const
