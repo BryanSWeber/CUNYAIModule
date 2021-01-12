@@ -36,6 +36,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     Position unit_pos = unit->getPosition();
 
     map<int, TilePosition> viable_placements = {};
+    int max_travel_distance = 500;
 
     if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
         return false;
@@ -52,14 +53,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         map<int, TilePosition> wall_spots = addClosestWall(building, unit->getTilePosition());
         if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, max_travel_distance))
             return true;
 
         //simply attempt the nearest station if the previous did not find.
         map<int, TilePosition> station_spots = addClosestStation(building, unit->getTilePosition());
         if (!station_spots.empty())
             viable_placements.insert(station_spots.begin(), station_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, max_travel_distance))
             return true;
 
     }
@@ -98,14 +99,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             map<int, TilePosition> wall_spots = addClosestWall(building, unit->getTilePosition());
             if (!wall_spots.empty())
                 viable_placements.insert(wall_spots.begin(), wall_spots.end());
-            if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+            if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, max_travel_distance))
                 return true;
 
             // Then try a block,
             map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, unit->getTilePosition());
             if (!block_spots.empty())
                 viable_placements.insert(block_spots.begin(), block_spots.end());
-            if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+            if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, max_travel_distance))
                 return true;
     }
 

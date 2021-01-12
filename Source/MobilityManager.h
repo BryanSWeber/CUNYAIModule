@@ -81,8 +81,8 @@ public:
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 
-    // Returns true if the enemy unit is too far up another hill.
-    bool isOnDifferentHill(const StoredUnit &e);
+    //Checks if a particular tile is worth running to (for attacking or retreating). Heuristic, needs work.
+    bool isTileApproachable(const TilePosition tp);
 
     Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 
@@ -90,6 +90,7 @@ public:
 
     bool checkEnemyApproachingUs(Unit e);
     bool checkEnemyApproachingUs(StoredUnit & e);
+    bool isMoreOpen(TilePosition &tp);
 
     //Seriously, this is easy to flip around sometimes. 
     Position getVectorToDestination(Position &p);

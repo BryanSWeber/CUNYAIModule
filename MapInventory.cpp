@@ -1817,6 +1817,11 @@ bool MapInventory::isTileThreatened(const TilePosition & tp)
     return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y] > 0;
 }
 
+double MapInventory::getTileThreat(const TilePosition & tp)
+{
+    return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y];
+}
+
 int MapInventory::getExpoPositionScore(const Position & p)
 {
     TilePosition centerTile = TilePosition(BWEM::Map::Instance().Center());

@@ -155,6 +155,8 @@ void BaseManager::updateBases()
     }
 
     if (baseMap_.empty()) {
+        if (RESIGN_MODE)
+            Broodwar->leaveGame();
         return;
     }
 

@@ -220,6 +220,8 @@ struct UnitInventory {
 
     //Updates summary of inventory, stored here.
     int countRecentAdditions(int frames);
+
+    //Must run after the creation of most (but not all) unit inventories, fills in all important details.
     void updateUnitInventorySummary();
     void updateUnitInventory(const Unitset &unit_set);
     void updateUnitsControlledBy(const Player & Player);

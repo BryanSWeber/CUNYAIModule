@@ -197,6 +197,8 @@ public:
 
     static bool isTileThreatened(const TilePosition & tp);
 
+    double getTileThreat(const TilePosition & tp);
+
     static int getExpoPositionScore(const Position &p);
 
     Position getSafeBase();

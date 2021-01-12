@@ -168,13 +168,13 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
     }
 
     // Shoot closest threat if they can shoot you or vis versa.
-    temp_max_divable = max(ei.max_range_, CUNYAIModule::getFunctionalRange(unit_));
+    temp_max_divable = max(ei.max_range_, CUNYAIModule::getFunctionalRange(unit_)) + CUNYAIModule::convertTileDistanceToPixelDistance(3);
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, ThreateningTargets);
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = max( ei.max_range_, CUNYAIModule::getFunctionalRange(unit_));
+    temp_max_divable = max( ei.max_range_, CUNYAIModule::getFunctionalRange(unit_)) + CUNYAIModule::convertTileDistanceToPixelDistance(3); 
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, SecondOrderThreats);
     }
@@ -307,20 +307,13 @@ Position Mobility::encircle() {
         }
 
         //If it's a better tile, switch to it. Exit upon finding a good one.
-        bool is_more_open = false;
-        // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
-        if(unit_->getType().size() == UnitSizeTypes::Small)
-            is_more_open = (CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) && BWEB::Map::isWalkable(target_tile)) || unit_->getType().isFlyer() ;
-        else
-            is_more_open = (CUNYAIModule::currentMapInventory.getOccupationField(target_tile) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 && BWEB::Map::isWalkable(target_tile)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
-
-        //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
-        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && is_more_open && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
             return encircle_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
         }
+
     }
 
     return Positions::Origin;
@@ -332,9 +325,9 @@ Position Mobility::escape() {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     TilePosition bestTile = TilePositions::Origin;
+    double base_threat = CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(pos_));
+    retreat_vector_ = Positions::Origin;
 
-    //double squaredRelativeDistance = INT_MAX;
-    //otherwise, move to a spot that is blind, or
     SpiralOut spiral;
     int n = 15; // how far in one direction should we search for a tile?
     for (int i = 0; i <= pow(2 * n, 2); i++) {
@@ -347,16 +340,26 @@ Position Mobility::escape() {
             continue;
         }
 
-        //bool is_closer = (pow(x, 2) + pow(y, 2)) < squaredRelativeDistance;
-        if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile)) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+        double new_threat = CUNYAIModule::currentMapInventory.getTileThreat(target_tile);
+
+
+        //If it's a perfect tile, switch to it. Exit upon finding a good one.
+        if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
-            encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
-            return encircle_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
+            retreat_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            return retreat_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
+        }
+
+        //If it's a better tile, move there at the end of this.
+        if (new_threat < base_threat && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
+            bestTile = target_tile;
+            base_threat = new_threat;
+            retreat_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
         }
     }
 
-    return Positions::Origin;
+    return retreat_vector_;
 }
 
 Position Mobility::avoid_edges() {
@@ -603,9 +606,11 @@ int Mobility::getDistanceMetric()
     return static_cast<int>(distance_metric_);
 }
 
-bool Mobility::isOnDifferentHill(const StoredUnit &e) {
-    int altitude = BWEM::Map::Instance().GetMiniTile(WalkPosition(e.pos_)).Altitude();
-    return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getFunctionalRange(unit_);
+bool Mobility::isTileApproachable(const TilePosition tp) {
+    bool same_height = Broodwar->getGroundHeight(TilePosition(pos_)) == Broodwar->getGroundHeight(tp);
+    bool closer_to_home = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(pos_) < CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(getCenterTile(tp));
+    bool isVisible = Broodwar->isVisible(tp); //allows flying units to retreat anywhere... unless they're blind.
+    return same_height || isVisible || closer_to_home;
 }
 
 Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
@@ -614,7 +619,7 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
     int target_surviablity = INT_MAX;
     for (auto t : ui.unit_map_) {
         dist_to_enemy = unit_->getDistance(t.second.pos_);
-        bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::checkCanFight(u_type_, t.second.type_);
+        bool baseline_requirement = (isTileApproachable(TilePosition(t.second.pos_)) || stored_unit_->is_flying_) && CUNYAIModule::checkCanFight(u_type_, t.second.type_);
         if (t.second.future_fap_value_ <= target_surviablity && dist_to_enemy <= MaxDiveDistance && baseline_requirement) {
             MaxDiveDistance = dist_to_enemy;
             target_surviablity = t.second.future_fap_value_;  //attack most likely to die, not closest!
@@ -638,6 +643,18 @@ bool Mobility::checkEnemyApproachingUs(StoredUnit & e) {
     Position vector_to_me = pos_ - e.pos_;
     double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
     return checkAngleSimilar(e.angle_, angle_to_me);
+}
+
+bool Mobility::isMoreOpen(TilePosition & tp)
+{
+    bool is_more_open = false;
+    // It is only more open if it is occupied by less than 2 small units or one large unit. Large units will consider anything partially occupied by a small unit (occupied 1) as occupied.
+    if (unit_->getType().size() == UnitSizeTypes::Small)
+        is_more_open = ((CUNYAIModule::currentMapInventory.getOccupationField(tp) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) || CUNYAIModule::currentMapInventory.getOccupationField(tp) == 0) && BWEB::Map::isWalkable(tp)) || unit_->getType().isFlyer();
+    else
+        is_more_open = ((CUNYAIModule::currentMapInventory.getOccupationField(tp) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 || CUNYAIModule::currentMapInventory.getOccupationField(tp) == 0) && BWEB::Map::isWalkable(tp)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
+
+    return is_more_open;
 }
 
 double getEnemySpeed(Unit e) {
