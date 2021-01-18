@@ -154,11 +154,11 @@ void BaseManager::updateBases()
         }
     }
 
-    if (baseMap_.empty()) {
-        if (RESIGN_MODE)
-            Broodwar->leaveGame();
-        return;
-    }
+    //if (baseMap_.empty()) {
+    //    if (RESIGN_MODE)
+    //        Broodwar->leaveGame();
+    //    return;
+    //}
 
     UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseAir());
     alarming_enemy_air.updateUnitInventorySummary();

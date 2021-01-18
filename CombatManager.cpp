@@ -74,7 +74,7 @@ bool CombatManager::combatScript(const Unit & u)
             return false;
 
         // if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
-        if (isCollectingForces(friend_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInExtraWideBufferField(u->getTilePosition()) > 0 /*&& CUNYAIModule::currentMapInventory.getBufferField(u->getTilePosition()) == 0*/ && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
+        if (isCollectingForces(friend_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInExtraWideBufferField(u->getTilePosition()) > 0 /*&& CUNYAIModule::currentMapInventory.getBufferField(u->getTilePosition()) == 0*/ && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
             return mobility.surroundLogic();
 
         //If there are potential targets, must fight.

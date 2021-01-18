@@ -20,16 +20,9 @@ using namespace std;
 bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phase) {
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
-        unit_->unburrow();
+    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
-
-    //UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
-    //friendly_blocks.updateUnitInventorySummary();
-    //bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
-    //if (has_a_blocking_item && !unit_->isFlying())
-    //    encircle();
 
     approach(e_pos);
     if (unit_->move(pos_ + attract_vector_)) {
@@ -213,8 +206,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
 bool Mobility::Retreat_Logic() {
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-        unit_->unburrow();
+    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
@@ -240,8 +232,7 @@ bool Mobility::Scatter_Logic(const Position pos)
     Position problem_pos = Positions::Origin;
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-        unit_->unburrow();
+    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
@@ -461,8 +452,27 @@ bool Mobility::prepareLurkerToAttack(const Position position_of_target) {
         }
         else if (!unit_->isBurrowed() && !dist_condition) {
             double theta = atan2(position_of_target.y - unit_->getPosition().y, position_of_target.x - unit_->getPosition().x);
-            Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
-            unit_->move(closest_loc_to_permit_attacking);
+            Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.85 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.85 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
+            moveTo(pos_, closest_loc_to_permit_attacking, StoredUnit::Phase::Attacking);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Mobility::prepareLurkerToMove() {
+
+    if (u_type_ == UnitTypes::Zerg_Lurker) {
+        bool conditionsToStay = (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_)) && !CUNYAIModule::currentMapInventory.getDetectField(TilePosition(pos_))) || unit_->isIrradiated();
+        bool conditionsToRun = unit_->isUnderStorm();
+        if (unit_->isBurrowed()) {
+            if(conditionsToRun)
+                unit_->unburrow();
+            else if(conditionsToStay)
+                return false;
+            else
+                unit_->unburrow();
             return true;
         }
     }
@@ -557,8 +567,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
         newPath.createUnitPath(start, finish);
         if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0) {
             // lurker fix
-            if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && (!CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(start)) || CUNYAIModule::currentMapInventory.getDetectField(TilePosition(start)))) {
-                unit_->unburrow();
+            if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
                 return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
             }
             else {

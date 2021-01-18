@@ -69,7 +69,10 @@ public:
     //Checks first area for safety.
     bool checkSafeGroundPath(const Position & finish);
 
+    //Gets a lurker ready to attack a particular position. Returns TRUE if the lurker needed fixing.
     bool prepareLurkerToAttack(const Position position_of_target);
+    //Gets a lurker ready to move. Returns TRUE if the lurker needed fixing.
+    bool prepareLurkerToMove();
 
     // gives a vector that has the direction towards higher values on the field.  returns a direction.
     Position getVectorTowardsField(const vector<vector<int>>& field) const;
