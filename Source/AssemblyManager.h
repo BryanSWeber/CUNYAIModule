@@ -92,8 +92,8 @@ public:
 
     //Building assembly functions
     TilePosition updateExpoPosition(); // Returns the TilePosition of the next Expo we want to make. Is determined without considering cost first, which should evade issues of sending drones on long trips so we can "afford" the expo upon arrival.
-    bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
-    bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> placements, const Unit u, const bool extra_critera, const int max_travel_distance_contributing = 500); // build at the nearest position in that map<int, TilePosition> using unit u. Confirms extra criteria is met. Will not consider more than (max_travel_distance_contributing) pixels of travel time into cost.
+    bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement. 
+    bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> placements, const Unit u, const bool extra_critera, const int max_travel_distance_contributing = 500); // build at the nearest position in that map<int, TilePosition> using unit u. Confirms extra criteria is met. Will not consider more than (max_travel_distance_contributing) pixels of travel time into cost. Now checks every worker to see if they are at the closest spot, now O(n^2) speed ... but hopefully better!
     bool Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv); // Build an expo at a internally chosen position, granting extra critera is true. Asks to be fed a map inventory so it knows what positions are safe.
     static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit); // Moves all units except for the Stored exeption_unit elsewhere.
     static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity. Will return false if a building is at the tile.

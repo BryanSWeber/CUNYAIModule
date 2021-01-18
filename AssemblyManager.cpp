@@ -36,7 +36,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     Position unit_pos = unit->getPosition();
 
     map<int, TilePosition> viable_placements = {};
-    int max_travel_distance = 500;
+    int max_travel_distance = INT_MAX; // No more max travel distance.
 
     if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
         return false;
@@ -644,19 +644,38 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 
 bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
+    int currentBestBuildDistance = INT_MAX;
+    StoredUnit bestBuilder(u);
+    UnitInventory canidateBuilders;
+    TilePosition buildSpot = TilePositions::Origin;
 
+    // find good workers
+    for (auto worker : CUNYAIModule::friendly_player_model.units_.unit_map_) { // We need the closest worker and want to check for it.
+        if (worker.first && worker.second.type_.isWorker() && CUNYAIModule::checkUnitTouchable(worker.first) && (worker.second.phase_ == StoredUnit::Phase::Returning || worker.second.phase_ == StoredUnit::Phase::None) && CUNYAIModule::workermanager.isEmptyWorker(worker.first)) {
+            canidateBuilders.addStoredUnit(worker.first);
+        }
+    }
+    // Find position closest to those workers.
     for (auto good_block = placements.begin(); good_block != placements.end(); good_block++) { // should automatically search by distance.
-        int min_plength;
+        for (auto canidateBuilder : canidateBuilders.unit_map_) {
+            int min_plength;
 
-        min_plength = min({ cap_distance,  getUnbuiltSpaceGroundDistance(u->getPosition(), Position(good_block->second)) }); //use the minimum of cap or the walking distance.
+            min_plength = min({ cap_distance,  getUnbuiltSpaceGroundDistance(canidateBuilder.first->getPosition(), Position(good_block->second)) }); //use the minimum of cap or the walking distance.
 
-        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block->second) &&  CUNYAIModule::my_reservation.addReserveSystem(good_block->second, building)) {
-            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-            u->stop();
-            return CUNYAIModule::updateUnitBuildIntent(u, building, good_block->second);
+            if (min_plength < currentBestBuildDistance && CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block->second)) {
+                currentBestBuildDistance = min_plength;
+                bestBuilder = StoredUnit(canidateBuilder.first);
+                buildSpot = good_block->second;
+            }
         }
     }
 
+    //Then build it:
+    if (buildSpot != TilePositions::Origin && CUNYAIModule::my_reservation.addReserveSystem(buildSpot, building)) {
+        CUNYAIModule::buildorder.announceBuildingAttempt(building);
+        bestBuilder.bwapi_unit_->stop();
+        return CUNYAIModule::updateUnitBuildIntent(bestBuilder.bwapi_unit_, building, buildSpot);
+    }
     //Diagnostics for failsafe
     if(CUNYAIModule::checkWillingAndAble(u, building, extra_critera))
         Diagnostics::DiagnosticWrite("I couldn't place a %s!", building.c_str());
