@@ -338,7 +338,7 @@ bool Base::isSporeNeeded()
         distance_to_alarming_air.insert(b.second.distance_to_air_);
     }
 
-    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseGround());
+    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, unit_->getPosition(), 750);
     alarming_enemy_air.updateUnitInventorySummary();
 
     bool too_close_by_air = false;
@@ -348,7 +348,7 @@ bool Base::isSporeNeeded()
     }
 
     if (CUNYAIModule::getClosestAirStored(alarming_enemy_air, this->unit_->getPosition()))
-        they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, this->unit_->getPosition())->pos_.getApproxDistance(this->unit_->getPosition()) < 500;
+        they_are_moving_out_air = CUNYAIModule::enemy_player_model.units_.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, this->unit_->getPosition())->pos_.getApproxDistance(this->unit_->getPosition()) < 500;
 
     bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
     bool getting_hit_air = (this->e_loc_.stock_fliers_ > 0);
