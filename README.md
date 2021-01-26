@@ -7,6 +7,8 @@ Link to complete bot description here: https://ieeexplore.ieee.org/document/8490
 
 Recent Development Notes: 
 
+(1/23/2021)  You can now play against this bot as a human on SCHNAIL: https://schnail.com/#/home
+
 (11/17/2020) We now use grids for some portions of combat, 256x256 arrays.  We also use 2 similar phases of "reservation". The first is the already existing build order system (not BOSS) executes preselected plans. It passes this plan to a short term reservation manager, so long as it does not collide with an existing reserved resource (larva, min, gas, supply).  All macro actions (morph, build, research) are now reserved through this short term reservation manager, which allows for us to "multitask"- such as building lings with excess minerals while still saving for gas-heavy purchases like mutas.
 
 (9/29/2020) Operationally, we have backed out of python and pybind11. There are various operating theaters for bots and it is challenging to find one method execution that works for all of them.
