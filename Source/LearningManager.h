@@ -11,9 +11,10 @@ using namespace BWAPI;
 
 struct LearningManager {
 
-    string readDirectory = "..//..//read//";
-    string writeDirectory = "..//..//write//";
-
+    //string readDirectory = "..//..//read//"; // If you are launched by the shell exe and are inside CUNYAIBot folder, you start from your particular position and search down.
+    //string writeDirectory = "..//..//write//";
+    string readDirectory = "bwapi-data//read//"; // If you are launched by BWAPI you start from starcraft.exe
+    string writeDirectory = "bwapi-data//write//";
 
     bool confirmLearningFilesPresent(); //Copy all important files to the write folder so they are present for access and modification during the game. 
     void initializeGeneticLearning(); //Use a handcrafted GA in order to determine the best opening. 
