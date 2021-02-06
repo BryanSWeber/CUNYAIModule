@@ -5,6 +5,8 @@ CUNYBot (City University of New York) is a C++ bot that plays a full game of Sta
 
 Link to complete bot description here: https://ieeexplore.ieee.org/document/8490444
 
+Other measures of bot performance are available at: https://www.basil-ladder.net/ranking.html#Bryan%20Weber
+
 Recent Development Notes: 
 
 (1/23/2021)  You can now play against this bot as a human on SCHNAIL: https://schnail.com/#/home
