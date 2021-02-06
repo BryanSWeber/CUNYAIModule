@@ -46,7 +46,7 @@ public:
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
     bool Tactical_Logic(UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool simplePathing(const Position &e_pos, const StoredUnit::Phase phase);
+    bool simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution = false);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
 
@@ -55,10 +55,15 @@ public:
 
     // Causes a unit to move away from its neighbors.
     Position isolate();
-    // causes a unit to move into a peremiter outside of enemy threat that is lower occupied.
+    // Returns a particular vector for a specific unit to move into a perimeter outside of enemy threat that is lower occupied.
     Position encircle();
-    // Causes a unit to move into a location outside of enemy threat, perimieter nonwithstanding.
-    Position escape();
+    // Encircle a particular position.
+    Position encircle(const Position p);
+    // Overload: encircle a particular tile position.
+    Position encircle(const TilePosition & tp);
+
+    // Causes a unit to move into a location outside of enemy threat, perimeter nonwithstanding.
+    Position escape(TilePosition tp);
     // causes a unit to avoid low-altitude areas.
     Position avoid_edges();
     // causes a unit to move towards a position.
@@ -79,7 +84,10 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
-    bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase);
+    // Moves to a location, if caution is TRUE then it will cancel an order to move to a threatened area and instead find the nearest suitable surround.
+    bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase, const bool caution = false);
+    //Return the nearest safe tileposition - uses encircle.
+    TilePosition nearestSafe(const TilePosition &tp);
 
     // gives how far the unit can move in one second.
     int getDistanceMetric();

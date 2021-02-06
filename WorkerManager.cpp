@@ -223,7 +223,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
 
   //Attaches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
 bool WorkerManager::attachToNearestMine(Resource_Inventory & ri, StoredUnit & miner) {
-    Stored_Resource* closest = CUNYAIModule::getClosestGroundStored(ri, miner.pos_);
+    Stored_Resource* closest = CUNYAIModule::getClosestStoredByGround(ri, CUNYAIModule::getUnitCenter(miner));
     if (closest) {
         miner.startMine(*closest); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {

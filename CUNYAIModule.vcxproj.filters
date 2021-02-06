@@ -110,6 +110,7 @@
     <ClInclude Include="Source\UnitInventory.h" />
     <ClInclude Include="Source\ResearchInventory.h" />
     <ClInclude Include="Source\ReservationManager.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

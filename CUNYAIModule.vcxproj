@@ -156,6 +156,7 @@
     <ClInclude Include="Source\UnitInventory.h" />
     <ClInclude Include="Source\LearningManager.h" />
     <ClInclude Include="Source\WorkerManager.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\bwapi\bwapi\BWAPILIB\BWAPILIB.vcxproj">

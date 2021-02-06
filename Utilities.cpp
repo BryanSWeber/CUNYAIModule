@@ -3,10 +3,13 @@
 #include <numeric> // std::accumulate
 #include <fstream>
 #include <algorithm>
+#include <functional>
+#include "Utilities.h"
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+
 
 // Gets units last error and prints it directly onscreen.  From tutorial.
 void CUNYAIModule::PrintError_Unit(const Unit &unit) {
@@ -356,14 +359,6 @@ int CUNYAIModule::countUnits( const UnitType &type, const UnitInventory &ui )
     int count = 0;
 
     for ( auto & e : ui.unit_map_) {
-
-        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
-        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-        //} 
-        //else if ( e.second.type_ == type ) {
-        //    count++;
-        //}
-
         count += (e.second.type_ == type) + (e.second.type_ != type && e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type) * (1 + e.second.build_type_.isTwoUnitsInOneEgg()) ; // better without if-conditions.
     }
 
@@ -385,14 +380,6 @@ int CUNYAIModule::countSuccessorUnits(const UnitType &type, const UnitInventory 
     int count = 0;
 
     for (auto & e : ui.unit_map_) {
-
-        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
-        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-        //} 
-        //else if ( e.second.type_ == type ) {
-        //    count++;
-        //}
-
         count += (e.second.type_ == type) + (e.second.type_ != type) * e.second.type_.isSuccessorOf(type); // better without if-conditions.
     }
 
@@ -405,14 +392,7 @@ int CUNYAIModule::countUnits( const UnitType &type, const Unitset &unit_set )
     int count = 0;
     for ( auto & unit : unit_set )
     {
-        //if ( unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type ) { // Count units under construction
-        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-        //} 
-        //else if ( unit->getType() == type ) {
-        //    count++;
-        //}
         count += (unit->getType() == type) + (unit->getType() != type && unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) * (1 + unit->getBuildType().isTwoUnitsInOneEgg()); // better without if-conditions.
-
     }
 
     return count;
@@ -639,33 +619,6 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit ) {
     return total_stock;
 }
 
-// returns helpful_friendly and helpful_enemy units from respective inventories.
-//vector<int> CUNYAIModule::getUsefulStocks(const UnitInventory & friend_loc, const UnitInventory & enemy_loc)
-//{
-//    int helpful_e, helpful_u;
-//
-//        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
-//        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
-//
-//
-//        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
-//           //if (friend_loc.stock_ground_units_ == 0) {
-//            //    helpful_e = enemy_loc.stock_shoots_up_;
-//            //}
-//            //else if (friend_loc.stock_fliers_ == 0) {
-//            //    helpful_e = enemy_loc.stock_shoots_down_;
-//            //}
-//        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
-//            //if (enemy_loc.stock_ground_units_ == 0) {
-//            //    helpful_u = friend_loc.stock_shoots_up_;
-//            //}
-//            //else if (enemy_loc.stock_fliers_ == 0) {
-//            //    helpful_u = friend_loc.stock_shoots_down_;
-//            //}
-//            
-//        vector<int> return_vec = { helpful_u, helpful_e };
-//        return return_vec;
-//}
 
 int CUNYAIModule::getTargetableStocks(const Unit & u, const UnitInventory & enemy_loc)
 {
@@ -688,51 +641,19 @@ const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
     return name;
 }
 
-//Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
-Unitset CUNYAIModule::getUnit_Set( const UnitInventory &ui, const Position &origin, const int &dist ) {
-    Unitset e_set;
-    for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
-        if (static_cast<int>((*e).second.pos_.getDistance( origin )) <= dist ) {
-            e_set.insert( (*e).second.bwapi_unit_ ); // if we take any distance and they are in inventory.
-        }
-    }
-    return e_set;
-}
-
-
-
-//Gets pointer to closest unit to point in UnitInventory. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored( UnitInventory &ui, const Position &origin, const int &dist = 999999 ) {
+//Gets pointer to closest StoredUnit contained in UI to the Origin point. Checks range, check if in includedUnitType and not in ExcludedUnitType
+StoredUnit * CUNYAIModule::getClosestStoredLinear(UnitInventory & ui, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType){
     int min_dist = dist;
-    int temp_dist = 999999;
-    StoredUnit* return_unit = nullptr;
-
-    if ( !ui.unit_map_.empty() ) {
-        for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
-            temp_dist = static_cast<int>((*e).second.pos_.getDistance( origin ));
-            if ( temp_dist <= min_dist && e->second.valid_pos_ ) {
-                min_dist = temp_dist;
-                return_unit = &(e->second);
-            }
-        }
-    }
-
-    return return_unit;
-}
-
-//Gets pointer to closest unit of a type to point in UnitInventory. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored(UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
-    int min_dist = dist;
-    int temp_dist = 999999;
+    double temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
-        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (e->second.type_ == u_type && e->second.valid_pos_ ){
-                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
+        for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
+            if (u->second.type_ == includedUnitType && u->second.type_ != includedUnitType && u->second.valid_pos_) {
+                temp_dist = CUNYAIModule::distanceToUnitCenter(origin, u->second);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
-                    return_unit = &(e->second);
+                    return_unit = &(u->second);
                 }
             }
         }
@@ -741,38 +662,20 @@ StoredUnit* CUNYAIModule::getClosestStored(UnitInventory &ui, const UnitType &u_
     return return_unit;
 }
 
-//Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
-Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
+
+//Gets pointer to closest StoredUnit contained in UI to the Origin point. Checks range, check if in includedUnitType and not in ExcludedUnitType
+StoredUnit* CUNYAIModule::getClosestStoredByGround(UnitInventory &ui, const Position &origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     int min_dist = dist;
-    int temp_dist = 999999;
-    Stored_Resource* return_unit = nullptr;
-
-    if (!ri.resource_inventory_.empty()) {
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
-            if (temp_dist <= min_dist ) {
-                min_dist = temp_dist;
-                return_unit = &(r->second);
-            }
-        }
-    }
-
-    return return_unit;
-}
-
-//Gets pointer to closest unit of a type to point in UnitInventory EXCLUDING the unit. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored(const Unit unit, UnitInventory &ui, const UnitType &u_type, const int &dist = 999999) {
-    int min_dist = dist;
-    int temp_dist = 999999;
+    double temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
-        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (e->second.type_ == u_type && e->second.valid_pos_ && e->first != unit) {
-                temp_dist = static_cast<int>((*e).second.pos_.getDistance(unit->getPosition()));
+        for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
+            if (u->second.type_ == includedUnitType && u->second.type_ != includedUnitType && u->second.valid_pos_) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getUnitCenter(u->second), origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
-                    return_unit = &(e->second);
+                    return_unit = &(u->second);
                 }
             }
         }
@@ -781,42 +684,44 @@ StoredUnit* CUNYAIModule::getClosestStored(const Unit unit, UnitInventory &ui, c
     return return_unit;
 }
 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, const Position &origin) {
-    int min_dist = 999999;
-    int temp_dist = 999999;
-    Stored_Resource* return_unit = nullptr;
+Stored_Resource * CUNYAIModule::getClosestStoredLinear(Resource_Inventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType){
+    int min_dist = dist;
+    double temp_dist = 999999;
+    Stored_Resource* returnResource = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist) {
-                min_dist = temp_dist;
-                return_unit = &(r->second);
+            if (r->second.type_ == includedUnitType && r->second.type_ != includedUnitType && r->second.valid_pos_) {
+                temp_dist = CUNYAIModule::distanceToUnitCenter(origin, r->second);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    returnResource = &(r->second);
+                }
             }
         }
     }
 
-    return return_unit;
+    return returnResource;
 }
 
-// Allows type -specific- selection. 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, const Position &origin) {
-    int min_dist = 999999;
-    int temp_dist = 999999;
-    Stored_Resource* return_unit = nullptr;
+Stored_Resource * CUNYAIModule::getClosestStoredByGround(Resource_Inventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
+    int min_dist = dist;
+    double temp_dist = 999999;
+    Stored_Resource* returnResource = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
-            bool right_type = (type == r->second.type_ || type.isMineralField() && r->second.type_.isMineralField()); //WARNING:: Minerals have 4 types.
-            if (temp_dist <= min_dist && right_type ) { 
-                min_dist = temp_dist;
-                return_unit = &(r->second);
+            if (r->second.type_ == includedUnitType && r->second.type_ != includedUnitType && r->second.valid_pos_) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getUnitCenter(r->second), origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    returnResource = &(r->second);
+                }
             }
         }
     }
 
-    return return_unit;
+    return returnResource;
 }
 
 StoredUnit* CUNYAIModule::getClosestGroundStored(UnitInventory &ui, const Position &origin) {
@@ -916,61 +821,6 @@ StoredUnit* CUNYAIModule::getClosestStoredAvailable(UnitInventory &ui, const Uni
     return return_unit;
 }
 
-
-//Gets position of closest occupied expo to position. Checks range. Careful about visiblity.
-//Position CUNYAIModule::getClosestExpo(const MapInventory &inv, const UnitInventory &ui, const Position &origin, const int &dist) {
-//    //int min_dist = dist;
-//    //int temp_dist = 999999;
-//    //Position return_pos = Positions::Origin;
-//    //vector<Position> hatchery_positions;
-//
-//    ////get all the hatcheries (of any type.).
-//    //for (auto & potential_hatchery : ui.UnitInventory_) {
-//    //    if (potential_hatchery.second.type_.isResourceDepot()) hatchery_positions.push_back(potential_hatchery.second.pos_);
-//    //}
-//
-//    //for (auto & expo = inv.expo_positions_complete_.begin(); expo != inv.expo_positions_complete_.end() && !inv.expo_positions_complete_.empty(); expo++) {
-//    //    Position expo_pos = Position(*expo);
-//    //    temp_dist = expo_pos.getDistance(return_pos);
-//    //    
-//    //    bool occupied_expo = false;
-//    //    //If it is occupied, we can count it.
-//    //    for (auto potential_occupant : hatchery_positions) {
-//    //        occupied_expo = potential_occupant.getDistance(expo_pos) < 500;
-//    //        if (occupied_expo) break;
-//    //    }
-//
-//    //    if (temp_dist <= min_dist && expo_pos.isValid() && occupied_expo) {
-//    //        min_dist = temp_dist;
-//    //        return_pos = expo_pos;
-//    //    }
-//    //}
-//    //
-//
-//    //return return_pos;
-//}
-
-//Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
-Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
-    int min_dist = dist;
-    int temp_dist = 999999;
-    Stored_Resource* return_unit = nullptr;
-
-    if (!ri.resource_inventory_.empty()) {
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            if (r->second.type_ == r_type && r->second.valid_pos_) {
-                temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
-                if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
-                    return_unit = &(r->second);
-                }
-            }
-        }
-    }
-
-    return return_unit;
-}
-
 //Gets pointer to closest attackable unit from unit in UnitInventory. Checks range. Careful about visiblity.  Can return nullptr.
 StoredUnit* CUNYAIModule::getClosestAttackableStored(UnitInventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
@@ -1047,7 +897,7 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(UnitInventory &ui, cons
 //Gets pointer to closest melee threat. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 StoredUnit* CUNYAIModule::getClosestMeleeThreatStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
+    bool can_be_attacked_by;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
@@ -1143,7 +993,7 @@ StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const 
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestTargetWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack;
     double temp_dist = INT_MAX;
@@ -1291,22 +1141,12 @@ UnitInventory CUNYAIModule::getThreateningUnitInventoryInRadius( const UnitInven
     return ui_out;
 }
 
-//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory &ui, const Position &origin, const int &dist) {
-    UnitInventory ui_out;
-    for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-        if (static_cast<int>(e->second.pos_.getDistance(origin)) <= dist && e->second.valid_pos_) {
-            ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
-        }
-    }
-    return ui_out;
-}
 
-//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
-UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory & ui, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     UnitInventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-        if (e->second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
+        if (CUNYAIModule::distanceToUnitCenter(origin, e->second) <= dist && e->second.valid_pos_) {
             ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
         }
     }
@@ -1314,11 +1154,11 @@ UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory &ui, co
 }
 
 //Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
+Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     Resource_Inventory ri_out;
-	for (auto & e = ri.resource_inventory_.begin(); e != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); e++) {
-		if (e->second.pos_.getDistance(origin) <= dist) {
-			ri_out.addStored_Resource(e->second); // if we take any distance and they are in inventory.
+	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+		if (CUNYAIModule::distanceToUnitCenter(origin, r->second) <= dist) {
+			ri_out.addStored_Resource(r->second); // if we take any distance and they are in inventory.
 		}
 	}
     ri_out.updateMines();
@@ -1344,11 +1184,11 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inven
 //Searches a research inventory for those resources that are both <350 away from a presumed base location and in the same area.
 Resource_Inventory CUNYAIModule::getResourceInventoryAtBase(const Resource_Inventory &ri, const Position &origin) {
     Resource_Inventory ri_area = getResourceInventoryInArea(ri, origin);
-    Resource_Inventory ri_250 = getResourceInventoryInRadius(ri, origin, 350);
+    Resource_Inventory ri_distance = getResourceInventoryInRadius(ri, origin, 350);
     Resource_Inventory ri_out;
 
     for (auto r_outer : ri_area.resource_inventory_) {
-        for (auto r_inner : ri_250.resource_inventory_) {
+        for (auto r_inner : ri_distance.resource_inventory_) {
             if (r_outer.second.pos_ == r_inner.second.pos_) {
                 ri_out.addStored_Resource(r_outer.second);
             }
@@ -1490,19 +1330,6 @@ bool CUNYAIModule::checkOccupiedArea(const UnitInventory &ui, const UnitType typ
     return false;
 }
 
-//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-//bool CUNYAIModule::checkThreatenedArea(const UnitInventory &ui, const UnitType &type, const Position &origin, const int &dist) {
-//
-//    for (auto & e = ui.UnitInventory_.begin(); e != ui.UnitInventory_.end() && !ui.UnitInventory_.empty(); e++) {
-//        if (e->second.pos_.x < origin.x + dist && e->second.pos_.x > origin.x - dist &&
-//            e->second.pos_.y < origin.y + dist && e->second.pos_.y > origin.y - dist &&
-//            CUNYAIModule::Can_Fight(e->second.type_, StoredUnit(type) ) ) {
-//            return true;
-//        }
-//    }
-//
-//    return false;
-//}
 
 bool CUNYAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
     bool inrange_x = screen_pos.x < pos.x && screen_pos.x + 640 > pos.x;
@@ -1607,264 +1434,6 @@ int CUNYAIModule::unitSpamCheckDuration(const Unit &unit) {
 
 
     return max(required_wait_time - duration_since_last_command, 0);
-}
-
-//checks if there is a smooth path to target. in minitiles
-//bool CUNYAIModule::isClearRayTrace( const Position &initial, const Position &final, const MapInventory &inv ) // see Brehsam's Algorithm
-//{
-//    int dx = abs( final.x - initial.x ) / 8;
-//    int dy = abs( final.y - initial.y ) / 8;
-//    int x = initial.x / 8;
-//    int y = initial.y / 8;
-//    int n = 1 + dx + dy;
-//    int x_inc = (final.x > initial.x) ? 1 : -1;
-//    int y_inc = (final.y > initial.y) ? 1 : -1;
-//    int error = dx - dy;
-//    dx *= 2;
-//    dy *= 2;
-//
-//    for ( ; n > 0; --n )
-//    {
-//        if ( inv.smoothed_barriers_[x][y] == 1 ) {
-//            return false;
-//        }
-//
-//        if ( error > 0 )
-//        {
-//            x += x_inc;
-//            error -= dy;
-//        }
-//        else
-//        {
-//            y += y_inc;
-//            error += dx;
-//        }
-//    }
-//
-//    return true;
-//} 
-
-//checks if there is a smooth path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
-bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold){ // see Brehsam's Algorithm for all 8 octants.
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
-    WalkPosition final = WalkPosition(finalp);
-    WalkPosition initial = WalkPosition(initialp);
-
-    dx = (final.x - initial.x);
-    dy = (final.y - initial.y);
-    dx1 = abs(dx);
-    dy1 = abs(dy);
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
-    map_x = Broodwar->mapWidth() * 4;
-    map_y = Broodwar->mapHeight() * 4;
-
-    if (dy1 <= dx1)
-    {
-        if (dx >= 0)
-        {
-            x = initial.x;
-            y = initial.y;
-            xe = final.x;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            xe = initial.x;
-        }
-
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
-        if ( safety_check && target_map[x][y] >= threshold) {
-            return false;
-        }
-
-        for (int i = 0; x<xe; i++)
-        {
-            x = x + 1;
-            if (px<0)
-            {
-                px = px + 2 * dy1;
-            }
-            else
-            {
-                if ((dx<0 && dy<0) || (dx>0 && dy>0))
-                {
-                    y++;
-                }
-                else
-                {
-                    y--;
-                }
-                px = px + 2 * (dy1 - dx1);
-            }
-
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if (safety_check && target_map[x][y] >= threshold) {
-                return false;
-            }
-        }
-    }
-    else
-    {
-        if (dy >= 0)
-        {
-            x = initial.x;
-            y = initial.y;
-            ye = final.y;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            ye = initial.y;
-        }
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-        if (safety_check && target_map[x][y] >= threshold) {
-            return false;
-        }
-
-        for (int i = 0; y<ye; i++)
-        {
-            y = y + 1;
-            if (py <= 0)
-            {
-                py = py + 2 * dx1;
-            }
-            else
-            {
-                if ((dx<0 && dy<0) || (dx>0 && dy>0))
-                {
-                    x++;
-                }
-                else
-                {
-                    x--;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if (safety_check && target_map[x][y] >= threshold) {
-                return false;
-            }
-
-        }
-    }
-
-    return true;
-
-}
-
-//Counts the number of minitiles in a path to target. in minitiles
-int CUNYAIModule::getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold) // see Brehsam's Algorithm. Is likely bugged in current state.
-{
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
-    WalkPosition final = WalkPosition(finalp);
-    WalkPosition initial = WalkPosition(initialp);
-
-    squares_counted = 0;
-    dx = (final.x - initial.x);
-    dy = (final.y - initial.y);
-    dx1 = abs(dx);
-    dy1 = abs(dy);
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
-    map_x = Broodwar->mapWidth() * 4;
-    map_y = Broodwar->mapHeight() * 4;
-
-    if (dy1 <= dx1)
-    {
-        if (dx >= 0)
-        {
-            x = initial.x;
-            y = initial.y;
-            xe = final.x;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            xe = initial.x;
-        }
-
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-        if (safety_check && target_map[x][y] >= 1) {
-            squares_counted++;
-        }
-
-        for (int i = 0; x<xe; i++)
-        {
-            x = x + 1;
-            if (px<0)
-            {
-                px = px + 2 * dy1;
-            }
-            else
-            {
-                if ((dx<0 && dy<0) || (dx>0 && dy>0))
-                {
-                    y++;
-                }
-                else
-                {
-                    y--;
-                }
-                px = px + 2 * (dy1 - dx1);
-            }
-
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if (safety_check && target_map[x][y] >= 1) {
-                squares_counted++;
-            }
-        }
-    }
-    else
-    {
-        if (dy >= 0)
-        {
-            x = initial.x;
-            y = initial.y;
-            ye = final.y;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            ye = initial.y;
-        }
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-        if (safety_check && target_map[x][y] >= 1) {
-            squares_counted++;
-        }
-
-        for (int i = 0; y<ye; i++)
-        {
-            y = y + 1;
-            if (py <= 0)
-            {
-                py = py + 2 * dx1;
-            }
-            else
-            {
-                if ((dx<0 && dy<0) || (dx>0 && dy>0))
-                {
-                    x++;
-                }
-                else
-                {
-                    x--;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if ( safety_check && target_map[x][y] >= 1) {
-                squares_counted++;
-            }
-
-        }
-    }
-
-    return squares_counted;
 }
 
 
@@ -2099,7 +1668,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
     return nearest_choke;
 }
 
-Position CUNYAIModule::getUnit_Center(Unit unit){
+Position CUNYAIModule::getUnitCenter(Unit unit){
     return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
 }
 

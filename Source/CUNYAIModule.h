@@ -16,6 +16,8 @@
 #include "BaseManager.h"
 #include <bwem.h>
 #include "BWEB\BWEB.h"
+#include <functional>
+
 //#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
 #include <chrono> // for in-game frame clock.
 
@@ -160,8 +162,6 @@ public:
     static void writePlayerModel(const PlayerModel &player, const string label);   //writes aribtrary player model to file.
 
 
-    //static bool Futile_Fight( Unit unit, Unit enemy );
-
     // Outlines the case where you can attack their type (air/ground/cloaked)
     static bool checkCanFight(UnitType u_type, UnitType e_type);
     static bool checkCanFight(UnitType u_type);
@@ -186,35 +186,27 @@ public:
     //Returns about how far a unit can move+shoot in a FAP sim duration.
     static int getChargableDistance(const Unit &u);
 
-    //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
-    static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
-    // Same but only checks the map itself.
-    // static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const MapInventory & inv );
-    // counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
-    static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     //gets the nearest choke by simple counting along in the direction of the final unit.
     static Position getNearestChoke(const Position & initial, const Position &final, const MapInventory & inv);
 
     //Strips the RACE_ from the front of the unit type string.
     static const char * noRaceName(const char *name);
-    //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
-    Unitset getUnit_Set(const UnitInventory & ui, const Position & origin, const int & dist);
 
-    //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
-    static StoredUnit* getClosestStored(UnitInventory & ui, const Position & origin, const int & dist);
-    static StoredUnit* getClosestStored(UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+    //Gets pointer to closest unit to origin in appropriate inventory. Checks range. 
     static StoredUnit * getClosestGroundStored(UnitInventory & ui, const Position & origin);
     static StoredUnit * getClosestAirStored(UnitInventory & ui, const Position & origin);
     static StoredUnit * getClosestAirStoredWithPriority(UnitInventory & ui, const Position & origin);
     static StoredUnit * getClosestStoredBuilding(UnitInventory & ui, const Position & origin, const int & dist);
     static StoredUnit * getClosestStoredAvailable(UnitInventory & ui, const UnitType & u_type, const Position & origin, const int & dist);
-    static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
-    static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-    static StoredUnit * getClosestStored(const Unit unit, UnitInventory & ui, const UnitType & u_type, const int & dist);
-    static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
-    static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
-    //static Position getClosestExpo(const MapInventory &inv, const UnitInventory &ui, const Position &origin, const int &dist = 999999);
 
+    //Gets pointer to closest attackable unit to point in UnitInventory. Checks range.
+    static StoredUnit * getClosestStoredLinear(UnitInventory & ui, const Position & origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    //Gets pointer to closest attackable unit to point in UnitInventory. Checks range.
+    static StoredUnit* getClosestStoredByGround(UnitInventory &ui, const Position &origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    //Gets pointer to closest attackable unit to point in ResourceInventory. Checks range. 
+    static Stored_Resource * getClosestStoredLinear(Resource_Inventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    //Gets pointer to closest attackable unit to point in ResourceInventory. Checks range. 
+    static Stored_Resource * getClosestStoredByGround(Resource_Inventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
 
     //Gets pointer to closest attackable unit to point in UnitInventory. Checks range. Careful about visiblity.
     static StoredUnit * getClosestAttackableStored(UnitInventory & ui, const Unit unit, const int & dist);
@@ -225,7 +217,7 @@ public:
     static StoredUnit * getClosestThreatOrTargetExcluding(UnitInventory & ui, const UnitType ut, const Unit & unit, const int & dist);
     static StoredUnit * getClosestThreatOrTargetWithPriority(UnitInventory & ui, const Unit & unit, const int & dist);
     static StoredUnit * getClosestThreatWithPriority(UnitInventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).
-    static StoredUnit * getClosestTargettWithPriority(UnitInventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
+    static StoredUnit * getClosestTargetWithPriority(UnitInventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
     static StoredUnit * getClosestGroundWithPriority(UnitInventory & ui, const Position & pos, const int & dist = 999999);
     static StoredUnit * getClosestIndicatorOfArmy(UnitInventory & ui, const Position & pos, const int & dist = 999999);
     static bool hasPriority(StoredUnit e);
@@ -234,7 +226,7 @@ public:
 
 
     //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
-    static UnitInventory getUnitInventoryInRadius(const UnitInventory &ui, const Position &origin, const int &dist);
+    static UnitInventory getUnitInventoryInRadius(const UnitInventory &ui, const Position &origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
     static UnitInventory getThreateningUnitInventoryInRadius(const UnitInventory & ui, const Position & origin, const int & dist, const bool & air_attack);
     static UnitInventory getUnitsOutOfReach(const UnitInventory & ui, const Unit & target);
     static UnitInventory getUnitInventoryInArea(const UnitInventory & ui, const Position & origin);
@@ -244,15 +236,11 @@ public:
 
     static Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin);
     static Resource_Inventory getResourceInventoryAtBase(const Resource_Inventory & ri, const Position & origin);
-    //Overload. Searches for units of a specific type.
-    static UnitInventory getUnitInventoryInRadius(const UnitInventory &ui, const UnitType u_type, const Position &origin, const int &dist);
-    static Resource_Inventory getResourceInventoryInRadius(const Resource_Inventory & ri, const Position & origin, const int & dist);
+    static Resource_Inventory getResourceInventoryInRadius(const Resource_Inventory & ri, const Position & origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
     //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
     static bool checkOccupiedArea(const UnitInventory &ui, const Position &origin);
     static bool checkOccupiedNeighborhood(const UnitInventory & ui, const Position & origin);
     static bool checkOccupiedArea(const UnitInventory & ui, const UnitType type, const Position & origin);
-    //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-    static bool checkUnitOccupiesArea(const Unit &unit, const Position &origin, const int & dist);
 
     //Returns True if the unit is ranged, false if no ranged attack, (checks if range > 64).
     static bool isRanged(const UnitType u_type);
@@ -282,8 +270,6 @@ public:
     static int countUnitsAvailable(const UnitType & uType);
     // Evaluates the total stock of a type of unit in the inventory.
     static int Stock_Units(const UnitType & unit_type, const UnitInventory & ui);
-    // evaluates the value of a stock of combat units, for all unit types in a unit inventory.
-    static int Stock_Combat_Units(const UnitInventory &ui);
 
     // Evaluates the value of a stock of buildings, in terms of total cost (min+gas)
     static int Stock_Buildings(const UnitType &building, const UnitInventory &ei);
@@ -313,7 +299,8 @@ public:
     //Returns the number of frames a unit has before it needs to be checked again.
     static int unitSpamCheckDuration(const Unit & unit);
     // Returns the actual center of a unit.
-    static Position getUnit_Center(Unit unit);
+    static Position getUnitCenter(Unit unit);
+
     // checks if it is safe to build, uses heuristic critera.
     static bool checkSafeBuildLoc(const Position pos);;
     // Checks if it is safe to mine, uses heuristic critera.
@@ -383,4 +370,14 @@ public:
         return A.x == B.x && A.y == B.y;
     }
 
+    // Returns the actual center of a Stored Unit/Resource.
+    static Position getUnitCenter(StoredUnit unit);
+    static Position getUnitCenter(Stored_Resource Resource);
+
+    // Returns the (linear) distance between the center of a Stored Unit/Resource and another place.
+    template<typename StoredType>
+    static double distanceToUnitCenter(const Position & origin, const StoredType & u)
+    {
+        return origin.getDistance(CUNYAIModule::getUnitCenter(u));
+    }
 };

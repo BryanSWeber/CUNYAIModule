@@ -1,6 +1,5 @@
 #pragma once
 
-# include "Source\CUNYAIModule.h"
 # include "Source\Diagnostics.h"
 # include "Source\MobilityManager.h"
 # include <random> // C++ base random is low quality.
@@ -17,7 +16,7 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
-bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phase) {
+bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
@@ -25,6 +24,8 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
     }
 
     approach(e_pos);
+    if (caution)
+        unit_->move(pos_ + attract_vector_ + escape(TilePosition(pos_ + attract_vector_)));
     if (unit_->move(pos_ + attract_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
@@ -39,26 +40,26 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     if (forward_movement) {
         if (CUNYAIModule::combat_manager.isScout(unit_)) {
             int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
-            return moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut);
+            return moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut, true);
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
-            return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut);
+            return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut, true);
         }
         else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
-            return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut);
+            return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut, true);
         }
-        else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
+        else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whichever type has an active problem..
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut);
+                return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut, true);
             }
             else {
-                return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut);
+                return moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut, true);
             }
         }
     }
 
     // Otherwise, return to home.
-    return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::PathingHome);
+    return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::PathingHome, true);
 
 }
 
@@ -213,7 +214,7 @@ bool Mobility::Retreat_Logic() {
     //Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
     if (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_))) {
-        return moveTo(pos_, pos_ + escape(), StoredUnit::Phase::Retreating);
+        return moveTo(pos_, pos_ + escape(TilePosition(pos_)), StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
@@ -273,25 +274,34 @@ bool Mobility::Scatter_Logic(const Position pos)
 }
 
 Position Mobility::encircle() {
+    return encircle(unit_->getPosition());
+}
+
+Position Mobility::encircle(const TilePosition &tp) {
+    return encircle(getCenterTile(tp));
+}
+
+Position Mobility::encircle(const Position p) {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     TilePosition bestTile = TilePositions::Origin;
+    TilePosition tp = TilePosition(p);
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if ( CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(unit_->getTilePosition()) )
+    if (CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(tp))
         return Positions::Origin;
 
     //double squaredRelativeDistance = INT_MAX;
     //otherwise, move to a spot that is blind, or
     SpiralOut spiral;
     int n = 15; // how far in one direction should we search for a tile?
-    for (int i = 0; i <= pow(2*n,2); i++) {
+    for (int i = 0; i <= pow(2 * n, 2); i++) {
         //Consider the tile of interest
         spiral.goNext();
-        int x = unit_->getTilePosition().x + spiral.x;
-        int y = unit_->getTilePosition().y + spiral.y;
+        int x = tp.x + spiral.x;
+        int y = tp.y + spiral.y;
         TilePosition target_tile = TilePosition(x, y);
         if (!target_tile.isValid()) {
             continue;
@@ -310,7 +320,7 @@ Position Mobility::encircle() {
     return Positions::Origin;
 }
 
-Position Mobility::escape() {
+Position Mobility::escape(TilePosition tp) {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
@@ -324,8 +334,8 @@ Position Mobility::escape() {
     for (int i = 0; i <= pow(2 * n, 2); i++) {
         //Consider the tile of interest
         spiral.goNext();
-        int x = unit_->getTilePosition().x + spiral.x;
-        int y = unit_->getTilePosition().y + spiral.y;
+        int x = tp.x + spiral.x;
+        int y = tp.y + spiral.y;
         TilePosition target_tile = TilePosition(x, y);
         if (!target_tile.isValid()) {
             continue;
@@ -352,6 +362,8 @@ Position Mobility::escape() {
 
     return retreat_vector_;
 }
+
+
 
 Position Mobility::avoid_edges() {
 
@@ -554,7 +566,7 @@ bool Mobility::prepareLurkerToMove() {
 //    return  return_vector;
 //}
 
-bool Mobility::moveTo(const Position &start, const Position &finish, const StoredUnit::Phase phase)
+bool Mobility::moveTo(const Position &start, const Position &finish, const StoredUnit::Phase phase, const bool caution)
 {
 
     if (!start.isValid() || !finish.isValid()) {
@@ -578,11 +590,13 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                     if (too_close)
                         i++;
                     else {
-                        unit_->move(getCenterTile(newPath.getTiles()[i]));
+                        if(caution)
+                            unit_->move(Position(newPath.getTiles()[i]) + escape(newPath.getTiles()[i]));
+                        else
+                            unit_->move(Position(newPath.getTiles()[i]));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
                     }
                 }
-
                 unit_->move(getCenterTile(newPath.getTiles()[0]));
                 return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
             }
@@ -597,17 +611,29 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                     if (too_close)
                         i++;
                     else {
-                        unit_->move(Position(cpp[i]->Center()));
+                        if (caution)
+                            unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
+                        else
+                            unit_->move(Position(cpp[i]->Center()));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
                     }
                 }
-
-                unit_->move(Position(cpp[0]->Center()));
+                if (caution)
+                    unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
+                else
+                    unit_->move(Position(cpp[i]->Center()));
                 return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
             }
         }
     }
-    return simplePathing(finish, phase);
+    return simplePathing(finish, phase, caution);
+}
+
+TilePosition Mobility::nearestSafe(const TilePosition & tp)
+{
+    if(CUNYAIModule::currentMapInventory.isTileThreatened(tp))
+        return TilePosition( encircle(tp) );
+    return tp;
 }
 
 int Mobility::getDistanceMetric()

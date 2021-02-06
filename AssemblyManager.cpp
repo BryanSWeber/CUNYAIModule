@@ -33,7 +33,7 @@ std::map<UnitType, int> AssemblyManager::assemblyCycle_ = PlayerModel::getCombat
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the UnitInventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
-    Position unit_pos = unit->getPosition();
+    Position unitCenter = CUNYAIModule::getUnitCenter(unit);
 
     map<int, TilePosition> viable_placements = {};
     int max_travel_distance = INT_MAX; // No more max travel distance.
@@ -65,7 +65,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
-        Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
+        Stored_Resource* closest_gas = CUNYAIModule::getClosestStoredByGround(CUNYAIModule::land_inventory, unitCenter, 9999999, UnitTypes::Resource_Vespene_Geyser);
         if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_){
             TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
             if (CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.

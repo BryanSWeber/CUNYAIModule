@@ -4,7 +4,7 @@
 #include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
-#include "Source/Diagnostics.h"
+#include "Source\Diagnostics.h"
 #include <bwem.h>
 
 bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved ||
@@ -103,8 +103,6 @@ bool CombatManager::combatScript(const Unit & u)
                     expanded_friend_loc.updateUnitInventorySummary();
                 }
 
-                auto overstacked_units = CUNYAIModule::getClosestStored(u, friend_loc, u->getType(), u->getType().width());
-
                 //Some unit types are special and behave differently.
                 switch (u->getType()) {
                 case UnitTypes::Protoss_Probe:
@@ -126,13 +124,8 @@ bool CombatManager::combatScript(const Unit & u)
                     break; 
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
                     if (isCollectingForces(friend_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && positionedForAttack && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
-                        if (overstacked_units) { // we don't want lurkers literally on top of each other.
-                            return mobility.surroundLogic();
-                        }
-                        else {
-                            mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
-                            return true; // now the lurker should be burrowed.
-                        }
+                        mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
+                        return true; // now the lurker should be burrowed.
                     }
                     else if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
                         return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
@@ -185,14 +178,9 @@ bool CombatManager::scoutScript(const Unit & u)
     }
     else if(CUNYAIModule::basemanager.getBaseCount() > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
-        //Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_MapInventory.pf_explore_);
-        //if(explore_vector != Positions::Origin)
-        //    return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector, StoredUnit::Phase::PathingOut);
-        //else {
-            StoredUnit* closest = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2);
+            StoredUnit* closest = CUNYAIModule::getClosestStoredLinear(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2, UnitTypes::AllUnits, UnitTypes::None);
             if (closest)
                 return mobility.moveTo(u->getPosition(), u->getPosition() - mobility.approach(closest->pos_) + mobility.avoid_edges(), StoredUnit::Phase::PathingOut);
-        //}
     }
     return false;
 }
@@ -215,13 +203,13 @@ bool CombatManager::liabilitiesScript(const Unit &u)
 {
     removeScout(u);
     liabilities_squad_.addStoredUnit(u);
-    StoredUnit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 500);
+    StoredUnit* closestSpore = CUNYAIModule::getClosestStoredLinear(CUNYAIModule::friendly_player_model.units_, u->getPosition(), 9999, UnitTypes::Zerg_Spore_Colony, UnitTypes::None);
     if (closestSpore && u->getPosition().getDistance(closestSpore->pos_) < 32) // If they're there at the destination, they are doing nothing.
         return CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::None);
     if (closestSpore && u->move(closestSpore->pos_)) // Otherwise, get them to safety.
         return CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::PathingHome);
 
-    StoredUnit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 9999);
+    StoredUnit* closestSunken = CUNYAIModule::getClosestStoredLinear(CUNYAIModule::friendly_player_model.units_, u->getPosition(), 9999, UnitTypes::Zerg_Sunken_Colony, UnitTypes::None);
     if (closestSunken && u->getPosition().getDistance(closestSunken->pos_) < 32) // If they're there at the destination, they are doing nothing.
         return CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::None); 
     if (closestSunken && u->move(closestSunken->pos_)) // Otherwise, get them to safety.
