@@ -649,8 +649,8 @@ StoredUnit * CUNYAIModule::getClosestStoredLinear(UnitInventory & ui, const Posi
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            if (u->second.type_ == includedUnitType && u->second.type_ != includedUnitType && u->second.valid_pos_) {
-                temp_dist = CUNYAIModule::distanceToUnitCenter(origin, u->second);
+            if ((u->second.type_ == includedUnitType || includedUnitType == UnitTypes::AllUnits) && u->second.type_ != includedUnitType && u->second.valid_pos_) {
+                temp_dist = CUNYAIModule::distanceToStoredCenter(origin, u->second);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(u->second);
@@ -671,8 +671,8 @@ StoredUnit* CUNYAIModule::getClosestStoredByGround(UnitInventory &ui, const Posi
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            if (u->second.type_ == includedUnitType && u->second.type_ != includedUnitType && u->second.valid_pos_) {
-                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getUnitCenter(u->second), origin);
+            if ((u->second.type_ == includedUnitType || includedUnitType == UnitTypes::AllUnits) && u->second.type_ != includedUnitType && u->second.valid_pos_) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getStoredCenter(u->second), origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(u->second);
@@ -691,8 +691,11 @@ Stored_Resource * CUNYAIModule::getClosestStoredLinear(Resource_Inventory & ri, 
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            if (r->second.type_ == includedUnitType && r->second.type_ != includedUnitType && r->second.valid_pos_) {
-                temp_dist = CUNYAIModule::distanceToUnitCenter(origin, r->second);
+            bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
+            bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
+            bool isAll = includedUnitType == UnitTypes::AllUnits;
+            if ((isMineral || isGas || isAll) && r->second.type_ != excludedUnitType && r->second.valid_pos_) {
+                temp_dist = CUNYAIModule::distanceToStoredCenter(origin, r->second);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     returnResource = &(r->second);
@@ -711,8 +714,11 @@ Stored_Resource * CUNYAIModule::getClosestStoredByGround(Resource_Inventory & ri
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            if (r->second.type_ == includedUnitType && r->second.type_ != includedUnitType && r->second.valid_pos_) {
-                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getUnitCenter(r->second), origin);
+            bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
+            bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
+            bool isAll = includedUnitType == UnitTypes::AllUnits;
+            if ((isMineral || isGas || isAll) && r->second.type_ != excludedUnitType && r->second.valid_pos_) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(CUNYAIModule::getStoredCenter(r->second), origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     returnResource = &(r->second);
@@ -1146,7 +1152,7 @@ UnitInventory CUNYAIModule::getThreateningUnitInventoryInRadius( const UnitInven
 UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory & ui, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     UnitInventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-        if (CUNYAIModule::distanceToUnitCenter(origin, e->second) <= dist && e->second.valid_pos_) {
+        if (CUNYAIModule::distanceToStoredCenter(origin, e->second) <= dist && e->second.valid_pos_ && (e->second.type_ == includedUnitType || includedUnitType == UnitTypes::AllUnits) && e->second.type_ != excludedUnitType) {
             ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
         }
     }
@@ -1157,7 +1163,10 @@ UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory & ui, c
 Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     Resource_Inventory ri_out;
 	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-		if (CUNYAIModule::distanceToUnitCenter(origin, r->second) <= dist) {
+        bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
+        bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
+        bool isAll = includedUnitType == UnitTypes::AllUnits;
+		if ((isMineral || isGas || isAll) && r->second.type_ != excludedUnitType && CUNYAIModule::distanceToStoredCenter(origin, r->second) <= dist) {
 			ri_out.addStored_Resource(r->second); // if we take any distance and they are in inventory.
 		}
 	}
@@ -1436,6 +1445,11 @@ int CUNYAIModule::unitSpamCheckDuration(const Unit &unit) {
     return max(required_wait_time - duration_since_last_command, 0);
 }
 
+Position CUNYAIModule::getUnitCenter(Unit unit)
+{
+    return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
+}
+
 
 double CUNYAIModule::getProperSpeed( const Unit u ) {
     UnitType u_type = u->getType();
@@ -1666,10 +1680,6 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
     //}
 
     return nearest_choke;
-}
-
-Position CUNYAIModule::getUnitCenter(Unit unit){
-    return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
 }
 
 // checks if a location is safe and doesn't block minerals.
@@ -1937,3 +1947,5 @@ int CUNYAIModule::convertTileDistanceToPixelDistance(int numberOfTiles) {
 int CUNYAIModule::convertPixelDistanceToTileDistance(int numberOfPixels) {
     return numberOfPixels / 32; // Tiles are 32x32 pixels, so the route across them diagonally is STILL 32 pixels because grids.;
 }
+
+

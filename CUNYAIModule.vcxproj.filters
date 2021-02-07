@@ -8,9 +8,6 @@
     <ClCompile Include="TechManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="VisionManager.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="CobbDouglas.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>

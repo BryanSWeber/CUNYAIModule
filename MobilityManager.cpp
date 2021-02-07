@@ -321,9 +321,6 @@ Position Mobility::encircle(const Position p) {
 }
 
 Position Mobility::escape(TilePosition tp) {
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     TilePosition bestTile = TilePositions::Origin;
     double base_threat = CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(pos_));
@@ -586,8 +583,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                 int i = 0;
                 while (newPath.getTiles().size() > 1 && i < newPath.getTiles().size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
                     bool too_close = start.getDistance(getCenterTile(newPath.getTiles()[i])) < 32 * 5;
-
-                    if (too_close)
+                    if (too_close && i < newPath.getTiles().size())
                         i++;
                     else {
                         if(caution)
@@ -608,7 +604,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                 int i = 0;
                 while (i < cpp.size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
                     bool too_close = Position(cpp[i]->Center()).getDistance(unit_->getPosition()) < 32 * 5;
-                    if (too_close)
+                    if (too_close && i < cpp.size() - 1)
                         i++;
                     else {
                         if (caution)
@@ -618,10 +614,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
                     }
                 }
-                if (caution)
-                    unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
-                else
-                    unit_->move(Position(cpp[i]->Center()));
+                unit_->move(Position(cpp[0]->Center()));
                 return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
             }
         }

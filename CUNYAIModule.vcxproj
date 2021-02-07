@@ -127,7 +127,6 @@
     <ClCompile Include="UnitInventory.cpp" />
     <ClCompile Include="LearningManager.cpp" />
     <ClCompile Include="TechManager.cpp" />
-    <ClCompile Include="VisionManager.cpp" />
     <ClCompile Include="WorkerManager.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="MobilityManager.cpp" />

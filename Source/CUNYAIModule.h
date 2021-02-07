@@ -371,13 +371,15 @@ public:
     }
 
     // Returns the actual center of a Stored Unit/Resource.
-    static Position getUnitCenter(StoredUnit unit);
-    static Position getUnitCenter(Stored_Resource Resource);
-
+    template<typename StoredType>
+    static Position getStoredCenter(StoredType unit)
+    {
+        return Position(unit.pos_.x + unit.type_.dimensionLeft(), unit.pos_.y + unit.type_.dimensionUp());
+    }
     // Returns the (linear) distance between the center of a Stored Unit/Resource and another place.
     template<typename StoredType>
-    static double distanceToUnitCenter(const Position & origin, const StoredType & u)
+    static double distanceToStoredCenter(const Position & origin, const StoredType & u)
     {
-        return origin.getDistance(CUNYAIModule::getUnitCenter(u));
+        return origin.getDistance(CUNYAIModule::getStoredCenter(u));
     }
 };

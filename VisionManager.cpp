@@ -19,13 +19,3 @@ int CUNYAIModule::Vision_Count() {
     return vision_tile_count;
 }
 
-Position CUNYAIModule::getUnitCenter(StoredUnit unit)
-{
-    return Position(unit.pos_.x + unit.type_.dimensionLeft(), unit.pos_.y + unit.type_.dimensionUp());
-}
-
-Position CUNYAIModule::getUnitCenter(Stored_Resource Resource)
-{
-    return Position(Resource.pos_.x + Resource.type_.dimensionLeft(), Resource.pos_.y + Resource.type_.dimensionUp());
-}
-
