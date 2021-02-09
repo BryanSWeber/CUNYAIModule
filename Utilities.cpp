@@ -684,13 +684,13 @@ StoredUnit* CUNYAIModule::getClosestStoredByGround(UnitInventory &ui, const Posi
     return return_unit;
 }
 
-Stored_Resource * CUNYAIModule::getClosestStoredLinear(Resource_Inventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType){
+Stored_Resource * CUNYAIModule::getClosestStoredLinear(ResourceInventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType){
     int min_dist = dist;
     double temp_dist = 999999;
     Stored_Resource* returnResource = nullptr;
 
-    if (!ri.resource_inventory_.empty()) {
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+    if (!ri.ResourceInventory_.empty()) {
+        for (auto & r = ri.ResourceInventory_.begin(); r != ri.ResourceInventory_.end() && !ri.ResourceInventory_.empty(); r++) {
             bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
             bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
             bool isAll = includedUnitType == UnitTypes::AllUnits;
@@ -707,13 +707,13 @@ Stored_Resource * CUNYAIModule::getClosestStoredLinear(Resource_Inventory & ri, 
     return returnResource;
 }
 
-Stored_Resource * CUNYAIModule::getClosestStoredByGround(Resource_Inventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
+Stored_Resource * CUNYAIModule::getClosestStoredByGround(ResourceInventory & ri, const Position & origin, const int & dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
     int min_dist = dist;
     double temp_dist = 999999;
     Stored_Resource* returnResource = nullptr;
 
-    if (!ri.resource_inventory_.empty()) {
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+    if (!ri.ResourceInventory_.empty()) {
+        for (auto & r = ri.ResourceInventory_.begin(); r != ri.ResourceInventory_.end() && !ri.ResourceInventory_.empty(); r++) {
             bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
             bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
             bool isAll = includedUnitType == UnitTypes::AllUnits;
@@ -1160,9 +1160,9 @@ UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory & ui, c
 }
 
 //Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
-    Resource_Inventory ri_out;
-	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+ResourceInventory CUNYAIModule::getResourceInventoryInRadius(const ResourceInventory &ri, const Position &origin, const int &dist, const UnitType & includedUnitType, const UnitType & excludedUnitType) {
+    ResourceInventory ri_out;
+	for (auto & r = ri.ResourceInventory_.begin(); r != ri.ResourceInventory_.end() && !ri.ResourceInventory_.empty(); r++) {
         bool isMineral = r->second.type_.isMineralField() && includedUnitType.isMineralField();
         bool isGas = r->second.type_ == UnitTypes::Resource_Vespene_Geyser && includedUnitType == UnitTypes::Resource_Vespene_Geyser;
         bool isAll = includedUnitType == UnitTypes::AllUnits;
@@ -1175,12 +1175,12 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inv
 }
 
 //Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
-	Resource_Inventory ri_out;
+ResourceInventory CUNYAIModule::getResourceInventoryInArea(const ResourceInventory &ri, const Position &origin) {
+	ResourceInventory ri_out;
 	auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
 	if (area) {
 		int area_id = area->Id();
-		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+		for (auto & r = ri.ResourceInventory_.begin(); r != ri.ResourceInventory_.end() && !ri.ResourceInventory_.empty(); r++) {
 			if (r->second.areaID_ == area_id) {
 				ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
 			}
@@ -1191,13 +1191,13 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inven
 }
 
 //Searches a research inventory for those resources that are both <350 away from a presumed base location and in the same area.
-Resource_Inventory CUNYAIModule::getResourceInventoryAtBase(const Resource_Inventory &ri, const Position &origin) {
-    Resource_Inventory ri_area = getResourceInventoryInArea(ri, origin);
-    Resource_Inventory ri_distance = getResourceInventoryInRadius(ri, origin, 350);
-    Resource_Inventory ri_out;
+ResourceInventory CUNYAIModule::getResourceInventoryAtBase(const ResourceInventory &ri, const Position &origin) {
+    ResourceInventory ri_area = getResourceInventoryInArea(ri, origin);
+    ResourceInventory ri_distance = getResourceInventoryInRadius(ri, origin, 350);
+    ResourceInventory ri_out;
 
-    for (auto r_outer : ri_area.resource_inventory_) {
-        for (auto r_inner : ri_distance.resource_inventory_) {
+    for (auto r_outer : ri_area.ResourceInventory_) {
+        for (auto r_inner : ri_distance.ResourceInventory_) {
             if (r_outer.second.pos_ == r_inner.second.pos_) {
                 ri_out.addStored_Resource(r_outer.second);
             }

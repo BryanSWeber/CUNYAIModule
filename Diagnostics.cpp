@@ -604,7 +604,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 150, upgrade_string);
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-    for (auto p = CUNYAIModule::land_inventory.resource_inventory_.begin(); p != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++p) {
+    for (auto p = CUNYAIModule::land_inventory.ResourceInventory_.begin(); p != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); ++p) {
         if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.

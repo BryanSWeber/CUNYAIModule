@@ -4,7 +4,7 @@
 #include "Source\CobbDouglas.h"
 #include "Source\MapInventory.h"
 #include "Source\UnitInventory.h"
-#include "Source\Resource_Inventory.h"
+#include "Source\ResourceInventory.h"
 #include "Source\ResearchInventory.h"
 #include "Source\LearningManager.h"
 #include "Source\AssemblyManager.h"
@@ -50,7 +50,7 @@ double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spen
 PlayerModel CUNYAIModule::friendly_player_model;
 PlayerModel CUNYAIModule::enemy_player_model;
 PlayerModel CUNYAIModule::neutral_player_model;
-Resource_Inventory CUNYAIModule::land_inventory; // resources.
+ResourceInventory CUNYAIModule::land_inventory; // resources.
 MapInventory CUNYAIModule::currentMapInventory;  // macro variables, not every unit I have.
 CombatManager CUNYAIModule::combat_manager;
 FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
@@ -403,8 +403,8 @@ void CUNYAIModule::onFrame()
     if (t_game == 0) {
         //update local resources
         //current_MapInventory.updateMapVeinsOut(current_MapInventory.start_positions_[0], current_MapInventory.enemy_base_ground_, current_MapInventory.map_out_from_enemy_ground_);
-        Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
-        Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
+        ResourceInventory mineral_inventory = ResourceInventory(Broodwar->getStaticMinerals());
+        ResourceInventory geyser_inventory = ResourceInventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         currentMapInventory.getExpoTilePositions(); // prime this once on game start.
 
@@ -873,9 +873,9 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
                 friendly_player_model.units_.purgeWorkerRelationsNoStop(miner_unit); // reset the worker
                 if (was_clearing) {
 
-                    auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
-                    if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
-                        land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
+                    auto found_mineral_ptr = land_inventory.ResourceInventory_.find(unit); // erase the now-gone mine.
+                    if (found_mineral_ptr != land_inventory.ResourceInventory_.end()) {
+                        land_inventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
                     }
 
                     workermanager.assignClear(miner_unit); // reassign clearing workers again.
@@ -893,9 +893,9 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
 
         // clear it just in case.
-        auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
-        if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
-            land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
+        auto found_mineral_ptr = land_inventory.ResourceInventory_.find(unit);
+        if (found_mineral_ptr != land_inventory.ResourceInventory_.end()) {
+            land_inventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
         }
 
     }

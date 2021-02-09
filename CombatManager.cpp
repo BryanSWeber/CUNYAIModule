@@ -80,13 +80,20 @@ bool CombatManager::combatScript(const Unit & u)
         //If there are potential targets, must fight.
         if (e_closest_demanding_response) {
 
+            //Overwrite local inventories, once we decide we need to fight, we need to make our decision based on our target and what is immediately available around the target. This way, all of our units have the SAME potential enemies and same potential friends.
+            UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest_demanding_response->pos_, search_radius);
+            UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_demanding_response->pos_, search_radius);
+
+            friend_loc.updateUnitInventorySummary();
+            enemy_loc.updateUnitInventorySummary();
+
             //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
             //If we can fight, our unit type will determine our behavior.
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
 
-                Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 256));
+                ResourceInventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 256));
                 UnitInventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 200));
                 trigger_loc.updateUnitInventorySummary();
                 //resource_loc.updateResourceInventory();
@@ -108,7 +115,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.resource_inventory_.empty()) {
+                    if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.ResourceInventory_.empty()) {
                         bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
                         if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
                             return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.

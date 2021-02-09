@@ -166,7 +166,7 @@ void UnitInventory::purgeWorkerRelationsNoStop(const Unit &unit)
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void UnitInventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, MapInventory &inv, Reservation &res)
+void UnitInventory::purgeWorkerRelationsOnly(const Unit &unit, ResourceInventory &ri, MapInventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -895,12 +895,12 @@ StoredUnit::StoredUnit(const Unit &unit) {
 //Increments the number of miners on a resource.
 void StoredUnit::startMine(Stored_Resource &new_resource) {
     locked_mine_ = new_resource.bwapi_unit_;
-    CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 //Increments the number of miners on a resource.
 void StoredUnit::startMine(Unit &new_resource) {
     locked_mine_ = new_resource;
-    CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 //Decrements the number of miners on a resource, if possible.
@@ -929,8 +929,8 @@ void stopMine(const Unit &unit) {
 //finds mine- Will return true something even if the mine DNE.
 Stored_Resource* StoredUnit::getMine() {
     Stored_Resource* tenative_resource = nullptr;
-    if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
-        tenative_resource = &CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second;
+    if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
+        tenative_resource = &CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second;
     }
     return tenative_resource;
 }
@@ -938,8 +938,8 @@ Stored_Resource* StoredUnit::getMine() {
 //finds mine- Will return true null if the mine DNE.
 Stored_Resource* getMine(const Unit &resource) {
     Stored_Resource* tenative_resource = nullptr;
-    if (CUNYAIModule::land_inventory.resource_inventory_.find(resource) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
-        tenative_resource = &CUNYAIModule::land_inventory.resource_inventory_.find(resource)->second;
+    if (CUNYAIModule::land_inventory.ResourceInventory_.find(resource) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
+        tenative_resource = &CUNYAIModule::land_inventory.ResourceInventory_.find(resource)->second;
     }
     return tenative_resource;
 }
@@ -968,7 +968,7 @@ bool StoredUnit::isAssignedLongDistanceMining() {
 //checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
 bool StoredUnit::isAssignedMining() {
     if (locked_mine_) {
-        if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+        if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine();
             return !mine_of_choice->blocking_mineral_ && mine_of_choice->type_.isMineralField();
         }
@@ -978,7 +978,7 @@ bool StoredUnit::isAssignedMining() {
 
 bool StoredUnit::isAssignedGas() {
     if (locked_mine_) {
-        if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+        if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine();
             return mine_of_choice->type_.isRefinery();
         }

@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "UnitInventory.h"
-#include "Resource_Inventory.h"
+#include "ResourceInventory.h"
 #include "PlayerModelManager.h"
 
 using namespace std;
@@ -55,7 +55,7 @@ private:
 
 public:
     MapInventory();
-    MapInventory(const UnitInventory &ui, const Resource_Inventory &ri);
+    MapInventory(const UnitInventory &ui, const ResourceInventory &ri);
 
     int nScouts = 2; // How many scouts will we have? Set by fiat.
     Position screen_position_;

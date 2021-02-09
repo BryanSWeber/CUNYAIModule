@@ -9,7 +9,7 @@
 using namespace std;
 using namespace BWAPI;
 
-struct UnitInventory; //forward declaration permits use of UnitInventory class within resource_inventory.
+struct UnitInventory; //forward declaration permits use of UnitInventory class within ResourceInventory.
 class MapInventory;
 
 struct Stored_Resource {
@@ -34,7 +34,7 @@ struct Stored_Resource {
 
 };
 
-class Resource_Inventory {
+class ResourceInventory {
 private:
     // For only occupied patches.
     int local_mineral_patches_ = 0;
@@ -47,10 +47,10 @@ private:
 
 public:
     //Creates an instance of the Resource inventory class.
-    Resource_Inventory(); // for blank construction.
-    Resource_Inventory(const Unitset &unit_set);
+    ResourceInventory(); // for blank construction.
+    ResourceInventory(const Unitset &unit_set);
 
-    std::map <Unit, Stored_Resource> resource_inventory_;
+    std::map <Unit, Stored_Resource> ResourceInventory_;
 
     void addStored_Resource(Unit unit);     // Updates the count of resource units.
     void addStored_Resource(Stored_Resource stored_resource);     // Updates the count of resource units.
@@ -63,8 +63,8 @@ public:
     void updateMines(); //counts number of viable gas mines and local mineral patches.
     void drawMineralRemaining() const;
     void drawUnreachablePatch(const MapInventory & inv) const;;
-    friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
-    friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
+    friend ResourceInventory operator + (const ResourceInventory & lhs, const ResourceInventory& rhs);
+    friend ResourceInventory operator - (const ResourceInventory & lhs, const ResourceInventory & rhs);
 
     // This command sometimes is inaccurate depending on the latancy. 
     int countLocalMiners();

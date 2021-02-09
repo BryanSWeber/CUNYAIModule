@@ -6,7 +6,7 @@
 #include "Source\UnitInventory.h"
 #include "Source/Diagnostics.h"
 #include "Source/MobilityManager.h"
-#include "Source\Resource_Inventory.h"
+#include "Source\ResourceInventory.h"
 #include "Source/BaseManager.h"
 #include <algorithm>
 #include <fstream>
@@ -18,7 +18,7 @@ using namespace std;
 
 // Creates a Inventory Object
 MapInventory::MapInventory() {};
-MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri) {
+MapInventory::MapInventory(const UnitInventory &ui, const ResourceInventory &ri) {
 
     updateVision_Count();
 
@@ -44,7 +44,7 @@ MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri
         updateUnwalkable();
     }
 
-    if (ri.resource_inventory_.size() == 0) {
+    if (ri.ResourceInventory_.size() == 0) {
         updateBuildablePos();
         int buildable_ct = 0;
         for (vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i) {
@@ -52,7 +52,7 @@ MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri
                 buildable_ct += buildable_positions_[i][j];
             }
         }
-        Diagnostics::DiagnosticWrite("There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct);
+        Diagnostics::DiagnosticWrite("There are %d resources on the map, %d canidate expo positions.", ri.ResourceInventory_.size(), buildable_ct);
     }
 
     if (map_veins_.size() == 0) {
@@ -473,7 +473,7 @@ int MapInventory::getRadialDistanceOutFromHome(const Position A) const
     return getDistanceBetween(A, safe_base_);
 }
 
-//void MapInventory::updateLiveMapVeins( const Unit &building, const UnitInventory &ui, const UnitInventory &ei, const Resource_Inventory &ri ) { // in progress.
+//void MapInventory::updateLiveMapVeins( const Unit &building, const UnitInventory &ui, const UnitInventory &ei, const ResourceInventory &ri ) { // in progress.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
 //    int start_iter = 2;
@@ -660,7 +660,7 @@ void MapInventory::updateUnwalkableWithBuildings() {
         }
     }
 
-    for (auto & u : CUNYAIModule::land_inventory.resource_inventory_) {
+    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
         // mark the building's current position.
         int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
         int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
@@ -684,7 +684,7 @@ void MapInventory::updateUnwalkableWithBuildings() {
 
 }
 
-//void MapInventory::updateLiveMapVeins(const UnitInventory &ui, const UnitInventory &ei, const Resource_Inventory &ri) { // in progress.
+//void MapInventory::updateLiveMapVeins(const UnitInventory &ui, const UnitInventory &ei, const ResourceInventory &ri) { // in progress.
 //
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1574,7 +1574,7 @@ Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) 
 
     vector<tuple<double, Position>> scout_expo_vector;
     vector<Position> chokesOrMineralPositions;
-    for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
+    for (const auto& r : CUNYAIModule::land_inventory.ResourceInventory_) {
         chokesOrMineralPositions.push_back(r.second.pos_);
     }
     for (const auto& a : BWEM::Map::Instance().Areas()) {

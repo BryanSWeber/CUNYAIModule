@@ -18,9 +18,9 @@ public:
     bool workerWork(const Unit &u);     // Do worker things. MAIN LOOP.
     bool assignGather(const Unit & unit, const UnitType mine, const int max_dist);     // Checks all Mines of type for undersaturation and assigns Gather. Goes to any undersaturated location, preference for local mine. Returns true on success.
     bool assignClear(const Unit & unit);     // Clears blocking minerals (as determined by BWEB). Check if area is threatened before clearing.  Returns true on success.
-    bool attachToNearestMine(Resource_Inventory & ri, StoredUnit & miner);     // attaches the miner to the nearest mine in the inventory, and updates the stored_unit. Returns true on success.
-    void attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, StoredUnit &miner);     // attaches the miner to the particular mine and updates the stored unit.
-    void attachToParticularMine(Unit & mine, Resource_Inventory & ri, StoredUnit & miner);     // Overload: attaches the miner to the particular mine and updates the stored unit.
+    bool attachToNearestMine(ResourceInventory & ri, StoredUnit & miner);     // attaches the miner to the nearest mine in the inventory, and updates the stored_unit. Returns true on success.
+    void attachToParticularMine(Stored_Resource &mine, ResourceInventory &ri, StoredUnit &miner);     // attaches the miner to the particular mine and updates the stored unit.
+    void attachToParticularMine(Unit & mine, ResourceInventory & ri, StoredUnit & miner);     // Overload: attaches the miner to the particular mine and updates the stored unit.
     bool checkBlockingMinerals(const Unit & unit, UnitInventory & ui);     // Returns true if there is a blocking mineral nearby.
     bool checkGasDump();     //Returns True if there is an endless dumping place for gas. Does not consider all possible gas outlets.
     bool checkGasOutlet();     //Returns True if there is an out for gas.

@@ -2,17 +2,17 @@
 
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
-#include "Source\Resource_Inventory.h"
+#include "Source\ResourceInventory.h"
 #include "Source\UnitInventory.h"
 #include "Source\MapInventory.h"
 #include "Source/Diagnostics.h"
 #include <bwem.h>
 
-//Resource_Inventory functions.
+//ResourceInventory functions.
 //Creates an instance of the resource inventory class.
 
 
-Resource_Inventory::Resource_Inventory() {
+ResourceInventory::ResourceInventory() {
     // Updates the static locations of minerals and gas on the map. Should only be called on game start.
     //if (Broodwar->getFrameCount() == 0){
     //    Unitset min = Broodwar->getStaticMinerals();
@@ -27,39 +27,39 @@ Resource_Inventory::Resource_Inventory() {
     //}
 }
 
-Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
+ResourceInventory::ResourceInventory(const Unitset &unit_set) {
 
     for (const auto & u : unit_set) {
-        resource_inventory_.insert({ u, Stored_Resource(u) });
+        ResourceInventory_.insert({ u, Stored_Resource(u) });
     }
 
     if (unit_set.empty()) {
-        resource_inventory_;
+        ResourceInventory_;
     }
 
 }
 
 // Updates the count of enemy units.
-void Resource_Inventory::addStored_Resource(Unit resource) {
-    resource_inventory_.insert({ resource, Stored_Resource(resource) });
+void ResourceInventory::addStored_Resource(Unit resource) {
+    ResourceInventory_.insert({ resource, Stored_Resource(resource) });
 };
 
-void Resource_Inventory::addStored_Resource(Stored_Resource stored_resource) {
-    resource_inventory_.insert({ stored_resource.bwapi_unit_, stored_resource });
+void ResourceInventory::addStored_Resource(Stored_Resource stored_resource) {
+    ResourceInventory_.insert({ stored_resource.bwapi_unit_, stored_resource });
 };
 
 
 //Removes enemy units that have died
-void Resource_Inventory::removeStored_Resource(Unit resource) {
-    resource_inventory_.erase(resource);
+void ResourceInventory::removeStored_Resource(Unit resource) {
+    ResourceInventory_.erase(resource);
 };
 
-Position Resource_Inventory::getMeanLocation() const {
+Position ResourceInventory::getMeanLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
     Position out = Positions::Origin;
-    for (const auto &u : this->resource_inventory_) {
+    for (const auto &u : this->ResourceInventory_) {
         x_sum += u.second.pos_.x;
         y_sum += u.second.pos_.y;
         count++;
@@ -106,7 +106,7 @@ Stored_Resource::Stored_Resource(Unit resource) {
 //    }
 //}
 
-void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventory &ei, MapInventory &inv) {
+void ResourceInventory::updateResourceInventory(UnitInventory &ui, UnitInventory &ei, MapInventory &inv) {
     // Update "My Bases"
     UnitInventory hatches;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
@@ -131,7 +131,7 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
         }
     }
 
-    for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty();) {
+    for (auto r = ResourceInventory_.begin(); r != ResourceInventory_.end() && !ResourceInventory_.empty();) {
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
 
@@ -156,7 +156,7 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
                 }
             }
             else {
-                r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+                r = ResourceInventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
                 erasure_sentinel = true;
             }
         }
@@ -169,13 +169,13 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
 
 
 // scrape over every resource to determine how many of them are actually  occupied.
-void Resource_Inventory::updateMines() {
+void ResourceInventory::updateMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
     local_geysers_ = 0;
     local_miners_ = 0;
     local_gas_collectors_ = 0;
-    for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
+    for (auto& r = ResourceInventory_.begin(); r != ResourceInventory_.end() && !ResourceInventory_.empty(); r++) {
         if (r->second.type_.isMineralField() && !r->second.blocking_mineral_ && r->second.occupied_resource_) {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
@@ -189,18 +189,18 @@ void Resource_Inventory::updateMines() {
         }
     } // find drone minima.
 }
-void Resource_Inventory::drawMineralRemaining() const
+void ResourceInventory::drawMineralRemaining() const
 {
-    for (auto u : resource_inventory_) {
+    for (auto u : ResourceInventory_) {
         Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
 
-void Resource_Inventory::drawUnreachablePatch(const MapInventory & inv) const
+void ResourceInventory::drawUnreachablePatch(const MapInventory & inv) const
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
+        for (auto r = ResourceInventory_.begin(); r != ResourceInventory_.end() && !ResourceInventory_.empty(); r++) {
             if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
                 if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
@@ -213,47 +213,47 @@ void Resource_Inventory::drawUnreachablePatch(const MapInventory & inv) const
     }
 }
 
-int Resource_Inventory::countLocalMiners()
+int ResourceInventory::countLocalMiners()
 {
     return local_miners_;
 }
 
-int Resource_Inventory::countLocalGasCollectors()
+int ResourceInventory::countLocalGasCollectors()
 {
     return local_gas_collectors_;
 }
 
-int Resource_Inventory::countLocalMinPatches()
+int ResourceInventory::countLocalMinPatches()
 {
     return local_mineral_patches_;
 }
 
-int Resource_Inventory::countLocalGeysers()
+int ResourceInventory::countLocalGeysers()
 {
     return local_geysers_;
 }
 
-int Resource_Inventory::countLocalRefineries()
+int ResourceInventory::countLocalRefineries()
 {
     return local_refineries_;
 }
 
-Resource_Inventory operator+(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
+ResourceInventory operator+(const ResourceInventory& lhs, const ResourceInventory& rhs)
 {
-    Resource_Inventory total = lhs;
+    ResourceInventory total = lhs;
     //total.UnitInventory_.insert(lhs.UnitInventory_.begin(), lhs.UnitInventory_.end());
-    total.resource_inventory_.insert(rhs.resource_inventory_.begin(), rhs.resource_inventory_.end());
+    total.ResourceInventory_.insert(rhs.ResourceInventory_.begin(), rhs.ResourceInventory_.end());
     return total;
 }
 
-Resource_Inventory operator-(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
+ResourceInventory operator-(const ResourceInventory& lhs, const ResourceInventory& rhs)
 {
-    Resource_Inventory total;
-    total.resource_inventory_.insert(lhs.resource_inventory_.begin(), lhs.resource_inventory_.end());
+    ResourceInventory total;
+    total.ResourceInventory_.insert(lhs.ResourceInventory_.begin(), lhs.ResourceInventory_.end());
 
-    for (map<Unit, Stored_Resource>::const_iterator& it = rhs.resource_inventory_.begin(); it != rhs.resource_inventory_.end();) {
-        if (total.resource_inventory_.find(it->first) != total.resource_inventory_.end()) {
-            total.resource_inventory_.erase(it->first);
+    for (map<Unit, Stored_Resource>::const_iterator& it = rhs.ResourceInventory_.begin(); it != rhs.ResourceInventory_.end();) {
+        if (total.ResourceInventory_.find(it->first) != total.ResourceInventory_.end()) {
+            total.ResourceInventory_.erase(it->first);
         }
         else {
             it++;

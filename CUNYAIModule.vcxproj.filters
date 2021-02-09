@@ -14,9 +14,6 @@
     <ClCompile Include="AssemblyManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Resource_Inventory.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="Research_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -71,11 +68,13 @@
     <ClCompile Include="ReservationManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="ResourceInventory.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
-    <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\BWEB\Block.h">
@@ -108,6 +107,7 @@
     <ClInclude Include="Source\ResearchInventory.h" />
     <ClInclude Include="Source\ReservationManager.h" />
     <ClInclude Include="Utilities.h" />
+    <ClInclude Include="Source\ResourceInventory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

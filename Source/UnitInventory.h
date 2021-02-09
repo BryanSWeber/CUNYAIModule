@@ -2,7 +2,7 @@
 
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
-#include "Resource_Inventory.h"
+#include "ResourceInventory.h"
 #include "MapInventory.h"
 #include "ReservationManager.h"
 #include "ResearchInventory.h"
@@ -229,7 +229,7 @@ struct UnitInventory {
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelationsStop(const Unit & unit);
     void purgeWorkerRelationsNoStop(const Unit & unit);
-    void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, MapInventory & inv, Reservation & res);
+    void purgeWorkerRelationsOnly(const Unit & unit, ResourceInventory & ri, MapInventory & inv, Reservation & res);
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllLastSeens() const;

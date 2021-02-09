@@ -4,7 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\MapInventory.h"
 #include "Source\UnitInventory.h"
-#include "Source\Resource_Inventory.h"
+#include "Source\ResourceInventory.h"
 #include "Source\ReservationManager.h"
 #include "Source/Diagnostics.h"
 #include <algorithm>

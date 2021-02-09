@@ -3,7 +3,7 @@
 #include <BWAPI.h> //4.2.0 BWAPI
 #include "MapInventory.h"
 #include "UnitInventory.h"
-#include "Resource_Inventory.h"
+#include "ResourceInventory.h"
 #include "ResearchInventory.h"
 #include "AssemblyManager.h"
 #include "ReservationManager.h"
@@ -92,7 +92,7 @@ public:
     static PlayerModel enemy_player_model;
     static PlayerModel neutral_player_model;
     static CombatManager combat_manager;
-    static Resource_Inventory land_inventory; // resources.
+    static ResourceInventory land_inventory; // resources.
     static MapInventory currentMapInventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
     static TechManager techmanager;
@@ -204,9 +204,9 @@ public:
     //Gets pointer to closest attackable unit to point in UnitInventory. Checks range.
     static StoredUnit* getClosestStoredByGround(UnitInventory &ui, const Position &origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
     //Gets pointer to closest attackable unit to point in ResourceInventory. Checks range. 
-    static Stored_Resource * getClosestStoredLinear(Resource_Inventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    static Stored_Resource * getClosestStoredLinear(ResourceInventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
     //Gets pointer to closest attackable unit to point in ResourceInventory. Checks range. 
-    static Stored_Resource * getClosestStoredByGround(Resource_Inventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    static Stored_Resource * getClosestStoredByGround(ResourceInventory & ri, const Position & origin, const int & dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
 
     //Gets pointer to closest attackable unit to point in UnitInventory. Checks range. Careful about visiblity.
     static StoredUnit * getClosestAttackableStored(UnitInventory & ui, const Unit unit, const int & dist);
@@ -234,9 +234,9 @@ public:
     static UnitInventory getUnitInventoryInNeighborhood(const UnitInventory & ui, const Position & origin);
     static UnitInventory getUnitInventoryInArea(const UnitInventory & ui, const UnitType ut, const Position & origin);
 
-    static Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin);
-    static Resource_Inventory getResourceInventoryAtBase(const Resource_Inventory & ri, const Position & origin);
-    static Resource_Inventory getResourceInventoryInRadius(const Resource_Inventory & ri, const Position & origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
+    static ResourceInventory CUNYAIModule::getResourceInventoryInArea(const ResourceInventory &ri, const Position &origin);
+    static ResourceInventory getResourceInventoryAtBase(const ResourceInventory & ri, const Position & origin);
+    static ResourceInventory getResourceInventoryInRadius(const ResourceInventory & ri, const Position & origin, const int &dist = 99999, const UnitType & includedUnitType = UnitTypes::AllUnits, const UnitType & excludedUnitType = UnitTypes::None);
     //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
     static bool checkOccupiedArea(const UnitInventory &ui, const Position &origin);
     static bool checkOccupiedNeighborhood(const UnitInventory & ui, const Position & origin);

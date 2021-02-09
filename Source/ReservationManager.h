@@ -4,7 +4,7 @@
 #include "CUNYAIModule.h"
 #include "MapInventory.h"
 #include "UnitInventory.h"
-#include "Resource_Inventory.h"
+#include "ResourceInventory.h"
 
 class Reservation {
 

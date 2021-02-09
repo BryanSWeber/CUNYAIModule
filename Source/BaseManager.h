@@ -23,7 +23,7 @@ public:
     int mineral_patches_;
     int gas_refinery_;
     int gas_geysers_;
-    Resource_Inventory r_loc_;
+    ResourceInventory r_loc_;
     UnitInventory u_loc_;
     UnitInventory e_loc_;
     bool emergency_spore_; //Do we want an emergency spore?

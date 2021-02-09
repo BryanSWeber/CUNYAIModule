@@ -107,13 +107,13 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     StoredUnit& miner = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
 
     bool building_unit = miner.isAssignedBuilding();
-    Resource_Inventory safe_fields;
-    Resource_Inventory escape_fields;
-    Resource_Inventory desperation_fields;
+    ResourceInventory safe_fields;
+    ResourceInventory escape_fields;
+    ResourceInventory desperation_fields;
 
-    Resource_Inventory local_fields;
-    Resource_Inventory long_dist_fields;
-    Resource_Inventory overmining_fields;
+    ResourceInventory local_fields;
+    ResourceInventory long_dist_fields;
+    ResourceInventory overmining_fields;
 
     Unit old_mineral_patch = nullptr;
     old_mineral_patch = miner.locked_mine_;
@@ -136,13 +136,13 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     bool there_exists_a_safe_mine = false;
     bool there_exists_an_escape_mine = false;
     // scrape over every resource to determine the lowest number of miners, and identify if there are any safe mines for this worker.
-    for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
+    for (auto r : CUNYAIModule::land_inventory.ResourceInventory_) {
         bool mine_is_right_type = false;
         bool potential_escape = drone_pathing_options.checkSafeEscapePath(r.second.pos_); 
         bool safe = drone_pathing_options.checkSafeGroundPath(unit->getPosition()) && potential_escape; // If there's no escape, it is not safe.
 
         bool mine_is_unoccupied_by_enemy = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
-        bool mine_is_occupied = CUNYAIModule::basemanager.getClosestBaseGround(r.second.pos_).r_loc_.resource_inventory_.count(r.first) > 0;
+        bool mine_is_occupied = CUNYAIModule::basemanager.getClosestBaseGround(r.second.pos_).r_loc_.ResourceInventory_.count(r.first) > 0;
 
         bool path_exists = CUNYAIModule::currentMapInventory.checkViableGroundPath(r.second.pos_, miner.pos_);
 
@@ -177,7 +177,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
 
     //We have to go over each type otherwise we may accidentially enter a mode without qualifiers.
     if (there_exists_a_safe_mine) {
-        for (auto r : safe_fields.resource_inventory_) {
+        for (auto r : safe_fields.ResourceInventory_) {
             if (r.second.number_of_miners_ < max_drone && r.second.number_of_miners_ == safe_resource_min) {
                 long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
                 if (r.second.occupied_resource_)
@@ -187,7 +187,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     }
     
     if (there_exists_an_escape_mine) {
-        for (auto r : escape_fields.resource_inventory_) {
+        for (auto r : escape_fields.ResourceInventory_) {
             if (r.second.number_of_miners_ < max_drone && r.second.number_of_miners_ == escape_resource_min) {
                 long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
                 if (r.second.occupied_resource_)
@@ -196,23 +196,23 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
         }
     }
 
-    for (auto r : desperation_fields.resource_inventory_) {
+    for (auto r : desperation_fields.ResourceInventory_) {
         if (r.second.occupied_resource_) // if the area has workers and is not occupied, then it is now a desperate choice. Just go anywhere occupied.
             if (r.second.number_of_miners_ >= 0)
                 overmining_fields.addStored_Resource(r.second); //
     }
 
     // mine from the closest mine with a base nearby.
-    if (!local_fields.resource_inventory_.empty())
+    if (!local_fields.ResourceInventory_.empty())
         assignment_complete = attachToNearestMine(local_fields, miner); // phase is updated here.
-    else if (!long_dist_fields.resource_inventory_.empty()) // if there are no suitible mineral patches with bases nearby, long-distance mine.
+    else if (!long_dist_fields.ResourceInventory_.empty()) // if there are no suitible mineral patches with bases nearby, long-distance mine.
         assignment_complete = attachToNearestMine(long_dist_fields, miner); // phase is updated here.
-    else if (!overmining_fields.resource_inventory_.empty()) { // if you are still in trouble just... mine *something*.
+    else if (!overmining_fields.ResourceInventory_.empty()) { // if you are still in trouble just... mine *something*.
         assignment_complete = attachToNearestMine(overmining_fields, miner); // phase is updated here.
         Diagnostics::DiagnosticWrite("I cannot find a safe place to mine, I'm going to overstack somewhere safe.");
     }
 
-    //Diagnostics::DiagnosticWrite("local:%d,distance:%d,overmining:%d", local_fields.resource_inventory_.size(), long_dist_fields.resource_inventory_.size(), overmining_fields.resource_inventory_.size());
+    //Diagnostics::DiagnosticWrite("local:%d,distance:%d,overmining:%d", local_fields.ResourceInventory_.size(), long_dist_fields.ResourceInventory_.size(), overmining_fields.ResourceInventory_.size());
 
     if (!assignment_complete && old_mineral_patch) {
         miner.startMine(old_mineral_patch);
@@ -222,7 +222,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
 } // closure worker mine
 
   //Attaches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
-bool WorkerManager::attachToNearestMine(Resource_Inventory & ri, StoredUnit & miner) {
+bool WorkerManager::attachToNearestMine(ResourceInventory & ri, StoredUnit & miner) {
     Stored_Resource* closest = CUNYAIModule::getClosestStoredByGround(ri, CUNYAIModule::getStoredCenter(miner));
     if (closest) {
         miner.startMine(*closest); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
@@ -237,8 +237,8 @@ bool WorkerManager::attachToNearestMine(Resource_Inventory & ri, StoredUnit & mi
     return false;
 }
 
-void WorkerManager::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, StoredUnit &miner) {
-    miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
+void WorkerManager::attachToParticularMine(Stored_Resource &mine, ResourceInventory &ri, StoredUnit &miner) {
+    miner.startMine(ri.ResourceInventory_.find(mine.bwapi_unit_)->second); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
     if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
         CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
     }
@@ -246,8 +246,8 @@ void WorkerManager::attachToParticularMine(Stored_Resource &mine, Resource_Inven
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
-void WorkerManager::attachToParticularMine(Unit &mine, Resource_Inventory &ri, StoredUnit &miner) {
-    miner.startMine(ri.resource_inventory_.find(mine)->second); // Let's not make mistakes by attaching it to "availabile Fields""
+void WorkerManager::attachToParticularMine(Unit &mine, ResourceInventory &ri, StoredUnit &miner) {
+    miner.startMine(ri.ResourceInventory_.find(mine)->second); // Let's not make mistakes by attaching it to "availabile Fields""
     miner.phase_ = mine->getType().isNeutral() ? StoredUnit::MiningMin : StoredUnit::MiningGas;
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
@@ -255,18 +255,18 @@ void WorkerManager::attachToParticularMine(Unit &mine, Resource_Inventory &ri, S
 bool WorkerManager::assignClear(const Unit & unit)
 {
     StoredUnit& miner = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-    Resource_Inventory available_fields;
+    ResourceInventory available_fields;
     Unit old_mineral_patch = nullptr;
     old_mineral_patch = miner.locked_mine_;
     miner.stopMine();
 
-    for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
+    for (auto& r = CUNYAIModule::land_inventory.ResourceInventory_.begin(); r != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); r++) {
         if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::currentMapInventory.getFrontLineBase().getDistance(r->second.pos_) < CUNYAIModule::currentMapInventory.my_portion_of_the_map_) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
 
-    if (!available_fields.resource_inventory_.empty() && attachToNearestMine(available_fields, miner))
+    if (!available_fields.ResourceInventory_.empty() && attachToNearestMine(available_fields, miner))
         return CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, StoredUnit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
     else if (old_mineral_patch) {
         miner.startMine(old_mineral_patch);
@@ -280,9 +280,9 @@ bool WorkerManager::checkBlockingMinerals(const Unit & unit, UnitInventory & ui)
 {
     bool already_assigned = false;
     StoredUnit& miner = ui.unit_map_.find(unit)->second;
-    Resource_Inventory available_fields;
+    ResourceInventory available_fields;
 
-    for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
+    for (auto& r = CUNYAIModule::land_inventory.ResourceInventory_.begin(); r != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); r++) {
         if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, r->second.pos_) && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
@@ -528,7 +528,7 @@ void WorkerManager::updateWorkersLongDistanceMining()
 void WorkerManager::updateWorkersOverstacked()
 {
     int overstacked_workers = 0;
-    for (auto & w = CUNYAIModule::land_inventory.resource_inventory_.begin(); w != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); w++) {
+    for (auto & w = CUNYAIModule::land_inventory.ResourceInventory_.begin(); w != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); w++) {
         if (w->second.type_.isMineralField() && w->second.number_of_miners_ - 2 > 0) {
             overstacked_workers += w->second.number_of_miners_ - 2;
         }
