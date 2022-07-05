@@ -1,12 +1,13 @@
 #pragma once
 /*
-    Manages both the assembly of units and (below) the fixed/immutable build order at the start of the game. 
+    Manages the assembly of units, which is mitigated by the initialized build order. 
 */
 
 #include "CUNYAIModule.h"
 #include "MapInventory.h"
 #include "UnitInventory.h"
 #include "ReservationManager.h"
+#include "Build.h"
 
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "BWEB\BWEB.h"
@@ -126,85 +127,4 @@ public:
 
 };
 
-
-class BuildOrderObject {
-private:
-
-    UnitType unit_in_queue_;
-    UpgradeType upgrade_in_queue_;
-    TechType research_in_queue_;
-
-public:
-    //bool operator==( const BuildOrderObject &rhs );
-    //bool operator!=( const BuildOrderObject &rhs );
-
-    BuildOrderObject(UnitType unit) {
-        unit_in_queue_ = unit;
-        upgrade_in_queue_ = UpgradeTypes::None;
-        research_in_queue_ = TechTypes::None;
-    };
-
-    BuildOrderObject(UpgradeType up) {
-        unit_in_queue_ = UnitTypes::None;
-        upgrade_in_queue_ = up;
-        research_in_queue_ = TechTypes::None;
-    };
-
-    BuildOrderObject(TechType tech) {
-        unit_in_queue_ = UnitTypes::None;
-        upgrade_in_queue_ = UpgradeTypes::None;
-        research_in_queue_ = tech;
-    };
-
-    UnitType BuildOrderObject::getUnit() {
-        return unit_in_queue_;
-    };
-
-    UpgradeType BuildOrderObject::getUpgrade() {
-        return upgrade_in_queue_;
-    };
-
-    TechType BuildOrderObject::getResearch() {
-        return research_in_queue_;
-    };
-};
-
-struct BuildingGene {
-    BuildingGene();
-    BuildingGene(string s);
-
-    vector<BuildOrderObject> building_gene_;  // how many of each of these do we want?
-    string initial_building_gene_;
-
-    map<UnitType, int> goal_units;
-
-    bool ever_clear_ = false;
-    UnitType last_build_order;
-
-    int cumulative_gas_;
-    int cumulative_minerals_;
-
-    void getInitialBuildOrder(string s);
-    void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
-    void updateRemainingBuildOrder(const UpgradeType &ups); // drops item from list as complete.
-    void updateRemainingBuildOrder(const TechType & research);// drops item from list as complete.
-    void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
-    void announceBuildingAttempt(UnitType ut);  // do we have a guy going to build it?
-    bool checkBuildingNextInBO(UnitType ut);
-    int  countTimesInBO(UnitType ut);
-    bool checkUpgradeNextInBO(UpgradeType upgrade);
-    bool checkResearch_Desired(TechType upgrade);
-    bool isEmptyBuildOrder();
-
-    void addBuildOrderElement(const UpgradeType &ups); // adds an element to the list.
-    void addBuildOrderElement(const TechType & research);// adds an element to the list.
-    void addBuildOrderElement(const UnitType &ut); // adds an element to the list.
-
-    void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the list again.
-
-    void retryBuildOrderElement(const UpgradeType & up);
-
-    void getCumulativeResources();
-    //bool checkExistsInBuild( UnitType unit );
-};
 

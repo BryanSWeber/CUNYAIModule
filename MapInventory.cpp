@@ -333,7 +333,7 @@ int MapInventory::getFieldValue(const Position & pos, const vector<vector<int>>&
 //    ss << WalkPosition(newCenter);
 //    string base = ss.str();
 //
-//    ifstream newVeins(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+//    ifstream newVeins(CUNYAIModule::learnedPlan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
 //    if (!newVeins)         //The file does not exist, we need to write it.
 //    {
 //
@@ -1065,61 +1065,61 @@ void MapInventory::mainCurrentMap() {
 
 }
 
-void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
-{
-    std::stringstream ss;
-    ss << center;
-    string base = ss.str();
+//void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
+//{
+//    std::stringstream ss;
+//    ss << center;
+//    string base = ss.str();
+//
+//    //Flatten map before writing it.
+//    vector<int> holding_vector;
+//    for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
+//        for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
+//            holding_vector.push_back(mapin[i][j]);
+//
+//    std::ostringstream merged_holding_vector;
+//    // Convert all but the last element to avoid a trailing ","
+//    std::copy(holding_vector.begin(), holding_vector.end() - 1,
+//        std::ostream_iterator<int>(merged_holding_vector, ","));
+//    // Now add the last element with no delimiter
+//    merged_holding_vector << holding_vector.back();
+//
+//    ifstream newMap(CUNYAIModule::learnedPlan.writeDirectory_ + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+//    if (!newMap)
+//    {
+//        ofstream map;
+//        map.open(CUNYAIModule::learnedPlan.writeDirectory_ + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
+//        //faster write of whole vector.
+//        map << merged_holding_vector.str() << endl;
+//
+//        map.close();
+//    }
+//    newMap.close();
+//}
 
-    //Flatten map before writing it.
-    vector<int> holding_vector;
-    for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
-        for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
-            holding_vector.push_back(mapin[i][j]);
-
-    std::ostringstream merged_holding_vector;
-    // Convert all but the last element to avoid a trailing ","
-    std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator<int>(merged_holding_vector, ","));
-    // Now add the last element with no delimiter
-    merged_holding_vector << holding_vector.back();
-
-    ifstream newMap(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (!newMap)
-    {
-        ofstream map;
-        map.open(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
-        //faster write of whole vector.
-        map << merged_holding_vector.str() << endl;
-
-        map.close();
-    }
-    newMap.close();
-}
-
-void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center)
-
-{
-    std::stringstream ss;
-    ss << center;
-    string number;
-    string base = ss.str();
-    mapin.clear();
-
-    ifstream newMap(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (newMap)
-    {
-        for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
-        {
-            mapin.push_back(std::vector<int>());
-            for (int j = 0; j < Broodwar->mapHeight() * 4; j++) {
-                getline(newMap, number, ',');
-                mapin[i].push_back(stoi(number));
-            }
-        }
-    }
-    newMap.close();
-}
+//void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center)
+//
+//{
+//    std::stringstream ss;
+//    ss << center;
+//    string number;
+//    string base = ss.str();
+//    mapin.clear();
+//
+//    ifstream newMap(CUNYAIModule::learnedPlan.writeDirectory_ + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+//    if (newMap)
+//    {
+//        for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
+//        {
+//            mapin.push_back(std::vector<int>());
+//            for (int j = 0; j < Broodwar->mapHeight() * 4; j++) {
+//                getline(newMap, number, ',');
+//                mapin[i].push_back(stoi(number));
+//            }
+//        }
+//    }
+//    newMap.close();
+//}
 
 
 vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units)

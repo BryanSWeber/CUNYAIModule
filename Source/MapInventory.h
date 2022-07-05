@@ -122,9 +122,9 @@ public:
     Position getBasePositionNearest(Position &p); 
 
     // write one of the map objects have created, centered around the passed position.
-    void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); 
+    //void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); 
     // read one of the map objects we have created, centered around the passed position.
-    void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center);
+    //void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center);
 
     //returns true if you have explored all start positions, false otherwise.
     bool checkExploredAllStartPositions(); 

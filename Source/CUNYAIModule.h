@@ -83,9 +83,6 @@ public:
     static bool econ_starved;
     static bool tech_starved;
     static double adaptation_rate; //Adaptation rate to opponent.
-    static double alpha_army_original;
-    static double alpha_tech_original;
-    static double alpha_econ_original;
 
     //Game should begin some universally declared inventories.
     static PlayerModel friendly_player_model;
@@ -97,16 +94,15 @@ public:
     static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
     static TechManager techmanager;
     static AssemblyManager assemblymanager;
-    static BuildingGene buildorder; //
     static Reservation my_reservation;
-    static LearningManager learned_plan;
+    static LearningManager learnedPlan;
     static WorkerManager workermanager;
     static BaseManager basemanager;
 
     //These measure its clock.
-    int short_delay;
-    int med_delay;
-    int long_delay;
+    static int short_delay;
+    static int med_delay;
+    static int long_delay;
 
     char delay_string[50];
     char map_string[50];
@@ -159,7 +155,7 @@ public:
 
     // evaluates if it was order to fight recently.
     static bool isRecentCombatant(const StoredUnit &su);
-    static void writePlayerModel(const PlayerModel &player, const string label);   //writes aribtrary player model to file.
+    static void onFrameWritePlayerModel(const PlayerModel &player, const string label);   //writes aribtrary player model to file.
 
 
     // Outlines the case where you can attack their type (air/ground/cloaked)

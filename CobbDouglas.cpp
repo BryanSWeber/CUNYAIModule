@@ -133,7 +133,7 @@ void CobbDouglas::storeStocks(int e_army_stock, int e_tech_stock, int e_worker_s
 }
 
 //Sets enemy utility function parameters based on known information.
-void CobbDouglas::enemy_mimic(const PlayerModel & enemy, const double adaptation_rate) {
+void CobbDouglas::enemy_mimic(const PlayerModel & enemy) {
     //If optimally chose, the derivatives will all be equal.
 
     Diagnostics::DiagnosticWrite("We're updating our model to mimic our opponents.");
@@ -142,9 +142,9 @@ void CobbDouglas::enemy_mimic(const PlayerModel & enemy, const double adaptation
     Diagnostics::DiagnosticWrite("Alpha_tech: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_tech, alpha_tech);
 
     //Shift alpha towards enemy choices.
-    alpha_army += adaptation_rate * (enemy.spending_model_.alpha_army - alpha_army);
-    alpha_econ += adaptation_rate * (enemy.spending_model_.alpha_econ - alpha_econ);
-    alpha_tech += adaptation_rate * (enemy.spending_model_.alpha_tech - alpha_tech);
+    alpha_army += adoptionRate * (enemy.spending_model_.alpha_army - alpha_army);
+    alpha_econ += adoptionRate * (enemy.spending_model_.alpha_econ - alpha_econ);
+    alpha_tech += adoptionRate * (enemy.spending_model_.alpha_tech - alpha_tech);
 
     bool army_possible = evalArmyPossible();
     bool econ_possible = evalEconPossible();

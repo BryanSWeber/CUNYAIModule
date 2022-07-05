@@ -38,6 +38,9 @@ private:
     double estimated_unseen_ground_ = 0; // a subset of estimated army. Should sum with fliers to be the total unseen army.
     double estimated_unseen_tech_ = 0; // Expenditures on research, upgrades, and buildings that allow better combat units.
     double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
+    
+    int firstAirThreatSeen_ = 0; //Frame first air threat is shown at.
+    int firstDetectorSeen_ = 0; //Frame first detect
 
     void Print_Average_CD(const int &screen_x, const int &screen_y); // Onscreen Diagnostic.
 
@@ -59,6 +62,8 @@ public:
     double getEstimatedUnseenTech(); // Returns a one number-summary of unseen tech upgrades, researches etc.
     double getEstimatedUnseenWorkers(); //Returns a one number-summary of the number of unseen workers the player has.
     double getEstimatedWorkers(); // Returns a one-number summary of the number of workers a player has. Not an estimate if I use this on myself.
+    int getFirstAirSeen(); // Returns frame air observed.
+    int getFirstDetectorSeen(); // Returns frame detector observed.
 
     //In case we need access to BWAPI functions.
     Player getPlayer(); //Returns the BWAPI player
@@ -76,7 +81,7 @@ public:
 
     // Counts for tallying what's in this inventory.
     vector< UnitType > unit_type_; // A vector of all the unit types, used in counting units.
-    vector< int > unit_count_;
+    vector< int > unit_count_; 
     vector< int > unit_incomplete_;
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
     int closest_ground_combatant_ = INT_MAX;
@@ -113,8 +118,6 @@ public:
     bool opponentCouldBeTeching(const TechType & tech); // Can they make this tech type? Considers if the tech type is finished, in which case they cannot remake it.
 
     void updateUnit_Counts(); //stores the count of all unit types the player has to avoid extensive recounting.  
-
-    void setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order); //if we want locked values this is how we set them.
 
     const double getCumArmy(); // getters for the private average alpha army stat.
     const double getCumEco(); // getters for the private average alpha eco stat.

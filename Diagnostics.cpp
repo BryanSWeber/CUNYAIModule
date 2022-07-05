@@ -400,10 +400,10 @@ void Diagnostics::Print_ResearchInventory(const int &screen_x, const int &screen
 }
 
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, const BuildingGene &bo) {
+void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, Build &bo) {
     int another_row_of_printing = 0;
-    if (!bo.building_gene_.empty()) {
-        for (auto i : bo.building_gene_) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+    if (!bo.isEmptyBuildOrder()) {
+        for (auto i : bo.getQueue()) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
             Broodwar->drawTextScreen(screen_x, screen_y, "Build Order:");  //
             if (i.getUnit() != UnitTypes::None) {
                 Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", CUNYAIModule::noRaceName(i.getUnit().c_str()));  //
@@ -466,41 +466,77 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
 
 }
 
-void Diagnostics::writeMacroIssues()
+void Diagnostics::issueCheats()
 {
-    if (Broodwar->getFrameCount() % (30 * 24) == 0) {
-        if (Broodwar->self()->minerals() > 300 || Broodwar->self()->gas() > 300 || (Broodwar->self()->supplyUsed() > 40 * 2 && Broodwar->self()->supplyTotal() <= Broodwar->self()->supplyUsed())) {
-            DiagnosticWrite(Broodwar->mapName().c_str());
-            DiagnosticWrite("Frame: %d", Broodwar->getFrameCount());
-            for (int i = 0; i != 229; i++)
-            { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-                int u_count = CUNYAIModule::countUnits(((UnitType)i), CUNYAIModule::my_reservation);
-                if (u_count > 0) {
-                    DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
-                }
-            }
-            for (auto const r : CUNYAIModule::my_reservation.getReservedUpgrades()) {
-                DiagnosticWrite("Reserved Upgrades:");  //
-                DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
-            }
-            DiagnosticWrite("Excess Resources/Current Resources");  //
-            DiagnosticWrite("Min: %d/%d", CUNYAIModule::my_reservation.getExcessMineral(), Broodwar->self()->minerals());  //
-            DiagnosticWrite("Gas: %d/%d", CUNYAIModule::my_reservation.getExcessGas(), Broodwar->self()->gas());  //
-            DiagnosticWrite("Supply: %d/%d", CUNYAIModule::my_reservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
-            DiagnosticWrite("Larva: %d/%d", CUNYAIModule::my_reservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
-
-            DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.econ_derivative);  //
-            DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.army_derivative);  //
-            DiagnosticWrite("Tech : %s, D.Tech:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.tech_derivative);  //
-        }
+    if (INF_MONEY) {
+        Broodwar->sendText("show me the money");
     }
+    if (MAP_REVEAL) {
+        Broodwar->sendText("black sheep wall");
+    }
+    if (NEVER_DIE) {
+        Broodwar->sendText("power overwhelming");
+    }
+    if (INSTANT_WIN) {
+        Broodwar->sendText("there is no cow level");
+    }
+
+    if (!(INF_MONEY || MAP_REVEAL || NEVER_DIE || INSTANT_WIN)) {
+        Broodwar->sendText("Cough Cough: Power Overwhelming! (Please work!)");
+    }
+
 }
 
-void Diagnostics::writePlayerModel(PlayerModel &pmodel)
+void Diagnostics::writeMacroIssues()
 {
-    DiagnosticWrite("Player's Cum. Army is:  %4.2f", pmodel.getCumArmy());
-    DiagnosticWrite("Player's Cum. Eco is:  %4.2f", pmodel.getCumEco());
-    DiagnosticWrite("Player's Cum. Tech is:  %4.2f", pmodel.getCumTech());
+    if (Broodwar->self()->minerals() > 300 || Broodwar->self()->gas() > 300 || (Broodwar->self()->supplyUsed() > 40 * 2 && Broodwar->self()->supplyTotal() <= Broodwar->self()->supplyUsed())) {
+        DiagnosticWrite(Broodwar->mapName().c_str());
+        DiagnosticWrite("Frame: %d", Broodwar->getFrameCount());
+        for (int i = 0; i != 229; i++)
+        { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+            int u_count = CUNYAIModule::countUnits(((UnitType)i), CUNYAIModule::my_reservation);
+            if (u_count > 0) {
+                DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
+            }
+        }
+        for (auto const r : CUNYAIModule::my_reservation.getReservedUpgrades()) {
+            DiagnosticWrite("Reserved Upgrades:");  //
+            DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
+        }
+        DiagnosticWrite("Excess Resources/Current Resources");  //
+        DiagnosticWrite("Min: %d/%d", CUNYAIModule::my_reservation.getExcessMineral(), Broodwar->self()->minerals());  //
+        DiagnosticWrite("Gas: %d/%d", CUNYAIModule::my_reservation.getExcessGas(), Broodwar->self()->gas());  //
+        DiagnosticWrite("Supply: %d/%d", CUNYAIModule::my_reservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
+        DiagnosticWrite("Larva: %d/%d", CUNYAIModule::my_reservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
+
+        DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.econ_derivative);  //
+        DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.army_derivative);  //
+        DiagnosticWrite("Tech : %s, D.Tech:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.tech_derivative);  //
+    }
+
+}
+
+void Diagnostics::onFrameWritePlayerModel(PlayerModel &pmodel)
+{
+    if (Broodwar->getFrameCount() == 0) {
+        DiagnosticWrite("Player's Cum. Army is:  %4.2f", pmodel.getCumArmy());
+        DiagnosticWrite("Player's Cum. Eco is:  %4.2f", pmodel.getCumEco());
+        DiagnosticWrite("Player's Cum. Tech is:  %4.2f", pmodel.getCumTech());
+
+        for (auto i : pmodel.getBuildingCartridge())
+            Diagnostics::DiagnosticWrite("Players Legal Buildings are: %s", i.first.c_str());
+        for (auto i : pmodel.getCombatUnitCartridge())
+            Diagnostics::DiagnosticWrite("Players Legal combatants are: %s", i.first.c_str());
+        for (auto i : pmodel.getTechCartridge())
+            Diagnostics::DiagnosticWrite("Players techs are: %s", i.first.c_str());
+        for (auto i : pmodel.getUpgradeCartridge())
+            Diagnostics::DiagnosticWrite("Players upgrades are: %s", i.first.c_str());
+    }
+
+    if (Broodwar->getFrameCount() % (24 * 60) == 0 && RIP_REPLAY) {
+        pmodel.units_.printUnitInventory(Broodwar->self());
+        pmodel.casualties_.printUnitInventory(Broodwar->self(), "casualties");
+    }
 }
 
 void Diagnostics::onFrame()
@@ -508,20 +544,22 @@ void Diagnostics::onFrame()
     //bwemMap.Draw(BWAPI::BroodwarPtr);
     drawMousePosition();
     BWEB::Map::draw();
-    writeMacroIssues();
+    if (Broodwar->getFrameCount() % (30 * 24) == 0) {
+        writeMacroIssues();
+    }
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
     //Print_Test_Case(0, 50);
     Print_Reservations(0, 190, CUNYAIModule::my_reservation);
     //enemy_player_model.Print_Average_CD(500, 170);
-    if (CUNYAIModule::buildorder.isEmptyBuildOrder()) {
+    if (CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
         CUNYAIModule::assemblymanager.Print_Assembly_FAP_Cycle(500, 170);
         //CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //Print_UnitInventory(500, 170, enemy_player_model.units_); // actual units on ground.
         //Print_ResearchInventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
     }
     else {
-        Print_Build_Order_Remaining(500, 170, CUNYAIModule::buildorder);
+        Print_Build_Order_Remaining(500, 170, CUNYAIModule::learnedPlan.inspectCurrentBuild());
     }
 
     Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::land_inventory.countLocalMinPatches());
@@ -685,7 +723,7 @@ void Diagnostics::onFrame()
     //Diagnostic_Watch_Expos();
     if (Broodwar->getFrameCount() % (24 * 60) == 0) {
         DiagnosticWrite("Game Frame is: %d", Broodwar->getFrameCount());
-        writePlayerModel(CUNYAIModule::enemy_player_model);
+        onFrameWritePlayerModel(CUNYAIModule::enemy_player_model);
     }
 
     //drawTiles(CUNYAIModule::currentMapInventory.screen_position_);

@@ -19,6 +19,7 @@ struct CobbDouglas
     double alpha_army;
     double alpha_tech;
     double alpha_econ;
+    double adoptionRate;
 
     double worker_stock;
     double army_stock;
@@ -40,7 +41,7 @@ struct CobbDouglas
 
     void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
     void storeStocks(int e_army_stock, int e_tech_stock, int e_worker_stock);
-    void enemy_mimic(const PlayerModel &enemy, const double adaptation_rate);
+    void enemy_mimic(const PlayerModel &enemy);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
     void printModelParameters();

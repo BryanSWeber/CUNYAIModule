@@ -672,14 +672,14 @@ void UnitInventory::updateUnitInventorySummary() {
 
 void UnitInventory::printUnitInventory(const Player &player, const string &bonus)
 {
-    //string start = "learned_plan.readDirectory + player->getName() + bonus + ".txt";
-    //string finish = learned_plan.writeDirectory + player->getName() + bonus + ".txt";
+    //string start = "learnedPlan.readDirectory + player->getName() + bonus + ".txt";
+    //string finish = learnedPlan.writeDirectory + player->getName() + bonus + ".txt";
     //if (filesystem::exists(start.c_str()))
     //    filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
 
 
     ifstream input; // brings in info;
-    input.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios::in);   // for each row
+    input.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -692,7 +692,7 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios_base::app);
+        output.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios_base::app);
         output << "GameSeed" << ",";
         output << "GameTime" << ",";
         for (auto i : UnitTypes::allUnitTypes()) {
@@ -706,7 +706,7 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
 
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios_base::app);
+    output.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios_base::app);
     output << Broodwar->getRandomSeed() << ",";
     output << Broodwar->elapsedTime() << ",";
     for (auto i : UnitTypes::allUnitTypes()) {
@@ -718,8 +718,8 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
     output.close();
 
     //if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-    //    string start = learned_plan.writeDirectory + player->getName() + bonus + ".txt";
-    //    string finish = learned_plan.readDirectory + player->getName() + bonus + ".txt";
+    //    string start = learnedPlan.writeDirectory + player->getName() + bonus + ".txt";
+    //    string finish = learnedPlan.readDirectory + player->getName() + bonus + ".txt";
     //    if (filesystem::exists(start.c_str()))
     //        filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
     //}
@@ -756,12 +756,7 @@ StoredUnit::StoredUnit(const UnitType &unittype, const bool &carrierUpgrade, con
     shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
 
     //Get unit's status. Precalculated, precached.
-
-    stock_value_ = getGrownWeight(type_, carrierUpgrade, reaverUpgrade);
-    if(stock_value_ == 0 ){
-        stock_value_ = getTraditionalWeight(type_, carrierUpgrade, reaverUpgrade);
-    }
-
+    stock_value_ = getTraditionalWeight(type_, carrierUpgrade, reaverUpgrade);
     current_stock_value_ = stock_value_; // Precalculated, precached.
     future_fap_value_ = stock_value_;
 };
@@ -826,20 +821,6 @@ int StoredUnit::getTraditionalWeight(const UnitType unittype, const bool &carrie
         stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
         return stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
-}
-
-int StoredUnit::getGrownWeight(const UnitType unittype, const bool &carrierUpgrade, const bool &reaverUpgrade) {
-    int stock_value_ = CUNYAIModule::learned_plan.resetScale(unittype);
-
-    if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
-        stock_value_ += CUNYAIModule::learned_plan.resetScale(UnitTypes::Protoss_Interceptor) * (4 + 4 * carrierUpgrade);
-    }
-
-    if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
-        stock_value_ += CUNYAIModule::learned_plan.resetScale(UnitTypes::Protoss_Scarab) * (5 + 5 * reaverUpgrade);
-    }
-
-    return stock_value_; // all other features are static features
 }
 
 

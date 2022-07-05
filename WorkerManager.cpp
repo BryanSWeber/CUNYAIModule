@@ -302,7 +302,7 @@ bool WorkerManager::checkGasOutlet() {
     if (CUNYAIModule::techmanager.checkTechAvail() && max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas() }) > CUNYAIModule::my_reservation.getExcessGas()) return true;
     if (checkGasDump()) return true;
     if (CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Lair) > 0) true; //Tier 2 means gas is always possible. 
-    if(CUNYAIModule::buildorder.cumulative_gas_ > 0) return true;
+    if(CUNYAIModule::learnedPlan.inspectCurrentBuild().getRemainingGas() > 0) return true;
 
     return false;
 }

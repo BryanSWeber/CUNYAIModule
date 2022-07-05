@@ -2,6 +2,7 @@
 
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
+#include "Build.h"
 
 // Manages various types of important diagnostics and print functions.
 class Diagnostics {
@@ -49,14 +50,19 @@ public:
     static void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
     static void Print_ResearchInventory(const int & screen_x, const int & screen_y, const ResearchInventory & ri);
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-    static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const BuildingGene & bo);
+    static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, Build & bo);
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
     static void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
 
-    // Writes to file any potential macro problems/concerning realities of the game.
+    //Announces any cheats for single player games, if I am testing something. Examples - encircling opponent might be tested with invicibility on. Contains comedy.
+    static void issueCheats();
+
+
+    // Dumps most information about a player model to the debug file. Has extra printouts at various times.
+    static void onFrameWritePlayerModel(PlayerModel &pmodel);
+
+    // Dumps a collection of macro issues;
     static void writeMacroIssues();
-    // Dumps most information about a player model to the debug file.
-    static void writePlayerModel(PlayerModel &pmodel);
 
     //Prints discription of an event to file.
     static void printUnitEventDetails(BWAPI::Event e);
@@ -70,8 +76,9 @@ public:
     static void DiagnosticText(char const *fmt, Ts && ... vals) {
         if constexpr (DIAGNOSTIC_MODE) {
             Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
+            cout << "\n" << fmt << "\n";
             ofstream output; // Prints to brood war file while in the WRITE file.
-            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            output.open(CUNYAIModule::learnedPlan.getWriteDir() + "Debug.txt", ios_base::app);
             output << fmt;
             ((output << ',' << std::forward<Ts>(vals)), ...);
             output << endl;
@@ -83,7 +90,7 @@ public:
     static void DiagnosticWrite(char const *fmt, Ts && ... vals) {
         if constexpr (DIAGNOSTIC_MODE) {
             ofstream output; // prints to brood war file while in the write file.
-            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            output.open(CUNYAIModule::learnedPlan.getWriteDir() + "Debug.txt", ios_base::app);
             output << fmt;
             ((output << ',' << std::forward<Ts>(vals)), ...);
             output << endl;

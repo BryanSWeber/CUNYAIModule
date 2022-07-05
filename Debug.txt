@@ -1,0 +1,1231 @@
+The matchup is Zerg vs Zerg
+selectedBuild
+The matchup is Zerg vs Unknown
+selectedBuild
+The matchup is Zerg vs Unknown
+selectedBuild
+The matchup is Zerg vs Unknown
+selectedBuild
+The matchup is Zerg vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+The matchup is Zerg vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+The matchup is Zerg vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+The matchup is Zerg vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,1,0,12,inf
+Build: %s is rated %d,Muta,inf
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+Trying Build Order: %s,Muta
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Zerg_Overlord
+Created a %s.,Zerg_Larva
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Zerg_Larva
+Created a %s.,Zerg_Larva
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Zerg_Hatchery
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+Game Frame is: %d,0
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+The matchup is Zerg vs Unknown
+selectedBuild
+The matchup is Zerg vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,1,0,12,inf
+Build: %s is rated %d,Muta,inf
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+Trying Build Order: %s,Muta
+Created a %s.,Special_Power_Generator
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Zerg_Larva
+Created a %s.,Zerg_Larva
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Zerg_Overlord
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Failed to purge worker in inventory.
+Created a %s.,Zerg_Drone
+Created a %s.,Zerg_Larva
+Created a %s.,Zerg_Hatchery
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+Game Frame is: %d,0
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+The matchup is Zerg vs Unknown
+selectedBuild
+The matchup is Terran vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,11,2,0,6.04402
+Build: %s is rated %d,Muta,6.04402
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+New best Build:,Lurker
+Trying Build Order: %s,Muta
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Terran_Command_Center
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+Game Frame is: %d,0
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+The matchup is Protoss vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,11,2,0,6.04402
+Build: %s is rated %d,Muta,6.04402
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+New best Build:,Lurker
+Trying Build Order: %s,Muta
+Failed to purge worker in inventory.
+Created a %s.,Protoss_Probe
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Protoss_Nexus
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Protoss_Probe
+Failed to purge worker in inventory.
+Created a %s.,Protoss_Probe
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Protoss_Probe
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+Game Frame is: %d,0
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+The matchup is Terran vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,11,2,0,6.04402
+Build: %s is rated %d,Muta,6.04402
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+New best Build:,Lurker
+Trying Build Order: %s,Muta
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Resource_Mineral_Field
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Failed to purge worker in inventory.
+Created a %s.,Terran_SCV
+Created a %s.,Terran_Command_Center
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Vespene_Geyser
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Resource_Mineral_Field
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+Created a %s.,Special_Power_Generator
+What do we think is happening for researches?
+This is the research units of an %s:,ENEMY
+Total Supply Observed: %d,0
+What do we think is happening behind the scenes?
+This is the unseen units of an %s:,ENEMY
+They have %4.2f of %s,4.00333,Terran_SCV
+They have %4.2f of %s,1,Terran_Command_Center
+I count an unused supply of %4.2f and imagine units taking %4.2f supply,400,8.00667
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+What do we think is happening for researches?
+This is the research units of an %s:,NOT ENEMY
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+Game Frame is: %d,0
+Player's Cum. Army is:  %4.2f,0
+Player's Cum. Eco is:  %4.2f,0
+Player's Cum. Tech is:  %4.2f,0
+Players Legal Buildings are: %s,Zerg_Hatchery
+Players Legal Buildings are: %s,Zerg_Lair
+Players Legal Buildings are: %s,Zerg_Hive
+Players Legal Buildings are: %s,Zerg_Hydralisk_Den
+Players Legal Buildings are: %s,Zerg_Greater_Spire
+Players Legal Buildings are: %s,Zerg_Queens_Nest
+Players Legal Buildings are: %s,Zerg_Evolution_Chamber
+Players Legal Buildings are: %s,Zerg_Ultralisk_Cavern
+Players Legal Buildings are: %s,Zerg_Spire
+Players Legal Buildings are: %s,Zerg_Spawning_Pool
+Players Legal Buildings are: %s,Zerg_Creep_Colony
+Players Legal Buildings are: %s,Zerg_Spore_Colony
+Players Legal Buildings are: %s,Zerg_Sunken_Colony
+Players Legal combatants are: %s,Zerg_Zergling
+Players Legal combatants are: %s,Zerg_Hydralisk
+Players Legal combatants are: %s,Zerg_Ultralisk
+Players Legal combatants are: %s,Zerg_Mutalisk
+Players Legal combatants are: %s,Zerg_Guardian
+Players Legal combatants are: %s,Zerg_Scourge
+Players Legal combatants are: %s,Zerg_Devourer
+Players Legal combatants are: %s,Zerg_Lurker
+Players techs are: %s,Lurker_Aspect
+Players upgrades are: %s,Zerg_Carapace
+Players upgrades are: %s,Zerg_Flyer_Carapace
+Players upgrades are: %s,Zerg_Melee_Attacks
+Players upgrades are: %s,Zerg_Missile_Attacks
+Players upgrades are: %s,Zerg_Flyer_Attacks
+Players upgrades are: %s,Pneumatized_Carapace
+Players upgrades are: %s,Metabolic_Boost
+Players upgrades are: %s,Adrenal_Glands
+Players upgrades are: %s,Muscular_Augments
+Players upgrades are: %s,Grooved_Spines
+Players upgrades are: %s,Chitinous_Plating
+Players upgrades are: %s,Anabolic_Synthesis
+Players upgrades are: %s,None
+The matchup is Protoss vs Unknown
+selectedBuild
+Parsed LearningFile, size = %d,13
+Selecting Best Build.
+Enumerating Builds Within BuildTableName: %s,Lurker
+Enumerating Builds Within BuildTableName: %s,Muta
+Enumerating Builds Within BuildTableName: %s,fivePool
+On Start: Build, win, loss:,Lurker,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Lurker,0,0,13,1.79769e+308
+Build: %s is rated %d,Lurker,1.79769e+308
+On Start: Build, win, loss:,Muta,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,Muta,11,2,0,6.04402
+Build: %s is rated %d,Muta,6.04402
+On Start: Build, win, loss:,fivePool,0,0
+Game that matched: Build, win, loss, unmatched, UCB:,fivePool,0,0,13,1.79769e+308
+Build: %s is rated %d,fivePool,1.79769e+308
+New best Build:,Muta
+New best Build:,Lurker
+Trying Build Order: %s,Muta

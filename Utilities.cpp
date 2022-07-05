@@ -127,7 +127,7 @@ bool CUNYAIModule::isFightingUnit(const UnitType &unittype)
 }
 
 
-void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string label)
+void CUNYAIModule::onFrameWritePlayerModel(const PlayerModel &player, const string label)
 {
     if constexpr(ANALYSIS_MODE) {
         ofstream output; // Prints to brood war file while in the WRITE file.
@@ -233,7 +233,7 @@ void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string labe
                 }
             }
 
-            output.open(learned_plan.writeDirectory + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
+            output.open(learnedPlan.getWriteDir() + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
 
             output << label << " Frame Count " << Broodwar->getFrameCount() << endl;
             output << " Unit Types " << smashed_unit_types << endl;

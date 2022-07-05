@@ -14,6 +14,7 @@
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\BWEB\BWEB.h"
 #include "Source\BaseManager.h"
+#include "Source\Build.h"
 #include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing
@@ -39,14 +40,12 @@ bool CUNYAIModule::tech_starved = false;
 bool CUNYAIModule::supply_starved = false;
 bool CUNYAIModule::gas_starved = false;
 
-double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
-double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
-double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
-double CUNYAIModule::alpha_army_original = 0;
-double CUNYAIModule::alpha_tech_original = 0;
-double CUNYAIModule::alpha_econ_original = 0;
-double CUNYAIModule::supply_ratio; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
-double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spending but will be matched with supply.
+//double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
+//double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
+//double CUNYAIModule::alpha_army_original = 0;
+//double CUNYAIModule::alpha_tech_original = 0;
+//double CUNYAIModule::alpha_econ_original = 0;
+
 PlayerModel CUNYAIModule::friendly_player_model;
 PlayerModel CUNYAIModule::enemy_player_model;
 PlayerModel CUNYAIModule::neutral_player_model;
@@ -56,11 +55,20 @@ CombatManager CUNYAIModule::combat_manager;
 FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
 TechManager CUNYAIModule::techmanager;
 AssemblyManager CUNYAIModule::assemblymanager;
-BuildingGene CUNYAIModule::buildorder; //
 Reservation CUNYAIModule::my_reservation;
-LearningManager CUNYAIModule::learned_plan;
+LearningManager CUNYAIModule::learnedPlan;
 WorkerManager CUNYAIModule::workermanager;
 BaseManager CUNYAIModule::basemanager;
+
+double CUNYAIModule::supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+double CUNYAIModule::gas_proportion = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
+double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
+
+//initialize clock values.
+int CUNYAIModule::short_delay = 0;
+int CUNYAIModule::med_delay = 0;
+int CUNYAIModule::long_delay = 0;
+
 
 void CUNYAIModule::onStart()
 {
@@ -126,38 +134,16 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    learned_plan = LearningManager();
-    learned_plan.confirmLearningFilesPresent();
+    learnedPlan.onStart();
 
-    //if (PY_RF_LEARNING) {
-    //    learned_plan.initializeRFLearning();
-    //}
-    if (GENETIC_HISTORY) {
-        learned_plan.initializeGeneticLearning();
-    }
-    if (RANDOM_PLAN) {
-        learned_plan.initializeRandomStart();
-    }
-    if (TEST_MODE) {
-        learned_plan.initializeTestStart();
-    }
-    if (UNIT_WEIGHTING) {
-        learned_plan.initializeGAUnitWeighting(); // in progress.
-    }
-    //if (PY_UNIT_WEIGHTING) {
-    //    learned_plan.initializeCMAESUnitWeighting(); // in progress.
-    //}
 
-    gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
-    supply_ratio = learned_plan.supply_ratio_t0; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
+    gas_proportion = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::GasProportion); //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
+    supply_ratio = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::SupplyRatio); //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
     //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    alpha_army_original = friendly_player_model.spending_model_.alpha_army = learned_plan.a_army_t0; // army starved parameter.
-    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = learned_plan.a_econ_t0; // econ starved parameter.
-    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = learned_plan.a_tech_t0; // tech starved parameter.
-    adaptation_rate = learned_plan.r_out_t0; //rate of worker growth.
-
-    buildorder.getInitialBuildOrder(learned_plan.build_order_t0);  //get initial build order.
-    Diagnostics::DiagnosticWrite(string("The build order is: " + learned_plan.build_order_t0).c_str());
+    friendly_player_model.spending_model_.alpha_army = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::ArmyAlpha); // army starved parameter.
+    friendly_player_model.spending_model_.alpha_econ = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::EconAlpha); // econ starved parameter.
+    friendly_player_model.spending_model_.alpha_tech = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::TechAlpha); // tech starved parameter.
+    friendly_player_model.spending_model_.adoptionRate = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::AdaptationRate); // rate of adaptation.
 
     //update Map Grids
     currentMapInventory.updateBuildablePos();
@@ -167,119 +153,43 @@ void CUNYAIModule::onStart()
     //current_MapInventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_MapInventory.front_line_base_, current_MapInventory.map_out_from_home_);
     //inventory.updateMapChokes();
 
-    //update timers.
-    short_delay = 0;
-    med_delay = 0;
-    long_delay = 0;
     my_reservation = Reservation();
 
     //friendly_player_model.setLockedOpeningValues();
 
-    // Testing Build Order content intenstively.
-    ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open( (learned_plan.writeDirectory + "BuildOrderFailures.txt").c_str(), ios_base::app);
-    string print_value = "";
-    print_value += learned_plan.build_order_t0;
-    output << "Trying Build Order" << print_value << endl;
-    output.close();
+    //if (RIP_REPLAY) {
+    //    string src = learnedPlan.readDirectory_ + Broodwar->enemy()->getName() + ".txt";
+    //    string dst = learnedPlan.writeDirectory_ + Broodwar->enemy()->getName() + ".txt";
+    //    rename(src.c_str(), dst.c_str());
 
+    //    src = learnedPlan.readDirectory_ + Broodwar->enemy()->getName() + "casualties" + ".txt";
+    //    dst = learnedPlan.writeDirectory_ + Broodwar->enemy()->getName() + "casualties" + ".txt";
+    //    rename(src.c_str(), dst.c_str());
 
-    if (RIP_REPLAY) {
-        string src = learned_plan.readDirectory + Broodwar->enemy()->getName() + ".txt";
-        string dst = learned_plan.writeDirectory + Broodwar->enemy()->getName() + ".txt";
-        rename(src.c_str(), dst.c_str());
+    //    src = learnedPlan.readDirectory_ + Broodwar->self()->getName() + ".txt";
+    //    dst = learnedPlan.writeDirectory_ + Broodwar->self()->getName() + ".txt";
+    //    rename(src.c_str(), dst.c_str());
 
-        src = learned_plan.readDirectory + Broodwar->enemy()->getName() + "casualties" + ".txt";
-        dst = learned_plan.writeDirectory + Broodwar->enemy()->getName() + "casualties" + ".txt";
-        rename(src.c_str(), dst.c_str());
+    //    src = learnedPlan.readDirectory_ + Broodwar->self()->getName() + "casualties" + ".txt";
+    //    dst = learnedPlan.writeDirectory_ + Broodwar->self()->getName() + "casualties" + ".txt";
+    //    rename(src.c_str(), dst.c_str());
 
-        src = learned_plan.readDirectory + Broodwar->self()->getName() + ".txt";
-        dst = learned_plan.writeDirectory + Broodwar->self()->getName() + ".txt";
-        rename(src.c_str(), dst.c_str());
+    //    if (std::filesystem::exists(learnedPlan.readDirectory_))
+    //        Diagnostics::DiagnosticWrite( "We found a READ folder");
+    //    if (std::filesystem::exists(learnedPlan.writeDirectory_))
+    //        Diagnostics::DiagnosticWrite( "We found a WRITE folder");
 
-        src = learned_plan.readDirectory + Broodwar->self()->getName() + "casualties" + ".txt";
-        dst = learned_plan.writeDirectory + Broodwar->self()->getName() + "casualties" + ".txt";
-        rename(src.c_str(), dst.c_str());
-
-        if (std::filesystem::exists(learned_plan.readDirectory))
-            Diagnostics::DiagnosticWrite( "We found a READ folder");
-        if (std::filesystem::exists(learned_plan.writeDirectory))
-            Diagnostics::DiagnosticWrite( "We found a WRITE folder");
-
-    }
+    //}
 
 }
 
 void CUNYAIModule::onEnd(bool isWinner)
 {// Called when the game ends
-
-    ofstream output; // Prints to brood war file while in the WRITE file.
-    if (std::filesystem::exists(learned_plan.writeDirectory + "history.txt")) {
-        //std::cout << "Writing to history at game end..." << std::endl;
+    try {
+        learnedPlan.onEnd(isWinner);
     }
-    output.open(learned_plan.writeDirectory + "history.txt", ios_base::app);
-    string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << gas_proportion << ","
-        << supply_ratio << ','
-        << alpha_army_original << ','
-        << alpha_econ_original << ','
-        << alpha_tech_original << ','
-        << adaptation_rate << ','
-        << CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str()) << ","
-        << isWinner << ','
-        << short_delay << ','
-        << med_delay << ','
-        << long_delay << ','
-        << CUNYAIModule::safeString(opponent_name) << ','
-        << CUNYAIModule::safeString(Broodwar->mapFileName().c_str()) << ','
-        << round(enemy_player_model.getCumArmy() * 1000000) / 1000000 << ','
-        << round(enemy_player_model.getCumEco() * 1000000) / 1000000 << ','
-        << round(enemy_player_model.getCumTech() * 1000000) / 1000000 << ','
-        << buildorder.initial_building_gene_ << ","
-        << Broodwar->self()->getBuildingScore() << ','
-        << Broodwar->self()->getKillScore() << ','
-        << Broodwar->self()->getRazingScore() << ','
-        << Broodwar->self()->getUnitScore() << ','
-        << enemy_player_model.casualties_.detector_count_ + enemy_player_model.units_.detector_count_ << ','
-        << enemy_player_model.casualties_.stock_fliers_ + enemy_player_model.units_.stock_fliers_ << ','
-        << Broodwar->elapsedTime()
-        << endl;
-    ;
-    output.close();
-
-    if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        try {
-            std::filesystem::copy(learned_plan.writeDirectory, learned_plan.readDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
-            Diagnostics::DiagnosticWrite("Successfully copied from WRITE to READ folder.");
-        }
-        catch (...) {
-            Diagnostics::DiagnosticWrite("Couldn't copy from WRITE to READ folder.");
-        }
-    }
-
-    if (!buildorder.isEmptyBuildOrder()) {
-        ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
-        string print_value = "";
-
-        print_value += buildorder.building_gene_.front().getResearch().c_str();
-        print_value += buildorder.building_gene_.front().getUnit().c_str();
-        print_value += buildorder.building_gene_.front().getUpgrade().c_str();
-
-        output << "Couldn't build: " << print_value << endl;
-        output << "Hatches Left?:" << CUNYAIModule::basemanager.getBaseCount() << endl;
-        output << "Win:" << isWinner << endl;
-        output.close();
-    }; // testing build order stuff intensively.
-
-    if (UNIT_WEIGHTING) {
-        ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(learned_plan.writeDirectory + "UnitWeights.txt", ios_base::app);
-        for (auto uw : learned_plan.unit_weights) {
-            output << uw.second << ",";
-        }
-        output << learned_plan.getOutcomeScore(isWinner, Broodwar->self()->getBuildingScore(), Broodwar->self()->getKillScore(), Broodwar->self()->getRazingScore(),Broodwar->self()->getBuildingScore()) << endl;
-        output.close();
+    catch (...) {
+        Diagnostics::DiagnosticWrite("Program Crashed in OnEnd.");
     }
 }
 
@@ -345,14 +255,13 @@ void CUNYAIModule::onFrame()
     friendly_player_model.units_.pullFromFAP(*MCfap.getState().first);
     enemy_player_model.units_.pullFromFAP(*MCfap.getState().second);
 
-    writePlayerModel(friendly_player_model, "friendly");
-    writePlayerModel(enemy_player_model, "enemy");
+    onFrameWritePlayerModel(friendly_player_model, "friendly");
+    onFrameWritePlayerModel(enemy_player_model, "enemy");
 
-    buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
     gas_starved = (workermanager.checkGasOutlet() && workermanager.getMinWorkers() > workermanager.getGasWorkers() //You must have more mineral gatherers than gas miners, otherwise you are simply eco starved.
         && (currentMapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
-        (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
+        !learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && (my_reservation.getExcessGas() <= 0 || (learnedPlan.inspectCurrentBuild().getRemainingGas() >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (currentMapInventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
@@ -407,44 +316,11 @@ void CUNYAIModule::onFrame()
         ResourceInventory geyser_inventory = ResourceInventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         currentMapInventory.getExpoTilePositions(); // prime this once on game start.
-
-
-        if (INF_MONEY) {
-            Broodwar->sendText("show me the money");
-        }
-        if (MAP_REVEAL) {
-            Broodwar->sendText("black sheep wall");
-        }
-        if (NEVER_DIE) {
-            Broodwar->sendText("power overwhelming");
-        }
-        if (INSTANT_WIN) {
-            Broodwar->sendText("there is no cow level");
-        }
-
-        if (!(INF_MONEY || MAP_REVEAL || NEVER_DIE || INSTANT_WIN)) {
-            Broodwar->sendText("Cough Cough: Power Overwhelming! (Please work!)");
-        }
-
-        for (auto i : CUNYAIModule::friendly_player_model.getBuildingCartridge())
-            Diagnostics::DiagnosticWrite("Our Legal Buildings are: %s", i.first.c_str());
-
-        for (auto i : CUNYAIModule::friendly_player_model.getCombatUnitCartridge())
-            Diagnostics::DiagnosticWrite("Our Legal combatants are: %s", i.first.c_str());
-
-        for (auto i : CUNYAIModule::friendly_player_model.getTechCartridge())
-            Diagnostics::DiagnosticWrite("Our techs are: %s", i.first.c_str());
-
-        for (auto i : CUNYAIModule::friendly_player_model.getUpgradeCartridge())
-            Diagnostics::DiagnosticWrite("Our upgrades are: %s", i.first.c_str());
+        
+        Diagnostics::issueCheats();
     }
 
-    if (t_game % (24 * 60) == 0 && RIP_REPLAY) {
-        friendly_player_model.units_.printUnitInventory(Broodwar->self());
-        friendly_player_model.casualties_.printUnitInventory(Broodwar->self(), "casualties");
-        enemy_player_model.units_.printUnitInventory(Broodwar->enemy());
-        enemy_player_model.casualties_.printUnitInventory(Broodwar->enemy(), "casualties");
-    }
+    Diagnostics::onFrameWritePlayerModel(friendly_player_model);
 
     techmanager.updateCanMakeTechExpenditures();
     techmanager.updateOptimalTech();
@@ -454,34 +330,16 @@ void CUNYAIModule::onFrame()
     assemblymanager.updatePotentialBuilders();
 
 
-    if (buildorder.building_gene_.empty()) {
-        buildorder.ever_clear_ = true;
-    }
-    else {
+    if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
         bool need_gas_now = false;
-        if (buildorder.building_gene_.front().getResearch()) {
-            if (buildorder.building_gene_.front().getResearch().gasPrice()) {
-                buildorder.building_gene_.front().getResearch().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
-            }
-        }
-        else if (buildorder.building_gene_.front().getUnit()) {
-            if (buildorder.building_gene_.front().getUnit().gasPrice()) {
-                buildorder.building_gene_.front().getUnit().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
-            }
-        }
-        else if (buildorder.building_gene_.front().getUpgrade()) {
-            if (buildorder.building_gene_.front().getUpgrade().gasPrice()) {
-                buildorder.building_gene_.front().getUpgrade().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
-            }
-        }
-
+        learnedPlan.inspectCurrentBuild().getNextGasCost() ? need_gas_now = true : need_gas_now = false;
         bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
         for (auto r : CUNYAIModule::my_reservation.getReservedBuildings()) {
             reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
         }
         if (need_gas_now && no_extractor && !reserved_extractor) {
-            buildorder.clearRemainingBuildOrder(false);
+            learnedPlan.inspectCurrentBuild().clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticWrite("Uh oh, something's went wrong with building an extractor!");
         }
     }
@@ -822,12 +680,12 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
         }
 
-        if (!buildorder.isEmptyBuildOrder()) {
+        if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
-                buildorder.retryBuildOrderElement(UnitTypes::Zerg_Overlord);
+                learnedPlan.inspectCurrentBuild().retryBuildOrderElement(UnitTypes::Zerg_Overlord);
             }
             else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
-                buildorder.clearRemainingBuildOrder( false );
+                learnedPlan.inspectCurrentBuild().clearRemainingBuildOrder( false );
                 Diagnostics::DiagnosticWrite("Uh oh! A drone has died and this means we need to ditch our build order!");
             }
         }

@@ -28,7 +28,7 @@ bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
         gasReserve_ += type.gasPrice();
         supplyReserve_ += type.supplyRequired();
         lastBuilderSent_ = Broodwar->getFrameCount();
-        CUNYAIModule::buildorder.updateRemainingBuildOrder(type);
+        CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(type);
     }
 
     return safe;
@@ -41,7 +41,7 @@ void Reservation::addReserveSystem(UpgradeType up)
     int level = Broodwar->self()->getUpgradeLevel(up);
     minReserve_ += up.mineralPrice(level);
     gasReserve_ += up.gasPrice(level);
-    CUNYAIModule::buildorder.updateRemainingBuildOrder(up);
+    CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(up);
 }
 
 bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
@@ -52,7 +52,7 @@ bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
         gasReserve_ += outputUnit.gasPrice();
         supplyReserve_ += outputUnit.supplyRequired();
         larvaReserve_ += originUnit->getType() == UnitTypes::Zerg_Larva;
-        CUNYAIModule::buildorder.updateRemainingBuildOrder(outputUnit);
+        CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(outputUnit);
     }
 
     return inserted;
@@ -61,7 +61,7 @@ bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
 bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservationBuildingMap_.find(pos);
     if (it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty()) {
-        if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_building) CUNYAIModule::buildorder.retryBuildOrderElement(type);
+        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_building) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(type);
         reservationBuildingMap_.erase(pos);
         return true;
     }
@@ -71,7 +71,7 @@ bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retr
 bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
     auto it = find(reservedUpgrades_.begin(), reservedUpgrades_.end(), up);
     if (it != reservedUpgrades_.end() && !reservedUpgrades_.empty()) {
-        if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::buildorder.retryBuildOrderElement(up);
+        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(up);
         reservedUpgrades_.erase(it);
         return true;
     }
@@ -81,7 +81,7 @@ bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
 bool Reservation::removeReserveSystem(UnitType type, bool retry_this_unit = false) {
     for (auto i = reservationUnits_.begin(); i != reservationUnits_.end(); i++) {
         if (i->second == type) {
-            if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::buildorder.retryBuildOrderElement(type);
+            if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(type);
             reservationUnits_.erase(i);
             return true;
         }

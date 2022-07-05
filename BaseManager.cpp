@@ -180,8 +180,8 @@ void BaseManager::updateBases()
             b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::currentMapInventory.getEnemyBaseAir()));
         }
 
-        if (enemy_unit_count_ >= 2 && !CUNYAIModule::buildorder.ever_clear_) {
-            CUNYAIModule::buildorder.clearRemainingBuildOrder(false);
+        if (enemy_unit_count_ >= 2 && !CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticWrite("Clearing Build order since there are %d baddies nearby.", enemy_unit_count_);
         }
 
@@ -305,12 +305,12 @@ bool Base::isSunkenNeeded()
     set<int> distance_to_alarming_ground;
     bool they_are_moving_out_ground = false;
 
-    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseGround());
-    alarming_enemy_ground.updateUnitInventorySummary();
-
     for (auto & b : CUNYAIModule::basemanager.getBases()) {
         distance_to_alarming_ground.insert(b.second.distance_to_ground_);
     }
+
+    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, this->unit_->getPosition());
+    alarming_enemy_ground.updateUnitInventorySummary();
 
     bool too_close_by_ground = false;
     if (distance_to_alarming_ground.size() >= 2 || this->distance_to_ground_ < 640) { // if we have two+ bases, defend 2 of them.

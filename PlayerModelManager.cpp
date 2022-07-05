@@ -24,6 +24,8 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
     units_.purgeBrokenUnits();
     units_.updateUnitInventorySummary();
     casualties_.updateUnitInventorySummary();
+    firstAirThreatSeen_ = (firstAirThreatSeen_ == 0 && units_.stock_fliers_ > 0) ? Broodwar->getFrameCount() : firstAirThreatSeen_;
+    firstDetectorSeen_ = (firstDetectorSeen_ == 0 && units_.detector_count_ > 0) ? Broodwar->getFrameCount() : firstDetectorSeen_;
 
     // Update Researches
     researches_.updateResearch(other_player);
@@ -83,13 +85,13 @@ void PlayerModel::updateSelfOnFrame()
         if (Broodwar->getFrameCount() % (30 * 24) == 0) {
             //Update existing CD functions to more closely mirror opponent. Do every 15 sec or so.
             if (!CUNYAIModule::enemy_player_model.units_.unit_map_.empty()) {
-                spending_model_.enemy_mimic(CUNYAIModule::enemy_player_model, CUNYAIModule::adaptation_rate);
+                spending_model_.enemy_mimic(CUNYAIModule::enemy_player_model);
                 //Diagnostics::DiagnosticWrite("Matching expenditures,L:%4.2f to %4.2f,K:%4.2f to %4.2f,T:%4.2f to %4.2f", spending_model_.alpha_econ, target_player.spending_model_.alpha_econ, spending_model_.alpha_army, target_player.spending_model_.alpha_army, spending_model_.alpha_tech, target_player.spending_model_.alpha_army);
             }
             else {
-                spending_model_.alpha_army = CUNYAIModule::alpha_army_original;
-                spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original;
-                spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original;
+                spending_model_.alpha_army = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::ArmyAlpha);
+                spending_model_.alpha_econ = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::EconAlpha);
+                spending_model_.alpha_tech = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::TechAlpha);
                 //Diagnostics::DiagnosticWrite("Reseting expenditures,%4.2f, %4.2f,%4.2f", spending_model_.alpha_econ, spending_model_.alpha_army, spending_model_.alpha_tech);
             }
         }
@@ -688,18 +690,6 @@ void PlayerModel::updateUnit_Counts() {
     unit_incomplete_ = unit_incomplete_temp;
 }
 
-// sample command set to explore zergling rushing.
-void PlayerModel::setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order) {
-
-    // sample command set to explore zergling rushing.
-    spending_model_.alpha_army = CUNYAIModule::alpha_army_original = alpha_army;
-    spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = alpha_econ;
-    spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = alpha_tech;
-
-    CUNYAIModule::gas_proportion = gas_proportion;
-    CUNYAIModule::supply_ratio = supply_ratio;
-    CUNYAIModule::buildorder = BuildingGene(build_order.c_str());
-}
 
 const double PlayerModel::getCumArmy()
 {
@@ -807,6 +797,16 @@ double PlayerModel::getEstimatedUnseenWorkers()
 double PlayerModel::getEstimatedWorkers()
 {
     return this->estimated_workers_;
+}
+
+int PlayerModel::getFirstAirSeen()
+{
+    return firstAirThreatSeen_;
+}
+
+int PlayerModel::getFirstDetectorSeen()
+{
+    return firstDetectorSeen_;
 }
 
 Player PlayerModel::getPlayer()

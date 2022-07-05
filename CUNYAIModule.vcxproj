@@ -108,6 +108,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyManager.cpp" />
+    <ClCompile Include="Build.cpp" />
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="CUNYAIModule.cpp" />
@@ -135,6 +136,7 @@
   <ItemGroup>
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\BaseManager.h" />
+    <ClInclude Include="Source\Build.h" />
     <ClInclude Include="Source\BWEB\Block.h" />
     <ClInclude Include="Source\BWEB\BWEB.h" />
     <ClInclude Include="Source\BWEB\JPS.h" />

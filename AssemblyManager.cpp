@@ -4,10 +4,11 @@
 #include "Source\AssemblyManager.h"
 #include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
-#include "Source/Diagnostics.h"
+#include "Source\Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\PlayerModelManager.h" // needed for cartidges.
 #include "Source\BWEB\BWEB.h"
+#include "Source\Build.h"
 #include <bwem.h>
 #include <iterator>
 #include <numeric>
@@ -43,8 +44,8 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
     if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
-            CUNYAIModule::buildorder.updateRemainingBuildOrder(building); // Remove from reserve systems.
-            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(building); // Remove from reserve systems.
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->announceBuildingAttempt(building);
             return CUNYAIModule::updateUnitBuildIntent(unit, building, unit->getTilePosition());
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically. Checks willing and able within loop.
@@ -69,7 +70,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_){
             TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
             if (CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
-                CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                CUNYAIModule::CUNYAIModule::learnedPlan.inspectCurrentBuild().announceBuildingAttempt(building);
                 unit->stop();
                 return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
             } //extractors must have buildings nearby or we shouldn't build them.
@@ -109,11 +110,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, max_travel_distance))
                 return true;
     }
-
-    //if (CUNYAIModule::buildorder.checkBuildingNextInBO(building)) {
-        //Diagnostics::DiagnosticWrite("I can't place a %s for you. Freeze here please!...", building.c_str());
-        //buildorder.updateRemainingBuildOrder(building); // skips the building.
-    //}
 
     return false;
 }
@@ -161,7 +157,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
         // If we found a viable base.
         if (base_expo != TilePositions::Origin) {
             if (CUNYAIModule::my_reservation.addReserveSystem(base_expo, Broodwar->self()->getRace().getResourceDepot())) {
-                CUNYAIModule::buildorder.announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
+                CUNYAIModule::CUNYAIModule::learnedPlan.inspectCurrentBuild().announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
                 return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), base_expo);
             }
         }
@@ -194,8 +190,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     UnitInventory u_loc;
 
     // Trust the build order. If there is a build order and it wants a building, build it!
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
-        UnitType next_in_build_order = CUNYAIModule::buildorder.building_gene_.front().getUnit();
+    if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
+        UnitType next_in_build_order = CUNYAIModule::learnedPlan.inspectCurrentBuild().getNext().getUnit();
         if (!next_in_build_order.isBuilding()) return false;
         if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::currentMapInventory);
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
@@ -404,14 +400,14 @@ bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
 
-    if (CUNYAIModule::buildorder.checkBuildingNextInBO(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hydralisk) == 0) {
-        CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
+    if (CUNYAIModule::learnedPlan.inspectCurrentBuild().checkIfNextInBuild(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hydralisk) == 0) {
+        CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
         Diagnostics::DiagnosticWrite("Reactionary Hydralisk. Must have lost one.");
         return true;
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoalArmy_ || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling) && is_larva) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Lurker) && is_hydra) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Guardian) && is_muta)) {
+    if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() || subgoalArmy_ || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling) && is_larva) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Lurker) && is_hydra) || (CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Guardian) && is_muta)) {
         is_building = AssemblyManager::reserveOptimalCombatUnit(morph_canidate, assemblyCycle_);
     }
 
@@ -423,14 +419,14 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate, const bool 
 
     if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony) || force_spore) {
         if (morph_canidate->morph(UnitTypes::Zerg_Spore_Colony)) {
-            CUNYAIModule::buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Spore_Colony);
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(UnitTypes::Zerg_Spore_Colony);
             return true;
         }
         return false;
     }
     else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony) || force_sunken) {
         if (morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony)) {
-            CUNYAIModule::buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(UnitTypes::Zerg_Sunken_Colony);
                 return true;
         }
         return false;
@@ -672,7 +668,7 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
 
     //Then build it:
     if (buildSpot != TilePositions::Origin && CUNYAIModule::my_reservation.addReserveSystem(buildSpot, building)) {
-        CUNYAIModule::buildorder.announceBuildingAttempt(building);
+        CUNYAIModule::learnedPlan.inspectCurrentBuild().announceBuildingAttempt(building);
         bestBuilder.bwapi_unit_->stop();
         return CUNYAIModule::updateUnitBuildIntent(bestBuilder.bwapi_unit_, building, buildSpot);
     }
@@ -1357,7 +1353,7 @@ TilePosition AssemblyManager::updateExpoPosition()
 
             score_temp = CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelevant.
 
-            bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
+            bool want_more_gas = CUNYAIModule::learnedPlan.inspectCurrentBuild().countTimesInBuildQueue(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
             bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
 
             bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
@@ -1442,11 +1438,11 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 }
 
 bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && my_reservation.canReserveWithExcessResource(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && my_reservation.canReserveWithExcessResource(ut) && (learnedPlan.inspectCurrentBuild().checkIfNextInBuild(ut) || (extra_criteria && CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && (learnedPlan.inspectCurrentBuild().checkIfNextInBuild(ut) || (extra_criteria && learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
@@ -1466,308 +1462,174 @@ bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) 
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuildingNextInBO(ut);
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && learnedPlan.inspectCurrentBuild().checkIfNextInBuild(ut);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
-    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBO(up);
+    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && learnedPlan.inspectCurrentBuild().checkIfNextInBuild(up);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
-    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBO(up);
+    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && learnedPlan.inspectCurrentBuild().checkIfNextInBuild(up);
 }
 
-void BuildingGene::updateRemainingBuildOrder(const UnitType &ut) {
-    if (!building_gene_.empty()) {
-        if (building_gene_.front().getUnit() == ut) {
-            building_gene_.erase(building_gene_.begin());
-        }
-    }
-}
+//void Build::setInitialBuildOrder(string s) {
+//
+//    building_gene_.clear();
+//
+//    initial_building_gene_ = s;
+//
+//    std::stringstream ss(s);
+//    std::istream_iterator<std::string> begin(ss);
+//    std::istream_iterator<std::string> end;
+//    std::vector<std::string> build_string(begin, end);
+//
+//    BuildOrderElement hatch = BuildOrderElement(UnitTypes::Zerg_Hatchery);
+//    BuildOrderElement extract = BuildOrderElement(UnitTypes::Zerg_Extractor);
+//    BuildOrderElement drone = BuildOrderElement(UnitTypes::Zerg_Drone);
+//    BuildOrderElement ovi = BuildOrderElement(UnitTypes::Zerg_Overlord);
+//    BuildOrderElement pool = BuildOrderElement(UnitTypes::Zerg_Spawning_Pool);
+//    BuildOrderElement evo = BuildOrderElement(UnitTypes::Zerg_Evolution_Chamber);
+//    BuildOrderElement speed = BuildOrderElement(UpgradeTypes::Metabolic_Boost);
+//    BuildOrderElement ling = BuildOrderElement(UnitTypes::Zerg_Zergling);
+//    BuildOrderElement creep = BuildOrderElement(UnitTypes::Zerg_Creep_Colony);
+//    BuildOrderElement sunken = BuildOrderElement(UnitTypes::Zerg_Sunken_Colony);
+//    BuildOrderElement spore = BuildOrderElement(UnitTypes::Zerg_Spore_Colony);
+//    BuildOrderElement lair = BuildOrderElement(UnitTypes::Zerg_Lair);
+//    BuildOrderElement hive = BuildOrderElement(UnitTypes::Zerg_Hive);
+//    BuildOrderElement spire = BuildOrderElement(UnitTypes::Zerg_Spire);
+//    BuildOrderElement greater_spire = BuildOrderElement(UnitTypes::Zerg_Greater_Spire);
+//    BuildOrderElement devourer = BuildOrderElement(UnitTypes::Zerg_Devourer);
+//    BuildOrderElement muta = BuildOrderElement(UnitTypes::Zerg_Mutalisk);
+//    BuildOrderElement hydra = BuildOrderElement(UnitTypes::Zerg_Hydralisk);
+//    BuildOrderElement lurker = BuildOrderElement(UnitTypes::Zerg_Lurker);
+//    BuildOrderElement hydra_den = BuildOrderElement(UnitTypes::Zerg_Hydralisk_Den);
+//    BuildOrderElement queens_nest = BuildOrderElement(UnitTypes::Zerg_Queens_Nest);
+//    BuildOrderElement lurker_tech = BuildOrderElement(TechTypes::Lurker_Aspect);
+//    BuildOrderElement grooved_spines = BuildOrderElement(UpgradeTypes::Grooved_Spines);
+//    BuildOrderElement muscular_augments = BuildOrderElement(UpgradeTypes::Muscular_Augments);
+//
+//    for (auto &build : build_string) {
+//        if (build == "hatch") {
+//            building_gene_.push_back(hatch);
+//        }
+//        else if (build == "extract") {
+//            building_gene_.push_back(extract);
+//        }
+//        else if (build == "drone") {
+//            building_gene_.push_back(drone);
+//        }
+//        else if (build == "ovi") {
+//            building_gene_.push_back(ovi);
+//        }
+//        else if (build == "overlord") {
+//            building_gene_.push_back(ovi);
+//        }
+//        else if (build == "pool") {
+//            building_gene_.push_back(pool);
+//        }
+//        else if (build == "evo") {
+//            building_gene_.push_back(evo);
+//        }
+//        else if (build == "speed") {
+//            building_gene_.push_back(speed);
+//        }
+//        else if (build == "ling") {
+//            building_gene_.push_back(ling);
+//        }
+//        else if (build == "creep") {
+//            building_gene_.push_back(creep);
+//        }
+//        else if (build == "sunken") {
+//            building_gene_.push_back(sunken);
+//        }
+//        else if (build == "spore") {
+//            building_gene_.push_back(spore);
+//        }
+//        else if (build == "lair") {
+//            building_gene_.push_back(lair);
+//        }
+//        else if (build == "hive") {
+//            building_gene_.push_back(hive);
+//        }
+//        else if (build == "spire") {
+//            building_gene_.push_back(spire);
+//        }
+//        else if (build == "greater_spire") {
+//            building_gene_.push_back(greater_spire);
+//        }
+//        else if (build == "devourer") {
+//            building_gene_.push_back(devourer);
+//        }
+//        else if (build == "muta") {
+//            building_gene_.push_back(muta);
+//        }
+//        else if (build == "lurker_tech") {
+//            building_gene_.push_back(lurker_tech);
+//        }
+//        else if (build == "hydra") {
+//            building_gene_.push_back(hydra);
+//        }
+//        else if (build == "lurker") {
+//            building_gene_.push_back(lurker);
+//        }
+//        else if (build == "hydra_den") {
+//            building_gene_.push_back(hydra_den);
+//        }
+//        else if (build == "queens_nest") {
+//            building_gene_.push_back(queens_nest);
+//        }
+//        else if (build == "grooved_spines") {
+//            building_gene_.push_back(grooved_spines);
+//        }
+//        else if (build == "muscular_augments") {
+//            building_gene_.push_back(muscular_augments);
+//        }
+//        else if (build == "5pool") { //shortcuts.
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(pool);
+//        }
+//        else if (build == "7pool") {
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(pool);
+//        }
+//        else if (build == "9pool") {
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(pool);
+//        }
+//        else if (build == "12pool") {
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(ovi);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(drone);
+//            building_gene_.push_back(pool);
+//        }
+//        else if (build == "12hatch") {
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(ovi);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(drone);
+//        building_gene_.push_back(hatch);
+//        }
+//    }
+//    getCumulativeResources();
+//}
 
-void BuildingGene::updateRemainingBuildOrder(const UpgradeType &ups) {
-    if (!building_gene_.empty()) {
-        if (building_gene_.front().getUpgrade() == ups) {
-            building_gene_.erase(building_gene_.begin());
-        }
-    }
-}
 
-void BuildingGene::updateRemainingBuildOrder(const TechType &research) {
-    if (!building_gene_.empty()) {
-        if (building_gene_.front().getResearch() == research) {
-            building_gene_.erase(building_gene_.begin());
-        }
-    }
-}
-
-void BuildingGene::announceBuildingAttempt(UnitType ut) {
-    if (ut.isBuilding()) {
-        last_build_order = ut;
-        Diagnostics::DiagnosticWrite("Building a %s", last_build_order.c_str());
-    }
-}
-
-bool BuildingGene::checkBuildingNextInBO(UnitType ut) {
-    // A building is not wanted at that moment if we have active builders or the timer is nonzero.
-    return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
-}
-
-int BuildingGene::countTimesInBO(UnitType ut) {
-    int count = 0;
-    for (auto g : building_gene_) {
-        if (g.getUnit() == ut) count++;
-    }
-    return count;
-}
-
-
-bool BuildingGene::checkUpgradeNextInBO(UpgradeType upgrade) {
-    // A building is not wanted at that moment if we have active builders or the timer is nonzero.
-    return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
-}
-
-bool BuildingGene::checkResearch_Desired(TechType research) {
-    // A building is not wanted at that moment if we have active builders or the timer is nonzero.
-    return !building_gene_.empty() && building_gene_.front().getResearch() == research;
-}
-
-bool BuildingGene::isEmptyBuildOrder() {
-    return building_gene_.empty();
-}
-
-void BuildingGene::addBuildOrderElement(const UpgradeType & ups)
-{
-    building_gene_.push_back(BuildOrderObject(ups));
-}
-
-void BuildingGene::addBuildOrderElement(const TechType & research)
-{
-    building_gene_.push_back(BuildOrderObject(research));
-}
-
-void BuildingGene::addBuildOrderElement(const UnitType & ut)
-{
-    building_gene_.push_back(BuildOrderObject(ut));
-}
-
-void BuildingGene::retryBuildOrderElement(const UnitType & ut)
-{
-    building_gene_.insert(building_gene_.begin(), BuildOrderObject(ut));
-}
-void BuildingGene::retryBuildOrderElement(const UpgradeType & up)
-{
-    building_gene_.insert(building_gene_.begin(), BuildOrderObject(up));
-}
-
-void BuildingGene::getCumulativeResources()
-{
-    cumulative_gas_ = 0;
-    cumulative_minerals_ = 0;
-    for (auto u : building_gene_) {
-        cumulative_gas_ += u.getResearch().gasPrice() + u.getUnit().gasPrice() + u.getUpgrade().gasPrice();
-        cumulative_minerals_ += u.getResearch().mineralPrice() + u.getUnit().mineralPrice() + u.getUpgrade().mineralPrice();
-    }
-}
-
-void BuildingGene::getInitialBuildOrder(string s) {
-
-    building_gene_.clear();
-
-    initial_building_gene_ = s;
-
-    std::stringstream ss(s);
-    std::istream_iterator<std::string> begin(ss);
-    std::istream_iterator<std::string> end;
-    std::vector<std::string> build_string(begin, end);
-
-    BuildOrderObject hatch = BuildOrderObject(UnitTypes::Zerg_Hatchery);
-    BuildOrderObject extract = BuildOrderObject(UnitTypes::Zerg_Extractor);
-    BuildOrderObject drone = BuildOrderObject(UnitTypes::Zerg_Drone);
-    BuildOrderObject ovi = BuildOrderObject(UnitTypes::Zerg_Overlord);
-    BuildOrderObject pool = BuildOrderObject(UnitTypes::Zerg_Spawning_Pool);
-    BuildOrderObject evo = BuildOrderObject(UnitTypes::Zerg_Evolution_Chamber);
-    BuildOrderObject speed = BuildOrderObject(UpgradeTypes::Metabolic_Boost);
-    BuildOrderObject ling = BuildOrderObject(UnitTypes::Zerg_Zergling);
-    BuildOrderObject creep = BuildOrderObject(UnitTypes::Zerg_Creep_Colony);
-    BuildOrderObject sunken = BuildOrderObject(UnitTypes::Zerg_Sunken_Colony);
-    BuildOrderObject spore = BuildOrderObject(UnitTypes::Zerg_Spore_Colony);
-    BuildOrderObject lair = BuildOrderObject(UnitTypes::Zerg_Lair);
-    BuildOrderObject hive = BuildOrderObject(UnitTypes::Zerg_Hive);
-    BuildOrderObject spire = BuildOrderObject(UnitTypes::Zerg_Spire);
-    BuildOrderObject greater_spire = BuildOrderObject(UnitTypes::Zerg_Greater_Spire);
-    BuildOrderObject devourer = BuildOrderObject(UnitTypes::Zerg_Devourer);
-    BuildOrderObject muta = BuildOrderObject(UnitTypes::Zerg_Mutalisk);
-    BuildOrderObject hydra = BuildOrderObject(UnitTypes::Zerg_Hydralisk);
-    BuildOrderObject lurker = BuildOrderObject(UnitTypes::Zerg_Lurker);
-    BuildOrderObject hydra_den = BuildOrderObject(UnitTypes::Zerg_Hydralisk_Den);
-    BuildOrderObject queens_nest = BuildOrderObject(UnitTypes::Zerg_Queens_Nest);
-    BuildOrderObject lurker_tech = BuildOrderObject(TechTypes::Lurker_Aspect);
-    BuildOrderObject grooved_spines = BuildOrderObject(UpgradeTypes::Grooved_Spines);
-    BuildOrderObject muscular_augments = BuildOrderObject(UpgradeTypes::Muscular_Augments);
-
-    for (auto &build : build_string) {
-        if (build == "hatch") {
-            building_gene_.push_back(hatch);
-        }
-        else if (build == "extract") {
-            building_gene_.push_back(extract);
-        }
-        else if (build == "drone") {
-            building_gene_.push_back(drone);
-        }
-        else if (build == "ovi") {
-            building_gene_.push_back(ovi);
-        }
-        else if (build == "overlord") {
-            building_gene_.push_back(ovi);
-        }
-        else if (build == "pool") {
-            building_gene_.push_back(pool);
-        }
-        else if (build == "evo") {
-            building_gene_.push_back(evo);
-        }
-        else if (build == "speed") {
-            building_gene_.push_back(speed);
-        }
-        else if (build == "ling") {
-            building_gene_.push_back(ling);
-        }
-        else if (build == "creep") {
-            building_gene_.push_back(creep);
-        }
-        else if (build == "sunken") {
-            building_gene_.push_back(sunken);
-        }
-        else if (build == "spore") {
-            building_gene_.push_back(spore);
-        }
-        else if (build == "lair") {
-            building_gene_.push_back(lair);
-        }
-        else if (build == "hive") {
-            building_gene_.push_back(hive);
-        }
-        else if (build == "spire") {
-            building_gene_.push_back(spire);
-        }
-        else if (build == "greater_spire") {
-            building_gene_.push_back(greater_spire);
-        }
-        else if (build == "devourer") {
-            building_gene_.push_back(devourer);
-        }
-        else if (build == "muta") {
-            building_gene_.push_back(muta);
-        }
-        else if (build == "lurker_tech") {
-            building_gene_.push_back(lurker_tech);
-        }
-        else if (build == "hydra") {
-            building_gene_.push_back(hydra);
-        }
-        else if (build == "lurker") {
-            building_gene_.push_back(lurker);
-        }
-        else if (build == "hydra_den") {
-            building_gene_.push_back(hydra_den);
-        }
-        else if (build == "queens_nest") {
-            building_gene_.push_back(queens_nest);
-        }
-        else if (build == "grooved_spines") {
-            building_gene_.push_back(grooved_spines);
-        }
-        else if (build == "muscular_augments") {
-            building_gene_.push_back(muscular_augments);
-        }
-        else if (build == "5pool") { //shortcuts.
-            building_gene_.push_back(drone);
-            building_gene_.push_back(pool);
-        }
-        else if (build == "7pool") {
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(pool);
-        }
-        else if (build == "9pool") {
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(pool);
-        }
-        else if (build == "12pool") {
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(ovi);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(drone);
-            building_gene_.push_back(pool);
-        }
-        else if (build == "12hatch") {
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(ovi);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(drone);
-        building_gene_.push_back(hatch);
-        }
-    }
-    getCumulativeResources();
-}
-
-void BuildingGene::clearRemainingBuildOrder(const bool diagnostic) {
-    if constexpr (ANALYSIS_MODE) {
-        if (!building_gene_.empty() && diagnostic) {
-
-            if (building_gene_.front().getUnit().supplyRequired() > Broodwar->self()->supplyTotal() - Broodwar->self()->supplyTotal()) {
-                ofstream output; // Prints to brood war file while in the WRITE file.
-                output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
-                string print_value = "";
-
-                //print_value += building_gene_.front().getResearch().c_str();
-                print_value += building_gene_.front().getUnit().c_str();
-                //print_value += building_gene_.front().getUpgrade().c_str();
-
-                output << "Supply blocked: " << print_value << endl;
-                output.close();
-                Broodwar->sendText("A %s was canceled.", print_value);
-            }
-            else {
-                ofstream output; // Prints to brood war file while in the WRITE file.
-                output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
-                string print_value = "";
-
-                print_value += building_gene_.front().getResearch().c_str();
-                print_value += building_gene_.front().getUnit().c_str();
-                print_value += building_gene_.front().getUpgrade().c_str();
-
-                output << "Couldn't build: " << print_value << endl;
-                output.close();
-                Broodwar->sendText("A %s was canceled.", print_value);
-            }
-        }
-    }
-    building_gene_.clear();
-};
-
-BuildingGene::BuildingGene() {};
-
-BuildingGene::BuildingGene(string s) { // unspecified items are unrestricted.
-
-    getInitialBuildOrder(s);
-
-}
 

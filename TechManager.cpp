@@ -271,7 +271,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
 {
     if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.isInReserveSystem(ups) && isInUpgradeCartridge(ups)) {
         if (unit->upgrade(ups)) {
-            CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(ups);
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = StoredUnit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
@@ -286,9 +286,9 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
 //Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && isInResearchCartridge(tech) && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
+    if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && isInResearchCartridge(tech) && (CUNYAIModule::learnedPlan.inspectCurrentBuild().checkIfNextInBuild(tech) || (extra_critera && CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
-            CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
+            CUNYAIModule::learnedPlan.modifyCurrentBuild()->updateRemainingBuildOrder(tech);
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = StoredUnit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
