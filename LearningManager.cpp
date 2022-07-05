@@ -32,7 +32,7 @@ void LearningManager::onStart()
     noStats = " 0 0 ";
     learningExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + ".csv";
     gameInfoExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + " Info.csv";
-    
+
     definePremadeBuildOrders();
     Diagnostics::DiagnosticText("Build Orders Defined");
     selectDefaultBuild();
@@ -81,7 +81,7 @@ void LearningManager::onEnd(bool isWinner)
         output << "Hatches Left?:" << CUNYAIModule::basemanager.getBaseCount() << endl;
         output << "Win:" << isWinner << endl;
         output.close();
-    }; 
+    };
 
     // If training in some enviorments, I need to manually move the read to write to mimic tournament play.
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
@@ -237,7 +237,7 @@ void LearningManager::definePremadeBuildOrders()
    //    BuildOrderElement(UnitTypes::Zerg_Extractor)
    //}
    // double threeHatchMutaParams[6] = { 0.517767817, 1.238421617 , 0.48223217, 0.439303835, 0.717060969, 0.373843463 };
-   
+
    // 9 Pool Spire
     vector<BuildOrderElement> OneBaseSpireList = { BuildOrderElement(UnitTypes::Zerg_Drone),
     BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -272,11 +272,11 @@ void LearningManager::definePremadeBuildOrders()
     double OneBaseSpireParams[6] = { 0.517767817, 1.238421617 , 0.48223217, 0.439303835, 0.717060969, 0.373843463 };
 
 
-    //Hardcoded build orders below. 
-    BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::Muta);
+    //Hardcoded build orders below.
+    BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::TwoBaseMuta);
     BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseSpire);
     BuildOrderSetup LurkerSetup = BuildOrderSetup(lurkerList, lurkerParams, BuildEnums::Lurker);
-    BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::fivePool);
+    BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::FivePool);
 
     myBuilds_.push_back(MutaSetup);
     myBuilds_.push_back(LurkerSetup);
@@ -337,7 +337,7 @@ void LearningManager::parseLearningFile()
 void LearningManager::selectDefaultBuild() {
     switch (Broodwar->enemy()->getRace() ) {
     case Races::Protoss:
-        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::Muta));
+        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::TwoBaseMuta));
         break;
     case Races::Terran:
         currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::Lurker));
@@ -346,7 +346,7 @@ void LearningManager::selectDefaultBuild() {
         currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::OneBaseSpire));
         break;
     default: //Random or Unknown.
-        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::fivePool));
+        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::FivePool));
     }
 }
 
@@ -375,17 +375,17 @@ void LearningManager::selectBestBuild()
         Diagnostics::DiagnosticText("Build: %s is rated %d", b.first.c_str(), getUpperConfidenceBound(win, loss));
     }
 
-    BuildEnums bestBuild = BuildEnums::fivePool;
-    double bestScore = 0;
+    BuildEnums bestBuild = currentBuild_.getBuildEnum(); //Start with the default.
+    double bestScore = storedUCB.find(bestBuild)->second;
 
     for (auto &s : storedUCB) {
         if (s.second > bestScore) {
             bestScore = s.second;
             bestBuild = s.first;
             Diagnostics::DiagnosticText("New best Build:", getBuildNameString(bestBuild) );
+            currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
-    currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
@@ -398,12 +398,12 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
 
 const string LearningManager::getBuildNameString(BuildEnums b)
 {
-    switch (b) {
-        case BuildEnums::fivePool: return "fivePool";
-        case BuildEnums::Lurker: return "Lurker";
-        case BuildEnums::Muta: return "Muta";
-        default: return "Error: Unknown Build Order";
+    for (auto i : BuildStringsTable_) {
+        if (i.second == b)
+            return i.first;
     }
+    string errorMsg = "Error: Build Not Found in Build Strings Table";
+    return errorMsg;
 }
 
 Build LearningManager::inspectCurrentBuild() {
@@ -464,7 +464,8 @@ BuildOrderSetup LearningManager::findMatchingBO(BuildEnums b)
 }
 
 map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
-    {"Muta", BuildEnums::Muta},
+    { "MutaTwoBase", BuildEnums::TwoBaseMuta},
     { "Lurker", BuildEnums::Lurker },
-    { "fivePool", BuildEnums::fivePool } 
+    { "PoolFive", BuildEnums::FivePool } ,
+    { "MutaOneBase", BuildEnums::OneBaseSpire }
 };
