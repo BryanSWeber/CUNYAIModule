@@ -271,17 +271,87 @@ void LearningManager::definePremadeBuildOrders()
     };
     double OneBaseSpireParams[6] = { 0.517767817, 1.238421617 , 0.48223217, 0.439303835, 0.717060969, 0.373843463 };
 
+    // 4H Macro Before Gas https://liquipedia.net/starcraft/4_Hatch_before_Gas_(vs._Protoss)
+    vector<BuildOrderElement> FourHatchList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Overlord),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Hatchery),
+       BuildOrderElement(UnitTypes::Zerg_Spawning_Pool),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Hatchery),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Hatchery), // 16–18 — Hatchery @ Natural or 3rd Base. MacroHatch.
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Extractor),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Evolution_Chamber), //100% Extractor — Evolution Chamber (See note)
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone), 
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UpgradeTypes::Zerg_Carapace), // @100% Evolution Chamber — +1 Zerg Carapace, (see note)
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Hatchery), // @300 Minerals — Hatchery (preferably used to narrow a chokepoint)
+       BuildOrderElement(UnitTypes::Zerg_Lair), // @100 Gas — Lair
+       BuildOrderElement(UpgradeTypes::Metabolic_Boost), // @100 Gas — Metabolic Boost
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Zergling),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Drone),
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
+       BuildOrderElement(UnitTypes::Zerg_Spire)
+    };
 
+    double FourHatchParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
+    
     //Hardcoded build orders below.
     BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::TwoBaseMuta);
     BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseSpire);
     BuildOrderSetup LurkerSetup = BuildOrderSetup(lurkerList, lurkerParams, BuildEnums::Lurker);
     BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::FivePool);
+    BuildOrderSetup FourHatchSetup = BuildOrderSetup(FourHatchList, FourHatchParams, BuildEnums::FourHatch);
 
     myBuilds_.push_back(MutaSetup);
+    myBuilds_.push_back(OneBaseSpireSetup);
     myBuilds_.push_back(LurkerSetup);
     myBuilds_.push_back(fivePoolSetup);
-    myBuilds_.push_back(OneBaseSpireSetup);
+    myBuilds_.push_back(FourHatchSetup);
 }
 
 void LearningManager::parseLearningFile()
@@ -467,5 +537,6 @@ map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "MutaTwoBase", BuildEnums::TwoBaseMuta},
     { "Lurker", BuildEnums::Lurker },
     { "PoolFive", BuildEnums::FivePool } ,
-    { "MutaOneBase", BuildEnums::OneBaseSpire }
+    { "MutaOneBase", BuildEnums::OneBaseSpire },
+    { "FourHatchMacro", BuildEnums::FourHatch }
 };

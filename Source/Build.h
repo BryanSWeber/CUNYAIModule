@@ -20,7 +20,8 @@ enum BuildEnums {
     TwoBaseMuta,
     Lurker,
     FivePool,
-    OneBaseSpire
+    OneBaseSpire,
+    FourHatch
 };
 
 class BuildOrderElement {

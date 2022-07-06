@@ -756,10 +756,12 @@ StoredUnit* CUNYAIModule::getClosestAirStored(UnitInventory &ui, const Position 
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
-                min_dist = temp_dist;
-                return_unit = &(u->second);
+            if (u->second.is_flying_ && u->second.valid_pos_) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(u->second);
+                }
             }
         }
     }
@@ -774,10 +776,12 @@ StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(UnitInventory &ui, con
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_ && hasPriority(u->second.type_)) {
-                min_dist = temp_dist;
-                return_unit = &(u->second);
+            if (u->second.is_flying_ && u->second.valid_pos_ && hasPriority(u->second.type_)) {
+                temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(u->second);
+                }
             }
         }
     }

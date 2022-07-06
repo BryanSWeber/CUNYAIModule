@@ -16,6 +16,7 @@ void Build::updateRemainingBuildOrder(const UnitType &ut) {
         }
     }
     updateCumulativeResources();
+    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ut.c_str(), Broodwar->getFrameCount());
 }
 
 void Build::updateRemainingBuildOrder(const UpgradeType &ups) {
@@ -25,6 +26,7 @@ void Build::updateRemainingBuildOrder(const UpgradeType &ups) {
         }
     }
     updateCumulativeResources();
+    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ups.c_str(), Broodwar->getFrameCount());
 }
 
 void Build::updateRemainingBuildOrder(const TechType &research) {
@@ -34,6 +36,7 @@ void Build::updateRemainingBuildOrder(const TechType &research) {
         }
     }
     updateCumulativeResources();
+    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", research.c_str(), Broodwar->getFrameCount());
 }
 
 const void Build::announceBuildingAttempt(UnitType ut) {
@@ -330,7 +333,6 @@ void Build::initializeBuildOrder(BuildOrderSetup b)
 void Build::clearRemainingBuildOrder(const bool diagnostic) {
     if constexpr (ANALYSIS_MODE) {
         if (!queueBuild_.empty() && diagnostic) {
-
             if (queueBuild_.front().getUnit().supplyRequired() > Broodwar->self()->supplyTotal() - Broodwar->self()->supplyTotal()) {
                 ofstream output; // Prints to brood war file while in the WRITE file.
                 output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
