@@ -47,25 +47,20 @@ private:
     static map<string, BuildEnums> BuildStringsTable_; //Table for build orders to translate human-readable strings.
     BuildOrderSetup findMatchingBO(BuildEnums b); //searchs MyBuilds for the correct matching type. Returns an empty BO otherwise.
 
-public:
+    string myRaceChar_;
+    string enemyRaceChar_;
+    string versionChar_;
+    string noStats_;
+    string learningExtension_;
+    string gameInfoExtension_;
 
-    int flierFrame; // Threatening Fliers First Seen
-    int detectorFrame; // Detectors First Seen
+public:
 
     // Key Operations
     void onStart();
     void onEnd(bool isWinner);
 
-
-    bool mapLearning;
-
-    string myRaceChar;
-    string enemyRaceChar;
-    string versionChar;
-    string noStats;
-    string learningExtension;
-    string gameInfoExtension;
-    const string getBuildNameString(BuildEnums b);
+    const string getBuildNameString(const BuildEnums b);
 
     Build inspectCurrentBuild();
     Build* modifyCurrentBuild();

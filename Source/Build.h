@@ -96,23 +96,23 @@ public:
     void initializeBuildOrder(BuildOrderSetup b); // Starts the build to a predefined setup.
     void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
 
-    void updateRemainingBuildOrder(const UpgradeType &ups); // drops item from list as complete.
+    void updateRemainingBuildOrder(const UpgradeType & ups); // drops item from list as complete.
     void updateRemainingBuildOrder(const TechType & research);// drops item from list as complete.
-    void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
+    void updateRemainingBuildOrder(const UnitType & ut); // drops item from list as complete.
 
-    void addBuildOrderElement(const UpgradeType &ups); // adds an element to the end of the queue.
+    void addBuildOrderElement(const UpgradeType & ups); // adds an element to the end of the queue.
     void addBuildOrderElement(const TechType & research);// adds an element to the end of the queue.
-    void addBuildOrderElement(const UnitType &ut); // adds an element to the end of the queue.
+    void addBuildOrderElement(const UnitType & ut); // adds an element to the end of the queue.
 
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
     void retryBuildOrderElement(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
 
-    const void announceBuildingAttempt(UnitType ut);  // do we have a guy going to build it?
-    const int countTimesInBuildQueue(UnitType ut); 
+    const void announceBuildingAttempt(const UnitType ut);  // Announce that a building has been attempted.
+    const int countTimesInBuildQueue(const UnitType ut);  //Counts the number of this unit in the BO. Needed to evaluate extractor-related items.
 
     const bool isEmptyBuildOrder(); // Returns true if empty.
 
-    const double getParameter(BuildParameterNames b); //Getting specific parameters by name.
+    const double getParameter(const BuildParameterNames b); //Getting specific parameters by name.
     const BuildEnums getBuildEnum(); //Gets the name of the build.
     const BuildOrderElement getNext(); //Returns next element, otherwise returns unittype none.
     const vector<BuildOrderElement> getQueue(); //returns the entire queue.
@@ -122,9 +122,9 @@ public:
     const int getNextGasCost();
     const int getNextMinCost();
 
-    const bool checkIfNextInBuild(UpgradeType upgrade); //Convenience for common call.
-    const bool checkIfNextInBuild(TechType upgrade); //Convenience for common call.
-    const bool checkIfNextInBuild(UnitType ut); //Convenience for common call.
+    const bool checkIfNextInBuild(const UpgradeType upgrade); //Convenience overload for common call.
+    const bool checkIfNextInBuild(const TechType upgrade); //Convenience overload for common call.
+    const bool checkIfNextInBuild(const UnitType ut); //Convenience for overload common call.
 };
 
 

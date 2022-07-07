@@ -13,33 +13,33 @@ void Build::updateRemainingBuildOrder(const UnitType &ut) {
     if (!queueBuild_.empty()) {
         if (queueBuild_.front().getUnit() == ut) {
             queueBuild_.erase(queueBuild_.begin());
+            Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ut.c_str(), Broodwar->getFrameCount());
         }
     }
     updateCumulativeResources();
-    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ut.c_str(), Broodwar->getFrameCount());
 }
 
 void Build::updateRemainingBuildOrder(const UpgradeType &ups) {
     if (!queueBuild_.empty()) {
         if (queueBuild_.front().getUpgrade() == ups) {
             queueBuild_.erase(queueBuild_.begin());
+            Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ups.c_str(), Broodwar->getFrameCount());
         }
     }
     updateCumulativeResources();
-    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", ups.c_str(), Broodwar->getFrameCount());
 }
 
 void Build::updateRemainingBuildOrder(const TechType &research) {
     if (!queueBuild_.empty()) {
         if (queueBuild_.front().getResearch() == research) {
             queueBuild_.erase(queueBuild_.begin());
+            Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", research.c_str(), Broodwar->getFrameCount());
         }
     }
     updateCumulativeResources();
-    Diagnostics::DiagnosticText("Just Finished a scheduled %s at %d", research.c_str(), Broodwar->getFrameCount());
 }
 
-const void Build::announceBuildingAttempt(UnitType ut) {
+const void Build::announceBuildingAttempt(const UnitType ut) {
     if (ut.isBuilding()) {
         Diagnostics::DiagnosticWrite("Building a %s", ut.c_str());
     }
@@ -112,7 +112,7 @@ void Build::updateCumulativeResources()
     }
 }
 
-const double Build::getParameter(BuildParameterNames b)
+const double Build::getParameter(const BuildParameterNames b)
 {
     return parameterValues_[b];
 }

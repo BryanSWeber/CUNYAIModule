@@ -26,12 +26,12 @@ using namespace std;
 void LearningManager::onStart()
 {
     // File extension including our race initial;
-    myRaceChar = CUNYAIModule::safeString(Broodwar->self()->getRace().c_str());
-    enemyRaceChar = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    versionChar = "2022.6.24";
-    noStats = " 0 0 ";
-    learningExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + ".csv";
-    gameInfoExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + " Info.csv";
+    myRaceChar_ = CUNYAIModule::safeString(Broodwar->self()->getRace().c_str());
+    enemyRaceChar_ = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    versionChar_ = "2022.6.24";
+    noStats_ = " 0 0 ";
+    learningExtension_ = myRaceChar_ + "v" + enemyRaceChar_ + " " + Broodwar->enemy()->getName() + " " + versionChar_ + ".csv";
+    gameInfoExtension_ = myRaceChar_ + "v" + enemyRaceChar_ + " " + Broodwar->enemy()->getName() + " " + versionChar_ + " Info.csv";
 
     definePremadeBuildOrders();
     Diagnostics::DiagnosticText("Build Orders Defined");
@@ -45,10 +45,10 @@ void LearningManager::onStart()
 
 void LearningManager::onEnd(bool isWinner)
 {
-    ifstream readFile(getReadDir() + gameInfoExtension);
+    ifstream readFile(getReadDir() + gameInfoExtension_);
     if (readFile)
-        copyFile(getReadDir() + gameInfoExtension, getWriteDir() + gameInfoExtension);
-    ofstream gameLog(getWriteDir() + gameInfoExtension, std::ios_base::app);
+        copyFile(getReadDir() + gameInfoExtension_, getWriteDir() + gameInfoExtension_);
+    ofstream gameLog(getWriteDir() + gameInfoExtension_, std::ios_base::app);
     //gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
 
     // Print all relevant model and game characteristics.
@@ -85,9 +85,9 @@ void LearningManager::onEnd(bool isWinner)
 
     // If training in some enviorments, I need to manually move the read to write to mimic tournament play.
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        ifstream readFile(getWriteDir() + gameInfoExtension);
+        ifstream readFile(getWriteDir() + gameInfoExtension_);
         if (readFile)
-            copyFile(getWriteDir() + gameInfoExtension, getReadDir() + gameInfoExtension);
+            copyFile(getWriteDir() + gameInfoExtension_, getReadDir() + gameInfoExtension_);
     }
 }
 
@@ -384,11 +384,11 @@ void LearningManager::parseLearningFile()
 {
     //Required Elements
     gameHistory_.clear();
-    int nRows = countLines(getReadDir() + gameInfoExtension);
+    int nRows = countLines(getReadDir() + gameInfoExtension_);
 
     //Grab File
     ifstream myFile;
-    myFile.open(getReadDir() + gameInfoExtension);
+    myFile.open(getReadDir() + gameInfoExtension_);
     if (!myFile.is_open()) {
         Diagnostics::DiagnosticText("No file to read in to ParseCSV");
     }
@@ -492,7 +492,7 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
     return double(win) / double(lose) + sqrt( 1.5 * log(double(gameHistory_.size()))/double(win + lose) );
 }
 
-const string LearningManager::getBuildNameString(BuildEnums b)
+const string LearningManager::getBuildNameString(const BuildEnums b)
 {
     for (auto i : BuildStringsTable_) {
         if (i.second == b)
