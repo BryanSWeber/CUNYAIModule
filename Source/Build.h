@@ -21,7 +21,8 @@ enum BuildEnums {
     Lurker,
     FivePool,
     OneBaseSpire,
-    FourHatch
+    FourHatchCarapace,
+    FourHatchBeforePool
 };
 
 class BuildOrderElement {

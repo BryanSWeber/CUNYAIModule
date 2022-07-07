@@ -272,7 +272,7 @@ void LearningManager::definePremadeBuildOrders()
     double OneBaseSpireParams[6] = { 0.517767817, 1.238421617 , 0.48223217, 0.439303835, 0.717060969, 0.373843463 };
 
     // 4H Macro Before Gas https://liquipedia.net/starcraft/4_Hatch_before_Gas_(vs._Protoss)
-    vector<BuildOrderElement> FourHatchList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+    vector<BuildOrderElement> FourHatchCarapaceList = { BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -338,20 +338,46 @@ void LearningManager::definePremadeBuildOrders()
        BuildOrderElement(UnitTypes::Zerg_Spire)
     };
 
-    double FourHatchParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
+    double FourHatchCarapaceParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
     
+    //4 hatch before pool. Gasless.
+    vector<BuildOrderElement> FourHatchBeforePoolList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Overlord),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Overlord),
+           BuildOrderElement(UnitTypes::Zerg_Spawning_Pool)
+    };
+    double FourHatchBeforePoolParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
+
     //Hardcoded build orders below.
     BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::TwoBaseMuta);
     BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseSpire);
     BuildOrderSetup LurkerSetup = BuildOrderSetup(lurkerList, lurkerParams, BuildEnums::Lurker);
     BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::FivePool);
-    BuildOrderSetup FourHatchSetup = BuildOrderSetup(FourHatchList, FourHatchParams, BuildEnums::FourHatch);
+    BuildOrderSetup FourHatchCarapaceSetup = BuildOrderSetup(FourHatchCarapaceList, FourHatchCarapaceParams, BuildEnums::FourHatchCarapace);
+    BuildOrderSetup FourHatchBeforePool = BuildOrderSetup(FourHatchBeforePoolList, FourHatchBeforePoolParams, BuildEnums::FourHatchBeforePool);
 
     myBuilds_.push_back(MutaSetup);
     myBuilds_.push_back(OneBaseSpireSetup);
     myBuilds_.push_back(LurkerSetup);
     myBuilds_.push_back(fivePoolSetup);
-    myBuilds_.push_back(FourHatchSetup);
+    myBuilds_.push_back(FourHatchCarapaceSetup);
+    myBuilds_.push_back(FourHatchBeforePool);
 }
 
 void LearningManager::parseLearningFile()
@@ -538,5 +564,5 @@ map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "Lurker", BuildEnums::Lurker },
     { "PoolFive", BuildEnums::FivePool } ,
     { "MutaOneBase", BuildEnums::OneBaseSpire },
-    { "FourHatchMacro", BuildEnums::FourHatch }
+    { "FourHatchCarapace", BuildEnums::FourHatchCarapace }
 };
