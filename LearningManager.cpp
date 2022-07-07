@@ -564,5 +564,6 @@ map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "Lurker", BuildEnums::Lurker },
     { "PoolFive", BuildEnums::FivePool } ,
     { "MutaOneBase", BuildEnums::OneBaseSpire },
-    { "FourHatchCarapace", BuildEnums::FourHatchCarapace }
+    { "FourHatchCarapace", BuildEnums::FourHatchCarapace },
+    { "FourHatchBeforePool", BuildEnums::FourHatchBeforePool }
 };
