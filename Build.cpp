@@ -39,18 +39,18 @@ void Build::updateRemainingBuildOrder(const TechType &research) {
     updateCumulativeResources();
 }
 
-const void Build::announceBuildingAttempt(const UnitType ut) {
+void Build::announceBuildingAttempt(const UnitType ut) const {
     if (ut.isBuilding()) {
         Diagnostics::DiagnosticWrite("Building a %s", ut.c_str());
     }
 }
 
-const bool Build::checkIfNextInBuild(UnitType ut) {
+bool Build::checkIfNextInBuild(UnitType ut) const {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return getNext().getUnit() == ut;
 }
 
-const int Build::countTimesInBuildQueue(UnitType ut) {
+int Build::countTimesInBuildQueue(UnitType ut) const {
     int count = 0;
     for (auto g : queueBuild_) {
         if (g.getUnit() == ut) count++;
@@ -59,17 +59,17 @@ const int Build::countTimesInBuildQueue(UnitType ut) {
 }
 
 
-const bool Build::checkIfNextInBuild(UpgradeType upgrade) {
+bool Build::checkIfNextInBuild(UpgradeType upgrade) const {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return getNext().getUpgrade() == upgrade;
 }
 
-const bool Build::checkIfNextInBuild(TechType research) {
+bool Build::checkIfNextInBuild(TechType research) const {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return getNext().getResearch() == research;
 }
 
-const bool Build::isEmptyBuildOrder() {
+bool Build::isEmptyBuildOrder() const {
     return queueBuild_.empty();
 }
 
@@ -112,7 +112,7 @@ void Build::updateCumulativeResources()
     }
 }
 
-const double Build::getParameter(const BuildParameterNames b)
+double Build::getParameter(const BuildParameterNames b) const
 {
     return parameterValues_[b];
 }
@@ -122,7 +122,7 @@ int Build::getParameterCount()
     return distance(begin(parameterValues_), end(parameterValues_));
 }
 
-const BuildEnums Build::getBuildEnum()
+BuildEnums Build::getBuildEnum() const
 {
     return buildName_;
 }
@@ -286,7 +286,7 @@ const BuildEnums Build::getBuildEnum()
 //}
 
 
-const BuildOrderElement Build::getNext()
+BuildOrderElement Build::getNext() const
 {
     if (!isEmptyBuildOrder())
         return queueBuild_.front();
@@ -294,27 +294,27 @@ const BuildOrderElement Build::getNext()
         return BuildOrderElement(UnitTypes::None);
 }
 
-const vector<BuildOrderElement> Build::getQueue()
+vector<BuildOrderElement> Build::getQueue() const
 {
     return queueBuild_;
 }
 
-const int Build::getRemainingGas()
+int Build::getRemainingGas() const
 {
     return cumulative_gas_;
 }
 
-const int Build::getRemainingMinerals()
+int Build::getRemainingMinerals() const
 {
     return cumulative_minerals_;
 }
 
-const int Build::getNextGasCost()
+int Build::getNextGasCost() const
 {
     return getNext().getResearch().gasPrice() + getNext().getUnit().gasPrice() + getNext().getUpgrade().gasPrice();
 }
 
-const int Build::getNextMinCost()
+int Build::getNextMinCost() const
 {
     return getNext().getResearch().mineralPrice() + getNext().getUnit().mineralPrice() + getNext().getUpgrade().mineralPrice();
 }

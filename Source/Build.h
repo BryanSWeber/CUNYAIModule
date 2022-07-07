@@ -107,24 +107,24 @@ public:
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
     void retryBuildOrderElement(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
 
-    const void announceBuildingAttempt(const UnitType ut);  // Announce that a building has been attempted.
-    const int countTimesInBuildQueue(const UnitType ut);  //Counts the number of this unit in the BO. Needed to evaluate extractor-related items.
+    void announceBuildingAttempt(const UnitType ut) const;  // Announce that a building has been attempted.
+    int countTimesInBuildQueue(const UnitType ut) const;  //Counts the number of this unit in the BO. Needed to evaluate extractor-related items.
 
-    const bool isEmptyBuildOrder(); // Returns true if empty.
+    bool isEmptyBuildOrder() const; // Returns true if empty.
 
-    const double getParameter(const BuildParameterNames b); //Getting specific parameters by name.
-    const BuildEnums getBuildEnum(); //Gets the name of the build.
-    const BuildOrderElement getNext(); //Returns next element, otherwise returns unittype none.
-    const vector<BuildOrderElement> getQueue(); //returns the entire queue.
+    double getParameter(const BuildParameterNames b) const; //Getting specific parameters by name.
+    BuildEnums getBuildEnum() const; //Gets the name of the build.
+    BuildOrderElement getNext() const; //Returns next element, otherwise returns unittype none.
+    vector<BuildOrderElement> getQueue() const; //returns the entire queue.
 
-    const int getRemainingGas();
-    const int getRemainingMinerals();
-    const int getNextGasCost();
-    const int getNextMinCost();
+    int getRemainingGas() const;
+    int getRemainingMinerals() const;
+    int getNextGasCost() const;
+    int getNextMinCost() const;
 
-    const bool checkIfNextInBuild(const UpgradeType upgrade); //Convenience overload for common call.
-    const bool checkIfNextInBuild(const TechType upgrade); //Convenience overload for common call.
-    const bool checkIfNextInBuild(const UnitType ut); //Convenience for overload common call.
+    bool checkIfNextInBuild(const UpgradeType upgrade) const; //Convenience overload for common call.
+    bool checkIfNextInBuild(const TechType upgrade) const; //Convenience overload for common call.
+    bool checkIfNextInBuild(const UnitType ut) const; //Convenience for overload common call.
 };
 
 

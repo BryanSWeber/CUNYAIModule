@@ -492,7 +492,7 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
     return double(win) / double(lose) + sqrt( 1.5 * log(double(gameHistory_.size()))/double(win + lose) );
 }
 
-const string LearningManager::getBuildNameString(const BuildEnums b)
+string LearningManager::getBuildNameString(const BuildEnums b) const
 {
     for (auto i : BuildStringsTable_) {
         if (i.second == b)
@@ -502,7 +502,7 @@ const string LearningManager::getBuildNameString(const BuildEnums b)
     return errorMsg;
 }
 
-Build LearningManager::inspectCurrentBuild() {
+Build LearningManager::inspectCurrentBuild() const {
     return currentBuild_;
 }
 
@@ -511,12 +511,12 @@ Build* LearningManager::modifyCurrentBuild()
     return &currentBuild_;
 }
 
-const string LearningManager::getReadDir()
+string LearningManager::getReadDir() const
 {
     return readDirectory_;
 }
 
-const string LearningManager::getWriteDir()
+string LearningManager::getWriteDir() const
 {
     return writeDirectory_;
 }

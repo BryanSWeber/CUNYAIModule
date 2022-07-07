@@ -60,19 +60,18 @@ public:
     void onStart();
     void onEnd(bool isWinner);
 
-    const string getBuildNameString(const BuildEnums b);
+    string getBuildNameString(const BuildEnums b) const;
 
-    Build inspectCurrentBuild();
-    Build* modifyCurrentBuild();
+    Build inspectCurrentBuild() const; //Returns a copy, does not allow touching the class. Good for various inspections that may be wanted.
+    Build* modifyCurrentBuild(); //Only do this if you're ready to modify the build.
 
-    const string getReadDir();
-    const string getWriteDir();
+    string getReadDir() const;
+    string getWriteDir() const;
 
-    void definePremadeBuildOrders();
-    void parseLearningFile();
+    void definePremadeBuildOrders(); // Creates the builds and stuffs them into myBuilds_.
+    void parseLearningFile(); // Reads a learning file appropriate for this game and stores the info in gameHistory_.
     void selectDefaultBuild(); //Set Build if no opponent is recognized or no history exists.
     void selectBestBuild(); //Using history, determine superior build.
-
 };
 
 
