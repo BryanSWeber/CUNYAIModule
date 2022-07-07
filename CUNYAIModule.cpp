@@ -72,6 +72,7 @@ int CUNYAIModule::long_delay = 0;
 
 void CUNYAIModule::onStart()
 {
+    Diagnostics::DiagnosticClockStart("onStart");
     Broodwar << "Map initialization..." << std::endl;
 
     //Initialize BWEM, must be done FIRST.
@@ -134,7 +135,9 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
+    Diagnostics::DiagnosticClockStart("Learning (OnStart)");
     learnedPlan.onStart();
+    Diagnostics::DiagnosticClockFinish("Learning (OnStart)");
 
 
     gas_proportion = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::GasProportion); //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
@@ -143,15 +146,18 @@ void CUNYAIModule::onStart()
     friendly_player_model.spending_model_.onStartSelf(learnedPlan);
 
     //update Map Grids
+    Diagnostics::DiagnosticClockStart("Map Inventory (OnStart)");
     currentMapInventory.updateBuildablePos();
     currentMapInventory.updateUnwalkable();
-    //inventory.updateSmoothPos();
     currentMapInventory.updateMapVeins();
+    //inventory.updateSmoothPos();
     //current_MapInventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_MapInventory.front_line_base_, current_MapInventory.map_out_from_home_);
     //inventory.updateMapChokes();
+    Diagnostics::DiagnosticClockFinish("Map Inventory (OnStart)");
+
 
     my_reservation = Reservation();
-
+    Diagnostics::DiagnosticClockFinish("onStart");
 }
 
 void CUNYAIModule::onEnd(bool isWinner)
@@ -185,7 +191,7 @@ void CUNYAIModule::onFrame()
     std::chrono::duration<double, std::milli> upgrade_time;
     std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
 
-    auto start_playermodel = std::chrono::high_resolution_clock::now();
+    auto startPlayerModelOnFrame = std::chrono::high_resolution_clock::now();
 
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -240,7 +246,7 @@ void CUNYAIModule::onFrame()
     //bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
-    playermodel_time = end_playermodel - start_playermodel;
+    playermodel_time = end_playermodel - startPlayerModelOnFrame;
 
 
     auto start_map = std::chrono::high_resolution_clock::now();
@@ -454,7 +460,7 @@ void CUNYAIModule::onFrame()
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    total_frame_time = end - start_playermodel;
+    total_frame_time = end - startPlayerModelOnFrame;
 
     //Clock App
     if (total_frame_time.count() > 55) {

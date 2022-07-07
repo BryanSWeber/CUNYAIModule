@@ -46,6 +46,7 @@ private:
     vector<BuildOrderSetup> myBuilds_; //Predefined BO's
     static map<string, BuildEnums> BuildStringsTable_; //Table for build orders to translate human-readable strings.
     BuildOrderSetup findMatchingBO(BuildEnums b); //searchs MyBuilds for the correct matching type. Returns an empty BO otherwise.
+    const string getBuildNameFromEnum(BuildEnums b);
 
 public:
 
@@ -65,7 +66,8 @@ public:
     string noStats;
     string learningExtension;
     string gameInfoExtension;
-    const string getBuildNameString(BuildEnums b);
+
+    const string getBuildName();
 
     Build inspectCurrentBuild();
     Build* modifyCurrentBuild();

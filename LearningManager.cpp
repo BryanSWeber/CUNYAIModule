@@ -40,7 +40,7 @@ void LearningManager::onStart()
     parseLearningFile();
     Diagnostics::DiagnosticText("Parsed LearningFile, size = %d", gameHistory_.size());
     selectBestBuild();
-    Diagnostics::DiagnosticText("Trying Build Order: %s", getBuildNameString(currentBuild_.getBuildEnum()).c_str() );
+    Diagnostics::DiagnosticText("Trying Build Order: %s", getBuildNameFromEnum(currentBuild_.getBuildEnum()).c_str() );
 }
 
 void LearningManager::onEnd(bool isWinner)
@@ -52,7 +52,7 @@ void LearningManager::onEnd(bool isWinner)
     //gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
 
     // Print all relevant model and game characteristics.
-    gameLog << getBuildNameString(currentBuild_.getBuildEnum()) << ','
+    gameLog << getBuildName() << ','
         << CUNYAIModule::safeString(Broodwar->mapFileName().c_str()) << ','
         << isWinner << ','
         << CUNYAIModule::short_delay << ','
@@ -70,7 +70,7 @@ void LearningManager::onEnd(bool isWinner)
     //If your Build Order didn't work and the bot is broken, let's write that specifically.
     if (!currentBuild_.isEmptyBuildOrder()) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
+        output.open(CUNYAIModule::learnedPlan.getWriteDir() + CUNYAIModule::learnedPlan.getBuildName() + "BuildOrderFailures.txt", ios_base::app);
         string print_value = "";
 
         print_value += currentBuild_.getNext().getResearch().c_str();
@@ -452,7 +452,7 @@ void LearningManager::selectBestBuild()
         if (s.second > bestScore) {
             bestScore = s.second;
             bestBuild = s.first;
-            Diagnostics::DiagnosticText("New best Build:", getBuildNameString(bestBuild) );
+            Diagnostics::DiagnosticText("New best Build:", getBuildNameFromEnum(bestBuild) );
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
@@ -467,7 +467,7 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
     return double(win) / double(lose) + sqrt( 1.5 * log(double(gameHistory_.size()))/double(win + lose) );
 }
 
-const string LearningManager::getBuildNameString(BuildEnums b)
+const string LearningManager::getBuildNameFromEnum(BuildEnums b)
 {
     for (auto i : BuildStringsTable_) {
         if (i.second == b)
@@ -475,6 +475,11 @@ const string LearningManager::getBuildNameString(BuildEnums b)
     }
     string errorMsg = "Error: Build Not Found in Build Strings Table";
     return errorMsg;
+}
+
+const string LearningManager::getBuildName()
+{
+    return getBuildNameFromEnum(currentBuild_.getBuildEnum());
 }
 
 Build LearningManager::inspectCurrentBuild() {

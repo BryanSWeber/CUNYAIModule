@@ -3,11 +3,15 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Build.h"
+#include <chrono> // for in-game frame clock.
+
 
 // Manages various types of important diagnostics and print functions.
 class Diagnostics {
 private:
     bool display = false;
+    static map<string, std::chrono::time_point<std::chrono::high_resolution_clock>> clockTimes;
+
 public:
     static void onFrame();
     static void drawAllVelocities(const UnitInventory ui);
@@ -41,6 +45,9 @@ public:
     static void writeMap(Position pos, string s);
     static void DiagnosticTrack(const Unit & u);
     static void DiagnosticTrack(const Position & p);
+
+    static void DiagnosticClockStart(const string p); //Start clock for purpose (string name).
+    static void DiagnosticClockFinish(const string p); //Stop clock for purpose (string name), DiagnosticTexts out the duration of the timer and its name.
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
     static void printUpgrade_Inventory(const int &screen_x, const int &screen_y);

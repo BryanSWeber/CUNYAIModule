@@ -3,7 +3,7 @@
 #include "Source/Diagnostics.h"
 #include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
-
+#include <chrono>
 
 
 // This function limits the drawing that needs to be done by the bot.
@@ -319,6 +319,25 @@ void Diagnostics::DiagnosticTrack(const Unit &u) {
 
 void Diagnostics::DiagnosticTrack(const Position &p) {
     Broodwar->setScreenPosition(p - Position{ 320,200 });
+}
+
+void Diagnostics::DiagnosticClockStart(const string p)
+{
+    std::chrono::time_point<std::chrono::high_resolution_clock> clockTime = std::chrono::high_resolution_clock::now();
+    if(clockTimes.insert({ p, clockTime }).second == false)
+        DiagnosticText("This string was already in the clock %s", p);
+}
+
+void Diagnostics::DiagnosticClockFinish(const string p)
+{
+    std::chrono::time_point<std::chrono::high_resolution_clock> clockTime = std::chrono::high_resolution_clock::now();
+    auto it = clockTimes.find(p);
+    if (it != clockTimes.end()) {
+        auto duration = (clockTime - it->second).count();
+        clockTimes.erase(it);
+        DiagnosticText("This clock %s took %3.fms", p);
+    }
+    DiagnosticText("This string wasn't in the clock %s", p);
 }
 
 
