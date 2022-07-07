@@ -35,8 +35,8 @@ public:
 
     void onStartSelf(LearningManager l);
 
-    void evaluateCD(double army_ct, double tech_ct, double wk_ct); //Estimates a CD with perfect information.
-
+    void setCD(double army_ct, double tech_ct, double wk_ct); //Estimates a CD with perfect information.
+    void setEnemyCD(int e_army_stock, int e_tech_stock, int e_worker_stock); //Estimates a CD with some ad-hoc limits on values.
     double getPriority();
 
     double getlnYPerCapita() const; //Per capita wealth, not really needed here but part of the formal model in economics.
@@ -52,8 +52,9 @@ public:
     const double getDeriviative(BuildParameterNames b);
     const double getStock(BuildParameterNames b);
 
-    void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock); //Estimates a CD within some ad-hoc bounds. For enemies.
-    void setStockObserved(int e_army_stock, int e_tech_stock, int e_worker_stock); //Stores Stocks for later calculations. 
+    //void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock); //Estimates a CD within some ad-hoc bounds. For enemies.
+    //void setStockObserved(int e_army_stock, int e_tech_stock, int e_worker_stock); //Stores Stocks for later calculations. 
+
     void enemy_mimic(const PlayerModel &enemy);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.

@@ -29,7 +29,7 @@ void CobbDouglas::onStartSelf(LearningManager l)
 }
 
 //complete but long creator method. Normalizes to 1 automatically.
-void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk)
+void CobbDouglas::setCD(double army_stk, double tech_stk, double wk_stk)
 {
     // CD takes the form Y= (A*labor)^alpha_l * capital^(alpha_k). I assume A is a technology augmenting only capital, and takes the form tech^(alpha_t). I can still normalize the sum of alpha_l and alpha_k to 1. 
     double a_tot = alpha_econ + alpha_army;
@@ -181,18 +181,16 @@ const double CobbDouglas::getStock(BuildParameterNames b)
     }
 }
 
-void CobbDouglas::estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
+void CobbDouglas::setEnemyCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
-    double K_over_L = safeDiv(e_army_stock, e_worker_stock); // avoid NAN's
+    worker_stock = std::max(e_worker_stock, 1);
+    army_stock = std::max(e_army_stock, 1);
+    tech_stock = std::max(e_tech_stock, 1);
+
+    double K_over_L = safeDiv(army_stock, worker_stock); // avoid NAN's
     alpha_army = CUNYAIModule::bindBetween(K_over_L / static_cast<double>(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_army, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(safeDiv(e_tech_stock, e_worker_stock) * alpha_econ / alpha_army, 0.05, 2.95);
-}
-
-void CobbDouglas::setStockObserved(int e_army_stock, int e_tech_stock, int e_worker_stock) {
-    army_stock = e_army_stock;
-    tech_stock = e_tech_stock;
-    worker_stock = e_worker_stock;
+    alpha_tech = CUNYAIModule::bindBetween(safeDiv(tech_stock, worker_stock) * alpha_econ / alpha_army, 0.05, 2.95);
 }
 
 //Sets enemy utility function parameters based on known information.

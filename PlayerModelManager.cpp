@@ -46,13 +46,15 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
         int worker_value = StoredUnit(player_race_.getWorker()).stock_value_;
         int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
 
-        spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
-            researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
-            estimated_worker_stock_);
+        //spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
+        //    researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
+        //    estimated_worker_stock_);
 
-        spending_model_.setStockObserved(units_.stock_fighting_total_,
-            researches_.research_stock_,
-            units_.worker_count_* worker_value);
+        //spending_model_.setStockObserved(units_.stock_fighting_total_,
+        //    researches_.research_stock_,
+        //    units_.worker_count_* worker_value);
+
+        spending_model_.setEnemyCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock_);
 
         updatePlayerAverageCD(); // For saving/printing on game end, what is this guy's style like?
     }
@@ -84,7 +86,7 @@ void PlayerModel::updateSelfOnFrame()
     researches_.updateResearch(Broodwar->self());
 
     int worker_value = StoredUnit(player_race_.getWorker()).stock_value_;
-    spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
+    spending_model_.setCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
         if (Broodwar->getFrameCount() % (30 * 24) == 0) {
