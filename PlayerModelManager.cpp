@@ -11,6 +11,11 @@ using namespace std;
 using namespace BWAPI;
 
 
+void PlayerModel::onStartSelf(LearningManager l)
+{
+    spending_model_.onStartSelf(l);
+}
+
 void PlayerModel::updateOtherOnFrame(const Player & other_player)
 {
     // Store Player
@@ -45,7 +50,7 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
             researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
             estimated_worker_stock_);
 
-        spending_model_.storeStocks(units_.stock_fighting_total_,
+        spending_model_.setStockObserved(units_.stock_fighting_total_,
             researches_.research_stock_,
             units_.worker_count_* worker_value);
 
@@ -89,10 +94,7 @@ void PlayerModel::updateSelfOnFrame()
                 //Diagnostics::DiagnosticWrite("Matching expenditures,L:%4.2f to %4.2f,K:%4.2f to %4.2f,T:%4.2f to %4.2f", spending_model_.alpha_econ, target_player.spending_model_.alpha_econ, spending_model_.alpha_army, target_player.spending_model_.alpha_army, spending_model_.alpha_tech, target_player.spending_model_.alpha_army);
             }
             else {
-                spending_model_.alpha_army = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::ArmyAlpha);
-                spending_model_.alpha_econ = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::EconAlpha);
-                spending_model_.alpha_tech = CUNYAIModule::learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::TechAlpha);
-                //Diagnostics::DiagnosticWrite("Reseting expenditures,%4.2f, %4.2f,%4.2f", spending_model_.alpha_econ, spending_model_.alpha_army, spending_model_.alpha_tech);
+                spending_model_.onStartSelf(CUNYAIModule::learnedPlan);
             }
         }
     }
@@ -100,10 +102,6 @@ void PlayerModel::updateSelfOnFrame()
     CUNYAIModule::tech_starved = spending_model_.tech_starved();
     CUNYAIModule::army_starved = spending_model_.army_starved();
     CUNYAIModule::econ_starved = spending_model_.econ_starved();
-
-    spending_model_.econ_derivative = spending_model_.econ_derivative;
-    spending_model_.army_derivative = spending_model_.army_derivative;
-    spending_model_.tech_derivative = spending_model_.tech_derivative;
 
     //Update general weaknesses.
     bool seen_air = CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0;
@@ -720,9 +718,9 @@ void PlayerModel::updatePlayerAverageCD()
 {
     int time = Broodwar->getFrameCount();
     if (time > 0) {
-        average_army_ = static_cast<double>(average_army_ * (time - 1) + spending_model_.alpha_army) / static_cast<double>(time);
-        average_econ_ = static_cast<double>(average_econ_ * (time - 1) + spending_model_.alpha_econ) / static_cast<double>(time);
-        average_tech_ = static_cast<double>(average_tech_ * (time - 1) + spending_model_.alpha_tech) / static_cast<double>(time);
+        average_army_ = static_cast<double>(average_army_ * (time - 1) + spending_model_.getParameter(BuildParameterNames::ArmyAlpha)) / static_cast<double>(time);
+        average_econ_ = static_cast<double>(average_econ_ * (time - 1) + spending_model_.getParameter(BuildParameterNames::EconAlpha)) / static_cast<double>(time);
+        average_tech_ = static_cast<double>(average_tech_ * (time - 1) + spending_model_.getParameter(BuildParameterNames::TechAlpha)) / static_cast<double>(time);
     }
 }
 

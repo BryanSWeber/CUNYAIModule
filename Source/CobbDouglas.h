@@ -3,6 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "PlayerModelManager.h"
+#include "LearningManager.h"
 #include <signal.h>
 
 
@@ -10,11 +11,9 @@ using namespace std;
 
 class PlayerModel;
 
-struct CobbDouglas
+class CobbDouglas
 {
-    CobbDouglas() {}; // default constructor.
-
-    void evaluateCD(double army_ct, double tech_ct, double wk_ct);
+private:
 
     double alpha_army;
     double alpha_tech;
@@ -29,18 +28,32 @@ struct CobbDouglas
     double army_derivative;
     double tech_derivative;
 
+    void setModelParameters(double armyAlpha, double econAlpha, double techAlpha, double adopRate);
+
+public:
+    CobbDouglas() {}; // default constructor.
+
+    void onStartSelf(LearningManager l);
+
+    void evaluateCD(double army_ct, double tech_ct, double wk_ct); //Estimates a CD with perfect information.
+
     double getPriority();
 
-    double getlny() const;
-    double getlnY() const;
+    double getlnYPerCapita() const; //Per capita wealth, not really needed here but part of the formal model in economics.
+    double getlnY() const; // Total overall wealth.
     double getlnYusing(const double alpha_army, const double alpha_tech) const;
+
 
     bool army_starved();
     bool econ_starved();
     bool tech_starved();
 
-    void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
-    void storeStocks(int e_army_stock, int e_tech_stock, int e_worker_stock);
+    const double getParameter(BuildParameterNames b);
+    const double getDeriviative(BuildParameterNames b);
+    const double getStock(BuildParameterNames b);
+
+    void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock); //Estimates a CD within some ad-hoc bounds. For enemies.
+    void setStockObserved(int e_army_stock, int e_tech_stock, int e_worker_stock); //Stores Stocks for later calculations. 
     void enemy_mimic(const PlayerModel &enemy);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
@@ -51,18 +64,15 @@ struct CobbDouglas
     bool evalEconPossible();
     bool evalTechPossible();
 
-
 };
 
 
 //The CD model is not made for 0's. But zeros happen in SC. 
 template <class T>
 double safeDiv(T &lhs, T &rhs) {
-    if (lhs != 0 && rhs != 0)  return static_cast<double>(lhs) / static_cast<double>(rhs);
-    else if (lhs == 0 && rhs != 0) return DBL_MIN;
+    if (lhs == 0 && rhs != 0) return DBL_MIN;
     else if (lhs > 0 && rhs == 0)  return DBL_MAX;
     else if (lhs < 0 && rhs == 0)  return -DBL_MAX;
     else if (lhs == 0 && rhs == 0) return DBL_MIN;
-    //else raise(SIGSEGV);  // simulates a standard crash when access invalid memory
-                                  // ie anything that can go wrong with pointers.
+    else return static_cast<double>(lhs) / static_cast<double>(rhs); //(lhs != 0 && rhs != 0)
 }

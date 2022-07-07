@@ -509,9 +509,9 @@ void Diagnostics::writeMacroIssues()
         DiagnosticWrite("Supply: %d/%d", CUNYAIModule::my_reservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
         DiagnosticWrite("Larva: %d/%d", CUNYAIModule::my_reservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
 
-        DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.econ_derivative);  //
-        DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.army_derivative);  //
-        DiagnosticWrite("Tech : %s, D.Tech:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.tech_derivative);  //
+        DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::EconAlpha));  //
+        DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::ArmyAlpha));  //
+        DiagnosticWrite("Tech : %s, D.Tech:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::TechAlpha));  //
     }
 
 }
@@ -577,7 +577,7 @@ void Diagnostics::onFrame()
     Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", CUNYAIModule::workermanager.checkExcessGasCapacity() ? "TRUE" : "FALSE");  //
 
 
-    //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
+    //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlnYPerCapita()); //
     //Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", friendly_player_model.spending_model_.getlnY()); //
 
     //Broodwar->drawTextScreen(125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60); //
@@ -588,13 +588,13 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
     //Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
 
-    Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.econ_derivative);  //
-    Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.army_derivative); //
-    Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.tech_derivative); //
+    Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::EconAlpha));  //
+    Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::ArmyAlpha)); //
+    Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::TechAlpha)); //
     Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", CUNYAIModule::adaptation_rate); //
-    Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
-    Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.alpha_army * 100); //
-    Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CUNYAIModule::friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
+    Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.getParameter(BuildParameterNames::EconAlpha) * 100);  // As %s
+    Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.getParameter(BuildParameterNames::ArmyAlpha) * 100); //
+    Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CUNYAIModule::friendly_player_model.spending_model_.getParameter(BuildParameterNames::TechAlpha) * 100); // No longer a % with capital-augmenting technology.
     Broodwar->drawTextScreen(250, 70, "gas_proportion: %4.2f", CUNYAIModule::gas_proportion); //
     Broodwar->drawTextScreen(250, 80, "supply_ratio_supply: %4.2f", CUNYAIModule::supply_ratio); //
     //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
@@ -618,7 +618,7 @@ void Diagnostics::onFrame()
     Broodwar->drawTextScreen(375, 30, "E. Army Stock/Est.: %d/%4.2f", CUNYAIModule::enemy_player_model.units_.stock_fighting_total_, CUNYAIModule::enemy_player_model.getEstimatedUnseenArmy());
     Broodwar->drawTextScreen(375, 40, "E. Tech Stock/Est.: %d/%4.2f", CUNYAIModule::enemy_player_model.researches_.research_stock_, CUNYAIModule::enemy_player_model.getEstimatedUnseenTech());
     Broodwar->drawTextScreen(375, 50, "E. Workers/Est.: %d/%d", CUNYAIModule::enemy_player_model.units_.worker_count_, static_cast<int>(CUNYAIModule::enemy_player_model.getEstimatedWorkers()));
-    Broodwar->drawTextScreen(375, 70, "Comparative lnY (E/F): %4.2f / %4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
+    Broodwar->drawTextScreen(375, 70, "Comparative lnY (E/F): %4.2f / %4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnY(), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
 
 
     ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //

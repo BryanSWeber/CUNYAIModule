@@ -981,8 +981,8 @@ bool AssemblyManager::assignAssemblyRole()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    subgoalArmy_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();
-    subgoalEcon_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() < CUNYAIModule::friendly_player_model.spending_model_.econ_derivative * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();; // they're complimentrary but I'd like them positively defined, negations can confuse.
+    subgoalArmy_ = CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::ArmyAlpha) * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() > CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::EconAlpha) * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();
+    subgoalEcon_ = CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::ArmyAlpha) * CUNYAIModule::friendly_player_model.spending_model_.evalArmyPossible() < CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::EconAlpha) * CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible();; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
     bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
     bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;

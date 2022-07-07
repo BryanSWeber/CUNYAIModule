@@ -18,7 +18,7 @@ private:
     inline static std::map<TechType, int> tech_cartridge_ = { { TechTypes::Lurker_Aspect, 0 } };
 
     // Averages for Opponent Modeling, outputting info at game end in history file.
-    void updatePlayerAverageCD();
+    void updatePlayerAverageCD(); 
     double average_army_; // Cumulative.
     double average_econ_; // Cumulative.
     double average_tech_; // Cumulative.
@@ -45,7 +45,6 @@ private:
     void Print_Average_CD(const int &screen_x, const int &screen_y); // Onscreen Diagnostic.
 
 public:
-
     //Commands that deal with the limits of viable actions.
     static std::map<UnitType, int> getCombatUnitCartridge(); //returns a copy of the combat unit cartridge.
     static std::map<UnitType, int> getEcoUnitCartridge(); // Returns a copy of the eco unit cartridge (usually just resource depots, workers, and extractors).
@@ -87,6 +86,7 @@ public:
     int closest_ground_combatant_ = INT_MAX;
 
     // Updating all those classes and values above
+    void onStartSelf(LearningManager l); //Establish basic values for bot at game start.
     void updateOtherOnFrame(const Player &other_player); //Throw an opponent in here and it will assume he produces from all known units (tech when possible, army when possible, econ always) and update his known units.
     void updateSelfOnFrame(); // Similar to update other, but perfect visiblity aids in most tasks, and inference about actions is unneeded.
 

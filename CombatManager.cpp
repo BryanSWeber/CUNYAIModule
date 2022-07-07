@@ -7,9 +7,6 @@
 #include "Source\Diagnostics.h"
 #include <bwem.h>
 
-bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved ||
-CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ||
-CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY(); // or we haven't scouted for an approximate minute. 
 
 UnitInventory CombatManager::scout_squad_;
 UnitInventory CombatManager::liabilities_squad_;
@@ -227,7 +224,7 @@ bool CombatManager::liabilitiesScript(const Unit &u)
 bool CombatManager::pathingScript(const Unit & u)
 {
     Mobility mobility = Mobility(u);
-    if (ready_to_fight || isScout(u)) {
+    if ( getMacroCombatReadiness() || isScout(u)) {
         return mobility.BWEM_Movement(true); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
     }
     else {
@@ -340,8 +337,11 @@ int CombatManager::getSearchRadius(const Unit & u)
     return totalSearchRadius;
 }
 
-void CombatManager::updateMacroCombatReadiness()
+bool CombatManager::getMacroCombatReadiness()
 {
-    ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+    bool ready_to_fight = !CUNYAIModule::army_starved ||
+        CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ||
+        CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+    return ready_to_fight;
 }
 

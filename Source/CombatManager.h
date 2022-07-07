@@ -13,7 +13,7 @@ private:
     static UnitInventory liabilities_squad_;     //Squad only gets hurt. Overlords, low energy psions...
     static UnitInventory scout_squad_;     //Squad scouts
     UnitInventory detector_squad_;     //Squad detects
-    static bool ready_to_fight;     // Some conditions for advancing units in or back.
+    static bool getMacroCombatReadiness();  // Evaluate advance/retreat conditions based on macro conditions.
 
 public:
     bool grandStrategyScript(const Unit & u);     // Runs all movement script for nonworker units. Priortizes combat when needed and pathing otherwise.
@@ -42,5 +42,4 @@ public:
     //static bool isPulledWorkersFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are Workers or Buildings
 
     int getSearchRadius(const Unit &u); //Returns the number of pixels we should search for targets.
-    void updateMacroCombatReadiness();  // Updating advance/retreat conditions.
 };

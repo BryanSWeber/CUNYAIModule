@@ -12,6 +12,22 @@ using namespace std;
 
 class PlayerModel;
 
+void CobbDouglas::setModelParameters(double armyAlpha, double econAlpha, double techAlpha, double adopRate)
+{
+    alpha_army = armyAlpha; // army starved parameter.
+    alpha_econ = econAlpha; // econ starved parameter.
+    alpha_tech = techAlpha; // tech starved parameter.
+    adoptionRate = adopRate; // rate of adaptation.
+}
+
+void CobbDouglas::onStartSelf(LearningManager l)
+{
+    setModelParameters(l.inspectCurrentBuild().getParameter(BuildParameterNames::ArmyAlpha),
+                        l.inspectCurrentBuild().getParameter(BuildParameterNames::EconAlpha),
+                        l.inspectCurrentBuild().getParameter(BuildParameterNames::TechAlpha),
+                        l.inspectCurrentBuild().getParameter(BuildParameterNames::AdaptationRate));
+}
+
 //complete but long creator method. Normalizes to 1 automatically.
 void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk)
 {
@@ -21,9 +37,9 @@ void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk)
     alpha_army = alpha_army / a_tot;
     //alpha_tech = alpha_tech; // No change here, it's not normalized.
 
-    worker_stock = wk_stk;
-    army_stock = army_stk;
-    tech_stock = tech_stk;
+    worker_stock = std::max(wk_stk, 1.0);
+    army_stock = std::max(army_stk, 1.0);
+    tech_stock = std::max(tech_stk, 1.0);
 
     bool army_possible = evalArmyPossible();
     bool econ_possible = evalEconPossible();
@@ -42,7 +58,7 @@ double CobbDouglas::getPriority() {
 }
 
 // Protected from failure in divide by 0 case.
-double CobbDouglas::getlny() const
+double CobbDouglas::getlnYPerCapita() const
 {
     double ln_y = 0;
     try {
@@ -118,6 +134,53 @@ bool CobbDouglas::tech_starved()
     }
 }
 
+const double CobbDouglas::getParameter(BuildParameterNames b)
+{
+    switch(b){
+    case BuildParameterNames::ArmyAlpha :
+        return alpha_army;
+    case BuildParameterNames::EconAlpha:
+        return alpha_econ;
+    case BuildParameterNames::TechAlpha:
+        return alpha_tech;
+    case BuildParameterNames::AdaptationRate:
+        return adoptionRate;
+    default:
+        Diagnostics::DiagnosticText("You're asking for a parameter from the CD model that it doesn't have.");
+        return 0.0;
+    }
+}
+
+const double CobbDouglas::getDeriviative(BuildParameterNames b)
+{
+    switch (b) {
+    case BuildParameterNames::ArmyAlpha:
+        return army_derivative;
+    case BuildParameterNames::EconAlpha:
+        return econ_derivative;
+    case BuildParameterNames::TechAlpha:
+        return tech_derivative;
+    default:
+        Diagnostics::DiagnosticText("You're asking for a derivative from the CD model that it doesn't have.");
+        return 0.0;
+    }
+}
+
+const double CobbDouglas::getStock(BuildParameterNames b)
+{
+    switch (b) {
+    case BuildParameterNames::ArmyAlpha:
+        return army_stock;
+    case BuildParameterNames::EconAlpha:
+        return worker_stock;
+    case BuildParameterNames::TechAlpha:
+        return tech_stock;
+    default:
+        Diagnostics::DiagnosticText("You're asking for a Stock from the CD model that it doesn't have.");
+        return 0.0;
+    }
+}
+
 void CobbDouglas::estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
     double K_over_L = safeDiv(e_army_stock, e_worker_stock); // avoid NAN's
@@ -126,7 +189,7 @@ void CobbDouglas::estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_wo
     alpha_tech = CUNYAIModule::bindBetween(safeDiv(e_tech_stock, e_worker_stock) * alpha_econ / alpha_army, 0.05, 2.95);
 }
 
-void CobbDouglas::storeStocks(int e_army_stock, int e_tech_stock, int e_worker_stock) {
+void CobbDouglas::setStockObserved(int e_army_stock, int e_tech_stock, int e_worker_stock) {
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;
     worker_stock = e_worker_stock;
@@ -171,7 +234,7 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
     GameParameters.open("..\\write\\GameParameters.txt", ios::app | ios::ate);
     if (GameParameters.is_open()) {
         GameParameters.seekp(0, ios::end); //to ensure the put pointer is at the end
-        GameParameters << getlnY() << "," << getlny() << "," << alpha_army << "," << alpha_econ << "," << alpha_tech << "," << econ_derivative << "," << army_derivative << "," << tech_derivative << "\n";
+        GameParameters << getlnY() << "," << getlnYPerCapita() << "," << alpha_army << "," << alpha_econ << "," << alpha_tech << "," << econ_derivative << "," << army_derivative << "," << tech_derivative << "\n";
         GameParameters.close();
     }
     else {

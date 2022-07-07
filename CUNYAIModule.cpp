@@ -139,11 +139,8 @@ void CUNYAIModule::onStart()
 
     gas_proportion = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::GasProportion); //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
     supply_ratio = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::SupplyRatio); //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
-    //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    friendly_player_model.spending_model_.alpha_army = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::ArmyAlpha); // army starved parameter.
-    friendly_player_model.spending_model_.alpha_econ = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::EconAlpha); // econ starved parameter.
-    friendly_player_model.spending_model_.alpha_tech = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::TechAlpha); // tech starved parameter.
-    friendly_player_model.spending_model_.adoptionRate = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::AdaptationRate); // rate of adaptation.
+
+    friendly_player_model.spending_model_.onStartSelf(learnedPlan);
 
     //update Map Grids
     currentMapInventory.updateBuildablePos();
@@ -154,32 +151,6 @@ void CUNYAIModule::onStart()
     //inventory.updateMapChokes();
 
     my_reservation = Reservation();
-
-    //friendly_player_model.setLockedOpeningValues();
-
-    //if (RIP_REPLAY) {
-    //    string src = learnedPlan.readDirectory_ + Broodwar->enemy()->getName() + ".txt";
-    //    string dst = learnedPlan.writeDirectory_ + Broodwar->enemy()->getName() + ".txt";
-    //    rename(src.c_str(), dst.c_str());
-
-    //    src = learnedPlan.readDirectory_ + Broodwar->enemy()->getName() + "casualties" + ".txt";
-    //    dst = learnedPlan.writeDirectory_ + Broodwar->enemy()->getName() + "casualties" + ".txt";
-    //    rename(src.c_str(), dst.c_str());
-
-    //    src = learnedPlan.readDirectory_ + Broodwar->self()->getName() + ".txt";
-    //    dst = learnedPlan.writeDirectory_ + Broodwar->self()->getName() + ".txt";
-    //    rename(src.c_str(), dst.c_str());
-
-    //    src = learnedPlan.readDirectory_ + Broodwar->self()->getName() + "casualties" + ".txt";
-    //    dst = learnedPlan.writeDirectory_ + Broodwar->self()->getName() + "casualties" + ".txt";
-    //    rename(src.c_str(), dst.c_str());
-
-    //    if (std::filesystem::exists(learnedPlan.readDirectory_))
-    //        Diagnostics::DiagnosticWrite( "We found a READ folder");
-    //    if (std::filesystem::exists(learnedPlan.writeDirectory_))
-    //        Diagnostics::DiagnosticWrite( "We found a WRITE folder");
-
-    //}
 
 }
 
@@ -266,9 +237,7 @@ void CUNYAIModule::onFrame()
     supply_starved = (currentMapInventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
-    bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
-
-    combat_manager.updateMacroCombatReadiness();
+    //bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
     playermodel_time = end_playermodel - start_playermodel;

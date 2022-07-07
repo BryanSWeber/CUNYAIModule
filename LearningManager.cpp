@@ -456,6 +456,7 @@ void LearningManager::selectBestBuild()
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
+    currentBuild_.initializeBuildOrder(findMatchingBO(FourHatch));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
