@@ -3,7 +3,6 @@
 #include "Source/Diagnostics.h"
 #include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
-#include <chrono>
 
 
 // This function limits the drawing that needs to be done by the bot.

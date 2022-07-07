@@ -51,7 +51,7 @@ void CobbDouglas::setCD(double army_stk, double tech_stk, double wk_stk)
 }
 
 // Identifies the value of our main priority.
-double CobbDouglas::getPriority() {
+double CobbDouglas::getPriority() const {
     double derivatives[3] = { econ_derivative , army_derivative, tech_derivative };
     double priority = *(max_element(begin(derivatives), end(derivatives)));
     return priority;
@@ -100,7 +100,7 @@ double CobbDouglas::getlnYusing(const double alpha_army, const double alpha_tech
 }
 
 //Identifies priority type
-bool CobbDouglas::army_starved()
+bool CobbDouglas::army_starved() const
 {
     if (army_derivative == getPriority())
     {
@@ -112,7 +112,7 @@ bool CobbDouglas::army_starved()
 }
 
 //Identifies priority type
-bool CobbDouglas::econ_starved()
+bool CobbDouglas::econ_starved() const
 {
     if (econ_derivative == getPriority())
     {
@@ -123,7 +123,7 @@ bool CobbDouglas::econ_starved()
     }
 }
 //Identifies priority type
-bool CobbDouglas::tech_starved()
+bool CobbDouglas::tech_starved() const
 {
     if (tech_derivative == getPriority())
     {
@@ -134,7 +134,7 @@ bool CobbDouglas::tech_starved()
     }
 }
 
-const double CobbDouglas::getParameter(BuildParameterNames b)
+double CobbDouglas::getParameter(BuildParameterNames b) const
 {
     switch(b){
     case BuildParameterNames::ArmyAlpha :
@@ -151,7 +151,7 @@ const double CobbDouglas::getParameter(BuildParameterNames b)
     }
 }
 
-const double CobbDouglas::getDeriviative(BuildParameterNames b)
+double CobbDouglas::getDeriviative(BuildParameterNames b) const
 {
     switch (b) {
     case BuildParameterNames::ArmyAlpha:
@@ -166,7 +166,7 @@ const double CobbDouglas::getDeriviative(BuildParameterNames b)
     }
 }
 
-const double CobbDouglas::getStock(BuildParameterNames b)
+double CobbDouglas::getStock(BuildParameterNames b) const
 {
     switch (b) {
     case BuildParameterNames::ArmyAlpha:
@@ -227,7 +227,7 @@ void CobbDouglas::enemy_mimic(const PlayerModel & enemy) {
 };
 
 
-void CobbDouglas::printModelParameters() { // we have poorly named parameters, alpha army is in CUNYAIModule as well.
+void CobbDouglas::printModelParameters() const { // we have poorly named parameters, alpha army is in CUNYAIModule as well.
     std::ofstream GameParameters;
     GameParameters.open("..\\write\\GameParameters.txt", ios::app | ios::ate);
     if (GameParameters.is_open()) {
@@ -240,7 +240,7 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
     }
 }
 
-bool CobbDouglas::evalArmyPossible()
+bool CobbDouglas::evalArmyPossible() const
 {
 
     double K_over_L = safeDiv(army_stock, worker_stock); // avoid NAN's
@@ -260,7 +260,7 @@ bool CobbDouglas::evalArmyPossible()
 
 }
 
-bool CobbDouglas::evalEconPossible()
+bool CobbDouglas::evalEconPossible() const
 {
     bool enough_mines_exist = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= static_cast<int>(Broodwar->getMinerals().size() * 2 + Broodwar->getGeysers().size() * 3 + 1);
     bool not_enough_miners_for_mines = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3);
@@ -269,7 +269,7 @@ bool CobbDouglas::evalEconPossible()
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
 
-bool CobbDouglas::evalTechPossible()
+bool CobbDouglas::evalTechPossible() const
 {
     return CUNYAIModule::techmanager.checkTechAvail(); // if you have no tech available, you cannot be tech starved.
 }

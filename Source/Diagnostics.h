@@ -10,7 +10,7 @@
 class Diagnostics {
 private:
     bool display = false;
-    static map<string, std::chrono::time_point<std::chrono::high_resolution_clock>> clockTimes;
+    static map< string, std::chrono::time_point<std::chrono::high_resolution_clock> > clockTimes;
 
 public:
     static void onFrame();

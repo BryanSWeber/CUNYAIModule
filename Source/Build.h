@@ -106,24 +106,24 @@ public:
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
     void retryBuildOrderElement(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
 
-    const void announceBuildingAttempt(UnitType ut);  // do we have a guy going to build it?
-    const int countTimesInBuildQueue(UnitType ut); 
+    void announceBuildingAttempt(UnitType ut) const;  // do we have a guy going to build it?
+    int countTimesInBuildQueue(UnitType ut) const;
 
-    const bool isEmptyBuildOrder(); // Returns true if empty.
+    bool isEmptyBuildOrder() const; // Returns true if empty.
 
-    const double getParameter(BuildParameterNames b); //Getting specific parameters by name.
-    const BuildEnums getBuildEnum(); //Gets the name of the build.
-    const BuildOrderElement getNext(); //Returns next element, otherwise returns unittype none.
-    const vector<BuildOrderElement> getQueue(); //returns the entire queue.
+    double getParameter(BuildParameterNames b) const; //Getting specific parameters by name.
+    BuildEnums getBuildEnum() const; //Gets the name of the build.
+    BuildOrderElement getNext() const; //Returns next element, otherwise returns unittype none.
+    vector<BuildOrderElement> getQueue() const; //returns the entire queue.
 
-    const int getRemainingGas();
-    const int getRemainingMinerals();
-    const int getNextGasCost();
-    const int getNextMinCost();
+    int getRemainingGas() const;
+    int getRemainingMinerals() const;
+    int getNextGasCost() const;
+    int getNextMinCost() const;
 
-    const bool checkIfNextInBuild(UpgradeType upgrade); //Convenience for common call.
-    const bool checkIfNextInBuild(TechType upgrade); //Convenience for common call.
-    const bool checkIfNextInBuild(UnitType ut); //Convenience for common call.
+    bool checkIfNextInBuild(UpgradeType upgrade) const; //Convenience for common call.
+    bool checkIfNextInBuild(TechType upgrade) const; //Convenience for common call.
+    bool checkIfNextInBuild(UnitType ut) const; //Convenience for common call.
 };
 
 
