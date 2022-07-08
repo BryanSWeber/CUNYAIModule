@@ -17,10 +17,11 @@ enum BuildParameterNames {
 };
 
 enum BuildEnums {
-    TwoBaseMuta,
     Lurker,
-    FivePool,
-    OneBaseSpire,
+    PoolFive,
+    PoolSeven,
+    OneBaseMuta,
+    TwoBaseMuta,
     FourHatchCarapace,
     FourHatchBeforePool
 };

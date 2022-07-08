@@ -217,6 +217,27 @@ void LearningManager::definePremadeBuildOrders()
 
     double fivePoolParams[6] = { 0.464593318, 1.145650349, 0.535406679, 0.409437865, 0.669303145, 0.428709651 };
 
+
+    // 7 pool https://liquipedia.net/starcraft/7_Pool_(vs._Terran)
+    vector<BuildOrderElement> sevenPoolList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Spawning_Pool),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Overlord),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Zergling),
+        BuildOrderElement(UnitTypes::Zerg_Zergling),
+        BuildOrderElement(UnitTypes::Zerg_Zergling),
+        BuildOrderElement(UnitTypes::Zerg_Zergling),
+        BuildOrderElement(UnitTypes::Zerg_Hatchery),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Drone),
+        BuildOrderElement(UnitTypes::Zerg_Extractor)
+    };
+
+    double sevenPoolParams[6] = { 0.464593318, 1.145650349, 0.535406679, 0.409437865, 0.669303145, 0.428709651 };
+
    // // 3 Hatch Muta: https://liquipedia.net/starcraft/3_Hatch_Muta_(vs._Terran) In progress.
    // vector<BuildOrderElement> threeHatchMutaList = { BuildOrderElement(UnitTypes::Zerg_Drone),
    //    BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -367,9 +388,10 @@ void LearningManager::definePremadeBuildOrders()
 
     //Hardcoded build orders below.
     BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::TwoBaseMuta);
-    BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseSpire);
+    BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseMuta);
     BuildOrderSetup LurkerSetup = BuildOrderSetup(lurkerList, lurkerParams, BuildEnums::Lurker);
-    BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::FivePool);
+    BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::PoolFive);
+    BuildOrderSetup sevenPoolSetup = BuildOrderSetup(sevenPoolList, sevenPoolParams, BuildEnums::PoolSeven);
     BuildOrderSetup FourHatchCarapaceSetup = BuildOrderSetup(FourHatchCarapaceList, FourHatchCarapaceParams, BuildEnums::FourHatchCarapace);
     BuildOrderSetup FourHatchBeforePool = BuildOrderSetup(FourHatchBeforePoolList, FourHatchBeforePoolParams, BuildEnums::FourHatchBeforePool);
 
@@ -377,6 +399,7 @@ void LearningManager::definePremadeBuildOrders()
     myBuilds_.push_back(OneBaseSpireSetup);
     myBuilds_.push_back(LurkerSetup);
     myBuilds_.push_back(fivePoolSetup);
+    myBuilds_.push_back(sevenPoolSetup);
     myBuilds_.push_back(FourHatchCarapaceSetup);
     myBuilds_.push_back(FourHatchBeforePool);
 }
@@ -440,10 +463,10 @@ void LearningManager::selectDefaultBuild() {
         currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::Lurker));
         break;
     case Races::Zerg:
-        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::OneBaseSpire));
+        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::OneBaseMuta));
         break;
     default: //Random or Unknown.
-        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::FivePool));
+        currentBuild_.initializeBuildOrder(findMatchingBO(BuildEnums::PoolFive));
     }
 }
 
@@ -483,7 +506,7 @@ void LearningManager::selectBestBuild()
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
-    currentBuild_.initializeBuildOrder(findMatchingBO(FivePool));
+    currentBuild_.initializeBuildOrder(findMatchingBO(PoolSeven));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
@@ -569,8 +592,8 @@ BuildOrderSetup LearningManager::findMatchingBO(BuildEnums b)
 map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "MutaTwoBase", BuildEnums::TwoBaseMuta},
     { "Lurker", BuildEnums::Lurker },
-    { "PoolFive", BuildEnums::FivePool } ,
-    { "MutaOneBase", BuildEnums::OneBaseSpire },
+    { "PoolFive", BuildEnums::PoolFive } ,
+    { "MutaOneBase", BuildEnums::OneBaseMuta },
     { "FourHatchCarapace", BuildEnums::FourHatchCarapace },
     { "FourHatchBeforePool", BuildEnums::FourHatchBeforePool }
 };
