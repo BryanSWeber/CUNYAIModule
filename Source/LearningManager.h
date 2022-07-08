@@ -30,7 +30,7 @@ struct History {
 class LearningManager {
 
 private:
-    //const string readDirectory_ = "..//read//"; // If you are launched by the shell exe (in the at-home test enviorment) and are inside the AI folder, you start from your particular position and search down.
+    //const string readDirectory_ = "..//read//"; // If you are launched manually (in the at-home test enviorment) and are inside the AI folder, you start from your particular position and search down.
     //const string writeDirectory_ = "..//write//";
     const string readDirectory_ = "bwapi-data/read/"; // If you are launched by BWAPI you start from starcraft.exe
     const string writeDirectory_ = "bwapi-data/write/";
@@ -46,7 +46,7 @@ private:
     vector<BuildOrderSetup> myBuilds_; //Predefined BO's
     static map<string, BuildEnums> BuildStringsTable_; //Table for build orders to translate human-readable strings.
     BuildOrderSetup findMatchingBO(BuildEnums b); //searchs MyBuilds for the correct matching type. Returns an empty BO otherwise.
-    const string getBuildNameFromEnum(BuildEnums b);
+    string getBuildNameFromEnum(const BuildEnums b) const;
 
     string myRaceChar_;
     string enemyRaceChar_;
@@ -61,9 +61,10 @@ public:
     void onStart();
     void onEnd(bool isWinner);
 
-    string getBuildNameString(const BuildEnums b) const;
 
-    Build inspectCurrentBuild() const; //Returns a copy, does not allow touching the class. Good for various inspections that may be wanted.
+    string getBuildName() const;
+
+    const Build inspectCurrentBuild() const; //Returns a copy, does not allow touching the class. Good for various inspections that may be wanted.
     Build* modifyCurrentBuild(); //Only do this if you're ready to modify the build.
 
     string getReadDir() const;

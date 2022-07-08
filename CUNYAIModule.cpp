@@ -308,7 +308,7 @@ void CUNYAIModule::onFrame()
             reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
         }
         if (need_gas_now && no_extractor && !reserved_extractor) {
-            learnedPlan.inspectCurrentBuild().clearRemainingBuildOrder(false);
+            learnedPlan.modifyCurrentBuild()->clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticWrite("Uh oh, something's went wrong with building an extractor!");
         }
     }
@@ -651,10 +651,10 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
         if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
-                learnedPlan.inspectCurrentBuild().retryBuildOrderElement(UnitTypes::Zerg_Overlord);
+                learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(UnitTypes::Zerg_Overlord);
             }
             else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
-                learnedPlan.inspectCurrentBuild().clearRemainingBuildOrder( false );
+                learnedPlan.modifyCurrentBuild()->clearRemainingBuildOrder( false );
                 Diagnostics::DiagnosticWrite("Uh oh! A drone has died and this means we need to ditch our build order!");
             }
         }

@@ -53,7 +53,7 @@ public:
     static void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
     static void Print_ResearchInventory(const int & screen_x, const int & screen_y, const ResearchInventory & ri);
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-    static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, Build & bo);
+    static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const Build & bo);
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
     static void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
 
@@ -110,7 +110,7 @@ public:
     void clockFinish(const std::string p)
     {
         auto clockFinish = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clockStart - clockFinish).count();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clockFinish - clockStart).count();
         std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
     }
 };

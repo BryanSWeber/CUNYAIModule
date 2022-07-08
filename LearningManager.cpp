@@ -482,7 +482,6 @@ void LearningManager::selectBestBuild()
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
-    currentBuild_.initializeBuildOrder(findMatchingBO(FourHatch));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
@@ -493,7 +492,7 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
     return double(win) / double(lose) + sqrt( 1.5 * log(double(gameHistory_.size()))/double(win + lose) );
 }
 
-string LearningManager::getBuildNameString(const BuildEnums b) const
+string LearningManager::getBuildNameFromEnum(const BuildEnums b) const
 {
     for (auto i : BuildStringsTable_) {
         if (i.second == b)
@@ -508,7 +507,7 @@ string LearningManager::getBuildName() const
     return getBuildNameFromEnum(currentBuild_.getBuildEnum());
 }
 
-Build LearningManager::inspectCurrentBuild() {
+const Build LearningManager::inspectCurrentBuild() const {
     return currentBuild_;
 }
 
