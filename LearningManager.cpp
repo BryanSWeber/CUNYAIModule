@@ -205,6 +205,7 @@ void LearningManager::definePremadeBuildOrders()
         BuildOrderElement(UnitTypes::Zerg_Zergling),
         BuildOrderElement(UnitTypes::Zerg_Overlord),
         BuildOrderElement(UnitTypes::Zerg_Zergling),
+        BuildOrderElement(UnitTypes::Zerg_Hatchery),
         BuildOrderElement(UnitTypes::Zerg_Zergling),
         BuildOrderElement(UnitTypes::Zerg_Zergling),
         BuildOrderElement(UnitTypes::Zerg_Zergling),
@@ -482,6 +483,7 @@ void LearningManager::selectBestBuild()
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
+    currentBuild_.initializeBuildOrder(findMatchingBO(FivePool));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
