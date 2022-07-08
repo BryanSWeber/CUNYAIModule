@@ -72,7 +72,7 @@ int CUNYAIModule::long_delay = 0;
 
 void CUNYAIModule::onStart()
 {
-    Diagnostics::DiagnosticClockStart("onStart");
+    DiagnosticTimer onStartClock;
     Broodwar << "Map initialization..." << std::endl;
 
     //Initialize BWEM, must be done FIRST.
@@ -135,10 +135,9 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    Diagnostics::DiagnosticClockStart("Learning (OnStart)");
+    DiagnosticTimer onStartLearningClock;
     learnedPlan.onStart();
-    Diagnostics::DiagnosticClockFinish("Learning (OnStart)");
-
+    onStartLearningClock.clockFinish("Learning (OnStart)");
 
     gas_proportion = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::GasProportion); //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
     supply_ratio = learnedPlan.inspectCurrentBuild().getParameter(BuildParameterNames::SupplyRatio); //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -146,18 +145,13 @@ void CUNYAIModule::onStart()
     friendly_player_model.spending_model_.onStartSelf(learnedPlan);
 
     //update Map Grids
-    Diagnostics::DiagnosticClockStart("Map Inventory (OnStart)");
-    currentMapInventory.updateBuildablePos();
-    currentMapInventory.updateUnwalkable();
-    currentMapInventory.updateMapVeins();
-    //inventory.updateSmoothPos();
-    //current_MapInventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_MapInventory.front_line_base_, current_MapInventory.map_out_from_home_);
-    //inventory.updateMapChokes();
-    Diagnostics::DiagnosticClockFinish("Map Inventory (OnStart)");
+    DiagnosticTimer onStartMapClock;
+    currentMapInventory.onStart();
+    onStartMapClock.clockFinish("Map Inventory (OnStart)");
 
 
     my_reservation = Reservation();
-    Diagnostics::DiagnosticClockFinish("onStart");
+    onStartClock.clockFinish("onStart");
 }
 
 void CUNYAIModule::onEnd(bool isWinner)

@@ -4,13 +4,12 @@
 #include "CUNYAIModule.h"
 #include "Build.h"
 #include <chrono> // for in-game frame clock.
-
+#include <map>
 
 // Manages various types of important diagnostics and print functions.
 class Diagnostics {
 private:
     bool display = false;
-    static map< string, std::chrono::time_point<std::chrono::high_resolution_clock> > clockTimes;
 
 public:
     static void onFrame();
@@ -45,9 +44,6 @@ public:
     static void writeMap(Position pos, string s);
     static void DiagnosticTrack(const Unit & u);
     static void DiagnosticTrack(const Position & p);
-
-    static void DiagnosticClockStart(const string p); //Start clock for purpose (string name).
-    static void DiagnosticClockFinish(const string p); //Stop clock for purpose (string name), DiagnosticTexts out the duration of the timer and its name.
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
     static void printUpgrade_Inventory(const int &screen_x, const int &screen_y);
@@ -103,5 +99,18 @@ public:
             output << endl;
             output.close();
         }
+    }
+};
+
+//This simple class starts and stops a timer. It announces when it is finished and has a unique name.
+class DiagnosticTimer {
+private:
+    std::chrono::high_resolution_clock::time_point clockStart = std::chrono::high_resolution_clock::now();
+public:
+    void clockFinish(const std::string p)
+    {
+        auto clockFinish = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clockStart - clockFinish).count();
+        std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
     }
 };

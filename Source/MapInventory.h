@@ -57,6 +57,8 @@ public:
     MapInventory();
     MapInventory(const UnitInventory &ui, const ResourceInventory &ri);
 
+    void onStart();
+
     int nScouts = 2; // How many scouts will we have? Set by fiat.
     Position screen_position_;
 

@@ -69,6 +69,13 @@ MapInventory::MapInventory(const UnitInventory &ui, const ResourceInventory &ri)
     }
 }
 
+void MapInventory::onStart()
+{
+    updateBuildablePos();
+    updateUnwalkable();
+    updateMapVeins();
+}
+
 //Marks Data for each area if it is "ground safe"
 void MapInventory::updateGroundDangerousAreas()
 {
