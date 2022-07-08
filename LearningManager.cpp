@@ -26,12 +26,12 @@ using namespace std;
 void LearningManager::onStart()
 {
     // File extension including our race initial;
-    myRaceChar = CUNYAIModule::safeString(Broodwar->self()->getRace().c_str());
-    enemyRaceChar = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    versionChar = "2022.6.24";
-    noStats = " 0 0 ";
-    learningExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + ".csv";
-    gameInfoExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + versionChar + " Info.csv";
+    myRaceChar_ = CUNYAIModule::safeString(Broodwar->self()->getRace().c_str());
+    enemyRaceChar_ = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    versionChar_ = "2022.6.24";
+    noStats_ = " 0 0 ";
+    learningExtension_ = myRaceChar_ + "v" + enemyRaceChar_ + " " + Broodwar->enemy()->getName() + " " + versionChar_ + ".csv";
+    gameInfoExtension_ = myRaceChar_ + "v" + enemyRaceChar_ + " " + Broodwar->enemy()->getName() + " " + versionChar_ + " Info.csv";
 
     definePremadeBuildOrders();
     Diagnostics::DiagnosticText("Build Orders Defined");
@@ -45,10 +45,10 @@ void LearningManager::onStart()
 
 void LearningManager::onEnd(bool isWinner)
 {
-    ifstream readFile(getReadDir() + gameInfoExtension);
+    ifstream readFile(getReadDir() + gameInfoExtension_);
     if (readFile)
-        copyFile(getReadDir() + gameInfoExtension, getWriteDir() + gameInfoExtension);
-    ofstream gameLog(getWriteDir() + gameInfoExtension, std::ios_base::app);
+        copyFile(getReadDir() + gameInfoExtension_, getWriteDir() + gameInfoExtension_);
+    ofstream gameLog(getWriteDir() + gameInfoExtension_, std::ios_base::app);
     //gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
 
     // Print all relevant model and game characteristics.
@@ -85,9 +85,9 @@ void LearningManager::onEnd(bool isWinner)
 
     // If training in some enviorments, I need to manually move the read to write to mimic tournament play.
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        ifstream readFile(getWriteDir() + gameInfoExtension);
+        ifstream readFile(getWriteDir() + gameInfoExtension_);
         if (readFile)
-            copyFile(getWriteDir() + gameInfoExtension, getReadDir() + gameInfoExtension);
+            copyFile(getWriteDir() + gameInfoExtension_, getReadDir() + gameInfoExtension_);
     }
 }
 
@@ -272,7 +272,7 @@ void LearningManager::definePremadeBuildOrders()
     double OneBaseSpireParams[6] = { 0.517767817, 1.238421617 , 0.48223217, 0.439303835, 0.717060969, 0.373843463 };
 
     // 4H Macro Before Gas https://liquipedia.net/starcraft/4_Hatch_before_Gas_(vs._Protoss)
-    vector<BuildOrderElement> FourHatchList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+    vector<BuildOrderElement> FourHatchCarapaceList = { BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -292,16 +292,16 @@ void LearningManager::definePremadeBuildOrders()
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
-       BuildOrderElement(UnitTypes::Zerg_Hatchery), // 16–18 — Hatchery @ Natural or 3rd Base. MacroHatch.
+       BuildOrderElement(UnitTypes::Zerg_Hatchery), // 16ï¿½18 ï¿½ Hatchery @ Natural or 3rd Base. MacroHatch.
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Extractor),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
-       BuildOrderElement(UnitTypes::Zerg_Evolution_Chamber), //100% Extractor — Evolution Chamber (See note)
+       BuildOrderElement(UnitTypes::Zerg_Evolution_Chamber), //100% Extractor ï¿½ Evolution Chamber (See note)
        BuildOrderElement(UnitTypes::Zerg_Drone),
-       BuildOrderElement(UnitTypes::Zerg_Drone), 
+       BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -309,7 +309,7 @@ void LearningManager::definePremadeBuildOrders()
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
-       BuildOrderElement(UpgradeTypes::Zerg_Carapace), // @100% Evolution Chamber — +1 Zerg Carapace, (see note)
+       BuildOrderElement(UpgradeTypes::Zerg_Carapace), // @100% Evolution Chamber ï¿½ +1 Zerg Carapace, (see note)
        BuildOrderElement(UnitTypes::Zerg_Overlord), //Not listed in BO, difficult to time.
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
@@ -317,9 +317,9 @@ void LearningManager::definePremadeBuildOrders()
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
        BuildOrderElement(UnitTypes::Zerg_Drone),
-       BuildOrderElement(UnitTypes::Zerg_Hatchery), // @300 Minerals — Hatchery (preferably used to narrow a chokepoint)
-       BuildOrderElement(UnitTypes::Zerg_Lair), // @100 Gas — Lair
-       BuildOrderElement(UpgradeTypes::Metabolic_Boost), // @100 Gas — Metabolic Boost
+       BuildOrderElement(UnitTypes::Zerg_Hatchery), // @300 Minerals ï¿½ Hatchery (preferably used to narrow a chokepoint)
+       BuildOrderElement(UnitTypes::Zerg_Lair), // @100 Gas ï¿½ Lair
+       BuildOrderElement(UpgradeTypes::Metabolic_Boost), // @100 Gas ï¿½ Metabolic Boost
        BuildOrderElement(UnitTypes::Zerg_Zergling),
        BuildOrderElement(UnitTypes::Zerg_Zergling),
        BuildOrderElement(UnitTypes::Zerg_Zergling),
@@ -338,31 +338,57 @@ void LearningManager::definePremadeBuildOrders()
        BuildOrderElement(UnitTypes::Zerg_Spire)
     };
 
-    double FourHatchParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
-    
+    double FourHatchCarapaceParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
+
+    //4 hatch before pool. Gasless.
+    vector<BuildOrderElement> FourHatchBeforePoolList = { BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Overlord),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Drone),
+           BuildOrderElement(UnitTypes::Zerg_Hatchery),
+           BuildOrderElement(UnitTypes::Zerg_Overlord),
+           BuildOrderElement(UnitTypes::Zerg_Spawning_Pool)
+    };
+    double FourHatchBeforePoolParams[6] = { 0.458350597, 1.293531827 , 0.541649398, 0.33578132, 0.697611437, 0.319556148 };
+
     //Hardcoded build orders below.
     BuildOrderSetup MutaSetup = BuildOrderSetup(MutaList, mutaParams, BuildEnums::TwoBaseMuta);
     BuildOrderSetup OneBaseSpireSetup = BuildOrderSetup(OneBaseSpireList, OneBaseSpireParams, BuildEnums::OneBaseSpire);
     BuildOrderSetup LurkerSetup = BuildOrderSetup(lurkerList, lurkerParams, BuildEnums::Lurker);
     BuildOrderSetup fivePoolSetup = BuildOrderSetup(fivePoolList, fivePoolParams, BuildEnums::FivePool);
-    BuildOrderSetup FourHatchSetup = BuildOrderSetup(FourHatchList, FourHatchParams, BuildEnums::FourHatch);
+    BuildOrderSetup FourHatchCarapaceSetup = BuildOrderSetup(FourHatchCarapaceList, FourHatchCarapaceParams, BuildEnums::FourHatchCarapace);
+    BuildOrderSetup FourHatchBeforePool = BuildOrderSetup(FourHatchBeforePoolList, FourHatchBeforePoolParams, BuildEnums::FourHatchBeforePool);
 
     myBuilds_.push_back(MutaSetup);
     myBuilds_.push_back(OneBaseSpireSetup);
     myBuilds_.push_back(LurkerSetup);
     myBuilds_.push_back(fivePoolSetup);
-    myBuilds_.push_back(FourHatchSetup);
+    myBuilds_.push_back(FourHatchCarapaceSetup);
+    myBuilds_.push_back(FourHatchBeforePool);
 }
 
 void LearningManager::parseLearningFile()
 {
     //Required Elements
     gameHistory_.clear();
-    int nRows = countLines(getReadDir() + gameInfoExtension);
+    int nRows = countLines(getReadDir() + gameInfoExtension_);
 
     //Grab File
     ifstream myFile;
-    myFile.open(getReadDir() + gameInfoExtension);
+    myFile.open(getReadDir() + gameInfoExtension_);
     if (!myFile.is_open()) {
         Diagnostics::DiagnosticText("No file to read in to ParseCSV");
     }
@@ -467,7 +493,7 @@ double LearningManager::getUpperConfidenceBound(int win, int lose) {
     return double(win) / double(lose) + sqrt( 1.5 * log(double(gameHistory_.size()))/double(win + lose) );
 }
 
-const string LearningManager::getBuildNameFromEnum(BuildEnums b)
+string LearningManager::getBuildNameString(const BuildEnums b) const
 {
     for (auto i : BuildStringsTable_) {
         if (i.second == b)
@@ -477,7 +503,7 @@ const string LearningManager::getBuildNameFromEnum(BuildEnums b)
     return errorMsg;
 }
 
-const string LearningManager::getBuildName()
+string LearningManager::getBuildName() const
 {
     return getBuildNameFromEnum(currentBuild_.getBuildEnum());
 }
@@ -491,12 +517,12 @@ Build* LearningManager::modifyCurrentBuild()
     return &currentBuild_;
 }
 
-const string LearningManager::getReadDir()
+string LearningManager::getReadDir() const
 {
     return readDirectory_;
 }
 
-const string LearningManager::getWriteDir()
+string LearningManager::getWriteDir() const
 {
     return writeDirectory_;
 }
@@ -544,5 +570,6 @@ map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "Lurker", BuildEnums::Lurker },
     { "PoolFive", BuildEnums::FivePool } ,
     { "MutaOneBase", BuildEnums::OneBaseSpire },
-    { "FourHatchMacro", BuildEnums::FourHatch }
+    { "FourHatchCarapace", BuildEnums::FourHatchCarapace },
+    { "FourHatchBeforePool", BuildEnums::FourHatchBeforePool }
 };

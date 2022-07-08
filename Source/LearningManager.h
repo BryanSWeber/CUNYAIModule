@@ -48,39 +48,29 @@ private:
     BuildOrderSetup findMatchingBO(BuildEnums b); //searchs MyBuilds for the correct matching type. Returns an empty BO otherwise.
     const string getBuildNameFromEnum(BuildEnums b);
 
-public:
+    string myRaceChar_;
+    string enemyRaceChar_;
+    string versionChar_;
+    string noStats_;
+    string learningExtension_;
+    string gameInfoExtension_;
 
-    int flierFrame; // Threatening Fliers First Seen
-    int detectorFrame; // Detectors First Seen
+public:
 
     // Key Operations
     void onStart();
     void onEnd(bool isWinner);
 
+    string getBuildNameString(const BuildEnums b) const;
 
-    bool mapLearning;
+    Build inspectCurrentBuild() const; //Returns a copy, does not allow touching the class. Good for various inspections that may be wanted.
+    Build* modifyCurrentBuild(); //Only do this if you're ready to modify the build.
 
-    string myRaceChar;
-    string enemyRaceChar;
-    string versionChar;
-    string noStats;
-    string learningExtension;
-    string gameInfoExtension;
+    string getReadDir() const;
+    string getWriteDir() const;
 
-    const string getBuildName();
-
-    Build inspectCurrentBuild();
-    Build* modifyCurrentBuild();
-
-    const string getReadDir();
-    const string getWriteDir();
-
-    void definePremadeBuildOrders();
-    void parseLearningFile();
+    void definePremadeBuildOrders(); // Creates the builds and stuffs them into myBuilds_.
+    void parseLearningFile(); // Reads a learning file appropriate for this game and stores the info in gameHistory_.
     void selectDefaultBuild(); //Set Build if no opponent is recognized or no history exists.
     void selectBestBuild(); //Using history, determine superior build.
-
 };
-
-
-

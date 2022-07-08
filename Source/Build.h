@@ -21,7 +21,8 @@ enum BuildEnums {
     Lurker,
     FivePool,
     OneBaseSpire,
-    FourHatch
+    FourHatchCarapace,
+    FourHatchBeforePool
 };
 
 class BuildOrderElement {
@@ -95,23 +96,23 @@ public:
     void initializeBuildOrder(BuildOrderSetup b); // Starts the build to a predefined setup.
     void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
 
-    void updateRemainingBuildOrder(const UpgradeType &ups); // drops item from list as complete.
+    void updateRemainingBuildOrder(const UpgradeType & ups); // drops item from list as complete.
     void updateRemainingBuildOrder(const TechType & research);// drops item from list as complete.
-    void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
+    void updateRemainingBuildOrder(const UnitType & ut); // drops item from list as complete.
 
-    void addBuildOrderElement(const UpgradeType &ups); // adds an element to the end of the queue.
+    void addBuildOrderElement(const UpgradeType & ups); // adds an element to the end of the queue.
     void addBuildOrderElement(const TechType & research);// adds an element to the end of the queue.
-    void addBuildOrderElement(const UnitType &ut); // adds an element to the end of the queue.
+    void addBuildOrderElement(const UnitType & ut); // adds an element to the end of the queue.
 
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
     void retryBuildOrderElement(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
 
-    void announceBuildingAttempt(UnitType ut) const;  // do we have a guy going to build it?
-    int countTimesInBuildQueue(UnitType ut) const;
+    void announceBuildingAttempt(const UnitType ut) const;  // Announce that a building has been attempted.
+    int countTimesInBuildQueue(const UnitType ut) const;  //Counts the number of this unit in the BO. Needed to evaluate extractor-related items.
 
     bool isEmptyBuildOrder() const; // Returns true if empty.
 
-    double getParameter(BuildParameterNames b) const; //Getting specific parameters by name.
+    double getParameter(const BuildParameterNames b) const; //Getting specific parameters by name.
     BuildEnums getBuildEnum() const; //Gets the name of the build.
     BuildOrderElement getNext() const; //Returns next element, otherwise returns unittype none.
     vector<BuildOrderElement> getQueue() const; //returns the entire queue.
@@ -121,9 +122,9 @@ public:
     int getNextGasCost() const;
     int getNextMinCost() const;
 
-    bool checkIfNextInBuild(UpgradeType upgrade) const; //Convenience for common call.
-    bool checkIfNextInBuild(TechType upgrade) const; //Convenience for common call.
-    bool checkIfNextInBuild(UnitType ut) const; //Convenience for common call.
+    bool checkIfNextInBuild(const UpgradeType upgrade) const; //Convenience overload for common call.
+    bool checkIfNextInBuild(const TechType upgrade) const; //Convenience overload for common call.
+    bool checkIfNextInBuild(const UnitType ut) const; //Convenience for overload common call.
 };
 
 
@@ -143,6 +144,6 @@ public:
 //    //"drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
 //    "12hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - TwoBaseMuta. Extra overlord is for safety.
 //    "12hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - range added an overlord.
-//    "12hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord  
+//    "12hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord
 //    "12hatch drone drone drone hatch drone drone drone hatch overlord pool", //supermacro cheese
 //}; //https://liquipedia.net/starcraft/4_Hatch_before_Gas_(vs._Protoss) //https://liquipedia.net/starcraft/3_Hatch_Hydralisk_(vs._Protoss) //https://liquipedia.net/starcraft/3_Hatch_Muta_(vs._Terran)
