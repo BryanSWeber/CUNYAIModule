@@ -506,7 +506,6 @@ void LearningManager::selectBestBuild()
             currentBuild_.initializeBuildOrder(findMatchingBO(bestBuild));
         }
     }
-    currentBuild_.initializeBuildOrder(findMatchingBO(PoolSeven));
 }
 
 //https://www.aionlinecourse.com/tutorial/machine-learning/upper-confidence-bound-%28ucb%29
@@ -593,6 +592,7 @@ map<string, BuildEnums> LearningManager::BuildStringsTable_ ={
     { "MutaTwoBase", BuildEnums::TwoBaseMuta},
     { "Lurker", BuildEnums::Lurker },
     { "PoolFive", BuildEnums::PoolFive } ,
+    { "PoolSeven", BuildEnums::PoolSeven } ,
     { "MutaOneBase", BuildEnums::OneBaseMuta },
     { "FourHatchCarapace", BuildEnums::FourHatchCarapace },
     { "FourHatchBeforePool", BuildEnums::FourHatchBeforePool }
