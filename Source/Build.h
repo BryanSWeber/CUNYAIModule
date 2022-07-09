@@ -22,7 +22,7 @@ enum BuildEnums {
     PoolSeven,
     OneBaseMuta,
     TwoBaseMuta,
-    FourHatchCarapace,
+    //FourHatchCarapace,
     FourHatchBeforePool
 };
 
