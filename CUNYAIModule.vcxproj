@@ -44,7 +44,7 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BWEM_DIR);</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BWAPI_DIR);$(BWEM_DIR)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(BWEM_LIB);</LibraryPath>
     <OutDir>$(SolutionDir)$(Configuration)\CUNYAIBot</OutDir>
   </PropertyGroup>
@@ -163,7 +163,7 @@
     <ProjectReference Include="..\bwapi\bwapi\BWAPILIB\BWAPILIB.vcxproj">
       <Project>{843656fd-9bfd-47bf-8460-7bfe9710ea2c}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\bwapi\Release_Binary\BWAPIClient\BWAPIClient.vcxproj">
+    <ProjectReference Include="..\bwapi\BWAPIClient\BWAPIClient.vcxproj">
       <Project>{c99abf61-6716-4fc0-aa77-9a136ea61680}</Project>
     </ProjectReference>
     <ProjectReference Include="..\BWEM-community\BWEM\BWEM.vcxproj">
