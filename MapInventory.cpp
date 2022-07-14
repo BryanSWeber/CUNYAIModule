@@ -586,110 +586,110 @@ int MapInventory::getRadialDistanceOutFromHome(const Position A) const
 //}
 
 
-// This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
-void MapInventory::updateUnwalkableWithBuildings() {
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
-
-    //mark all occupied areas.  IAAUW
-
-    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
-            int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
-            int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
-            int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_map_) {
-        if (e.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = e.second.pos_.x + e.second.type_.dimensionLeft();
-            int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
-            int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
-            int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_map_) {
-        if (n.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = n.second.pos_.x + n.second.type_.dimensionLeft();
-            int min_x = n.second.pos_.x - n.second.type_.dimensionRight();
-            int max_y = n.second.pos_.y + n.second.type_.dimensionUp();
-            int min_y = n.second.pos_.y - n.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
-        // mark the building's current position.
-        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
-        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
-        int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
-        int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
-
-        WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-        WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-        //respect map bounds please.
-        WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-        WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-        for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-            for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-            }
-        }
-
-    }
-
-}
+//// This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
+//void MapInventory::updateUnwalkableWithBuildings() {
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
+//
+//    unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
+//
+//    //mark all occupied areas.  IAAUW
+//
+//    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+//        if (u.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+//            int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+//            int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+//            int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_map_) {
+//        if (e.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = e.second.pos_.x + e.second.type_.dimensionLeft();
+//            int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
+//            int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
+//            int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_map_) {
+//        if (n.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = n.second.pos_.x + n.second.type_.dimensionLeft();
+//            int min_x = n.second.pos_.x - n.second.type_.dimensionRight();
+//            int max_y = n.second.pos_.y + n.second.type_.dimensionUp();
+//            int min_y = n.second.pos_.y - n.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
+//        // mark the building's current position.
+//        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+//        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+//        int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+//        int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
+//
+//        WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//        WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//        //respect map bounds please.
+//        WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//        WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//        for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//            for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//            }
+//        }
+//
+//    }
+//
+//}
 
 //void MapInventory::updateLiveMapVeins(const UnitInventory &ui, const UnitInventory &ei, const ResourceInventory &ri) { // in progress.
 //

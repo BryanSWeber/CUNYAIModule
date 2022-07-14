@@ -74,6 +74,9 @@
     <ClCompile Include="Build.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="CombatSimulator.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -112,6 +115,7 @@
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Source\ResourceInventory.h" />
     <ClInclude Include="Source\Build.h" />
+    <ClInclude Include="Source\CombatSimulator.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

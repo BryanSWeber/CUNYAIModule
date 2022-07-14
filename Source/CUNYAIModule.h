@@ -98,6 +98,7 @@ public:
     static LearningManager learnedPlan;
     static WorkerManager workermanager;
     static BaseManager basemanager;
+    static CombatSimulator mainCombatSim;
 
     //These measure its clock.
     static int short_delay;

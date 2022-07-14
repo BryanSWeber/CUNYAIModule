@@ -15,6 +15,7 @@
 #include "Source\BWEB\BWEB.h"
 #include "Source\BaseManager.h"
 #include "Source\Build.h"
+#include "Source\CombatSimulator.h"
 #include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing
@@ -52,13 +53,13 @@ PlayerModel CUNYAIModule::neutral_player_model;
 ResourceInventory CUNYAIModule::land_inventory; // resources.
 MapInventory CUNYAIModule::currentMapInventory;  // macro variables, not every unit I have.
 CombatManager CUNYAIModule::combat_manager;
-FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
 TechManager CUNYAIModule::techmanager;
 AssemblyManager CUNYAIModule::assemblymanager;
 Reservation CUNYAIModule::my_reservation;
 LearningManager CUNYAIModule::learnedPlan;
 WorkerManager CUNYAIModule::workermanager;
 BaseManager CUNYAIModule::basemanager;
+CombatSimulator CUNYAIModule::mainCombatSim;
 
 double CUNYAIModule::supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
 double CUNYAIModule::gas_proportion = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
@@ -167,25 +168,10 @@ void CUNYAIModule::onEnd(bool isWinner)
 void CUNYAIModule::onFrame()
 { // Called once every game frame
 
-
+    DiagnosticTimer onFrameClock;
   // Return if the game is a replay or is paused
-
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
-
-    // Performance Qeuery Timer
-    // http://www.decompile.com/cpp/faq/windows_timer_api.htm
-    std::chrono::duration<double, std::milli> map_time;
-    std::chrono::duration<double, std::milli> playermodel_time;
-    std::chrono::duration<double, std::milli> larva_time;
-    std::chrono::duration<double, std::milli> worker_time;
-    std::chrono::duration<double, std::milli> scout_time;
-    std::chrono::duration<double, std::milli> combat_time;
-    std::chrono::duration<double, std::milli> detector_time;
-    std::chrono::duration<double, std::milli> upgrade_time;
-    std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
-
-    auto startPlayerModelOnFrame = std::chrono::high_resolution_clock::now();
 
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -193,12 +179,13 @@ void CUNYAIModule::onFrame()
     bool attempted_morph_lurker_this_frame = false;
     bool attempted_morph_guardian_this_frame = false;
 
-    // Update enemy player model. Draw all associated units.
+    DiagnosticTimer playerUpdatesClock;
+    // Update Players:
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
-    //enemy_player_model.units_.drawAllHitPoints(current_MapInventory);
+    friendly_player_model.updateSelfOnFrame(); 
     enemy_player_model.units_.drawAllLocations();
     enemy_player_model.units_.drawAllLastSeens();
-
+    Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
     //Update neutral units
     Player* neutral_player;
     for (auto p : Broodwar->getPlayers()) {
@@ -207,24 +194,11 @@ void CUNYAIModule::onFrame()
     neutral_player_model.updateOtherOnFrame(*neutral_player);
     Diagnostics::drawAllHitPoints(neutral_player_model.units_);
     neutral_player_model.units_.drawAllLocations();
+    playerUpdatesClock.clockFinish("Player Models Updated On Frame");
 
-    friendly_player_model.updateSelfOnFrame(); // So far, mimics the only other enemy player.
-    Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
-
-    // Update FAPS with units.
-    MCfap.clear();
-    enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
-    Diagnostics::drawAllFutureDeaths(enemy_player_model.units_);
-
-    friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
-    Diagnostics::drawAllFutureDeaths(friendly_player_model.units_);
-
-    // Let us estimate FAP values.
-    MCfap.simulate(FAP_SIM_DURATION);
-    int friendly_fap_score = getFAPScore(MCfap, true);
-    int enemy_fap_score = getFAPScore(MCfap, false);
-    friendly_player_model.units_.pullFromFAP(*MCfap.getState().first);
-    enemy_player_model.units_.pullFromFAP(*MCfap.getState().second);
+    DiagnosticTimer combatOnFrame;
+    combat_manager.onFrame();
+    combatOnFrame.clockFinish("Combat Updated");
 
     onFrameWritePlayerModel(friendly_player_model, "friendly");
     onFrameWritePlayerModel(enemy_player_model, "enemy");
@@ -239,8 +213,8 @@ void CUNYAIModule::onFrame()
 
     //bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
-    auto end_playermodel = std::chrono::high_resolution_clock::now();
-    playermodel_time = end_playermodel - startPlayerModelOnFrame;
+    //auto end_playermodel = std::chrono::high_resolution_clock::now();
+    //playermodel_time = end_playermodel - startPlayerModelOnFrame;
 
 
     auto start_map = std::chrono::high_resolution_clock::now();
@@ -334,8 +308,8 @@ void CUNYAIModule::onFrame()
      //current_MapInventory.DiagnosticTile();
 
 
-    auto end_map = std::chrono::high_resolution_clock::now();
-    map_time = end_map - start_map;
+    //auto end_map = std::chrono::high_resolution_clock::now();
+    //map_time = end_map - start_map;
 
     // Display the game status indicators at the top of the screen
     if constexpr (DIAGNOSTIC_MODE) {
@@ -357,7 +331,7 @@ void CUNYAIModule::onFrame()
         assemblymanager.updateExpoPosition();
         Diagnostics::drawExpo();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
-    larva_time = end_unit_morphs - start_unit_morphs;
+    //larva_time = end_unit_morphs - start_unit_morphs;
 
 
     // Iterate through all the units that we own
@@ -431,9 +405,9 @@ void CUNYAIModule::onFrame()
         if (u->getType().isWorker()) workermanager.workerWork(u);
         auto end_worker = std::chrono::high_resolution_clock::now();
 
-        detector_time += end_detector - start_detector;
-        worker_time += end_worker - start_worker;
-        combat_time += end_combat - start_combat;
+        //detector_time += end_detector - start_detector;
+        //worker_time += end_worker - start_worker;
+        //combat_time += end_combat - start_combat;
     } // closure: unit iterator
 
     //Upgrade loop- happens AFTER buildings.
@@ -450,44 +424,44 @@ void CUNYAIModule::onFrame()
             //PrintError_Unit( u );
         }
         auto end_upgrade = std::chrono::high_resolution_clock::now();
-        upgrade_time += end_upgrade - start_upgrade;
+        //upgrade_time += end_upgrade - start_upgrade;
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    total_frame_time = end - startPlayerModelOnFrame;
+    //total_frame_time = end - startPlayerModelOnFrame;
 
-    //Clock App
-    if (total_frame_time.count() > 55) {
-        short_delay += 1;
-    }
-    if (total_frame_time.count() > 1000) {
-        med_delay += 1;
-    }
-    if (total_frame_time.count() > 10000) {
-        long_delay += 1;
-    }
-    if constexpr (RESIGN_MODE) {
-        if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || countUnits(UnitTypes::Zerg_Drone, friendly_player_model.units_) == 0)) //if game times out or lags out, end game with resignation.
-        {
-            Broodwar->leaveGame();
-        }
-    }
+    ////Clock App
+    //if (total_frame_time.count() > 55) {
+    //    short_delay += 1;
+    //}
+    //if (total_frame_time.count() > 1000) {
+    //    med_delay += 1;
+    //}
+    //if (total_frame_time.count() > 10000) {
+    //    long_delay += 1;
+    //}
+    //if constexpr (RESIGN_MODE) {
+    //    if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || countUnits(UnitTypes::Zerg_Drone, friendly_player_model.units_) == 0)) //if game times out or lags out, end game with resignation.
+    //    {
+    //        Broodwar->leaveGame();
+    //    }
+    //}
 
-    if constexpr (DIAGNOSTIC_MODE) {
-        int n;
-        n = sprintf_s(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-        n = sprintf_s(playermodel_string, "Players:       %3.f%%,%3.fms ", playermodel_time.count() / static_cast<double>(total_frame_time.count()) * 100, playermodel_time.count());
-        n = sprintf_s(map_string, "Maps:          %3.f%%,%3.fms ", map_time.count() / static_cast<double>(total_frame_time.count()) * 100, map_time.count());
-        n = sprintf_s(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / static_cast<double>(total_frame_time.count()) * 100, larva_time.count());
-        n = sprintf_s(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / static_cast<double>(total_frame_time.count()) * 100, worker_time.count());
-        n = sprintf_s(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / static_cast<double>(total_frame_time.count()) * 100, scout_time.count());
-        n = sprintf_s(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / static_cast<double>(total_frame_time.count()) * 100, combat_time.count());
-        n = sprintf_s(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / static_cast<double>(total_frame_time.count()) * 100, detector_time.count());
-        n = sprintf_s(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
-    }
+    //if constexpr (DIAGNOSTIC_MODE) {
+    //    int n;
+    //    n = sprintf_s(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+    //    n = sprintf_s(playermodel_string, "Players:       %3.f%%,%3.fms ", playermodel_time.count() / static_cast<double>(total_frame_time.count()) * 100, playermodel_time.count());
+    //    n = sprintf_s(map_string, "Maps:          %3.f%%,%3.fms ", map_time.count() / static_cast<double>(total_frame_time.count()) * 100, map_time.count());
+    //    n = sprintf_s(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / static_cast<double>(total_frame_time.count()) * 100, larva_time.count());
+    //    n = sprintf_s(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / static_cast<double>(total_frame_time.count()) * 100, worker_time.count());
+    //    n = sprintf_s(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / static_cast<double>(total_frame_time.count()) * 100, scout_time.count());
+    //    n = sprintf_s(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / static_cast<double>(total_frame_time.count()) * 100, combat_time.count());
+    //    n = sprintf_s(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / static_cast<double>(total_frame_time.count()) * 100, detector_time.count());
+    //    n = sprintf_s(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
+    //}
 
     //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
-
+    onFrameClock.clockFinish("On Frame Total");
 } // closure: Onframe
 
 void CUNYAIModule::onSendText(std::string text)

@@ -4,6 +4,7 @@
 #include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
+#include "Source\CombatSimulator.h"
 #include "Source\Diagnostics.h"
 #include <bwem.h>
 
@@ -113,7 +114,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.ResourceInventory_.empty()) {
-                        bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
+                        bool unit_dead_next_check = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->unitDeadInFuture(14);
                         if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
                             return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
@@ -335,6 +336,19 @@ int CombatManager::getSearchRadius(const Unit & u)
     totalSearchRadius = max({ CUNYAIModule::friendly_player_model.units_.max_range_, 192, totalSearchRadius });
 
     return totalSearchRadius;
+}
+
+void CombatManager::onFrame()
+{
+    // Update FAPS with units, runs sim, and reports issues.
+    CUNYAIModule::mainCombatSim.addPlayersToSimulation();
+    CUNYAIModule::mainCombatSim.runSimulation();
+    CUNYAIModule::friendly_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getFriendlySim());
+    CUNYAIModule::enemy_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getEnemySim());
+
+    Diagnostics::drawAllFutureDeaths(enemy.units_);
+    Diagnostics::drawAllFutureDeaths(friendly.units_);
+
 }
 
 bool CombatManager::getMacroCombatReadiness()
