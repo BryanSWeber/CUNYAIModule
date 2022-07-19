@@ -738,36 +738,30 @@ bool AssemblyManager::checkBestUnit(const UnitType &ut) {
 //Updates the assembly cycle to consider the value of each unit. Discards units one might not want to build on a heuristic basis.
 void AssemblyManager::updateOptimalCombatUnit() {
     bool building_optimal_unit = false;
-    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
-
-    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
-    CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
-    CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
-
+    CombatSimulator buildSim;
+    buildSim.addPlayersToMiniSimulation();
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assemblyCycle_) {
         StoredUnit su = StoredUnit(potential_type.first);
-        UnitInventory friendly_units_under_consideration; // new every time.
-        auto buildFAP_copy = buildFAP;
+        auto buildSimCopy = buildSim;
         remainder_.getReservationCapacity(); //First, let us consider building our units.
 
         for (int i = 0; i <= remainder_.getWaveSize(potential_type.first); i++) {
-            friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
-            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
+            buildSimCopy.addExtraUnitToSimulation(su); //add unit we are interested in to the inventory:
+            if (potential_type.first.isTwoUnitsInOneEgg()) buildSimCopy.addExtraUnitToSimulation(su); // do it twice if you're making 2.
         }
         // Imagine any leftover will be spent on "other units" that we can afford. How do we determine them? Try each and every one in my list.
         for (auto ut : assemblyCycle_) {
             for (int i = 0; i <= remainder_.getWaveSize(potential_type.first); i++) {
-                friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
-                if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
+                buildSimCopy.addExtraUnitToSimulation(su); //add unit we are interested in to the inventory:
+                if (potential_type.first.isTwoUnitsInOneEgg()) buildSimCopy.addExtraUnitToSimulation(su); // do it twice if you're making 2.
             }
         }
 
-        friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
-        buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+        buildSimCopy.runSimulation(); // a complete infinitely long simulation cannot be ran... medics & firebats vs air causes a lockup.
 
-        int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
+        int score = buildSimCopy.getFriendlyScore() - buildSimCopy.getEnemyScore(); //Which shows best gain over opponents?
 
         //Apply holistic weights.
         applyWeightsFor(potential_type.first);
@@ -778,141 +772,66 @@ void AssemblyManager::updateOptimalCombatUnit() {
 }
 
 
-//Returns true if (players) units would do more damage if they only shot up. Player is self (if true) or to the enemy (if false). 
-bool AssemblyManager::testActiveAirProblem(const ResearchInventory &ri, const bool &test_for_self_weakness) {
-
-    int benifit_of_shooting_air_targets = 0;
-    int benifit_of_shooting_ground_targets = 0;
+bool AssemblyManager::testActiveAirDefenseBest(const bool testSelf) const {
 
     UnitType build_type = UnitTypes::None;
-    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
-                                                       //add friendly units under consideration to FAP in loop, resetting each time.
+    CombatSimulator buildSim;
+    buildSim.addPlayersToMiniSimulation();
 
-    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
-
-    UnitInventory potentially_weak_team;
-    ResearchInventory potentially_weak_team_researches;
-    UnitInventory team_creating_problems;
-    ResearchInventory team_creating_problems_researches;
-
-    if (test_for_self_weakness) {
-        potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
-        potentially_weak_team_researches = CUNYAIModule::friendly_player_model.researches_;
-        team_creating_problems = CUNYAIModule::enemy_player_model.units_;
-        team_creating_problems_researches = CUNYAIModule::enemy_player_model.researches_;
-
-    }
-    else {
-        potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
-        potentially_weak_team_researches = CUNYAIModule::enemy_player_model.researches_;
-        team_creating_problems = CUNYAIModule::friendly_player_model.units_;
-        team_creating_problems_researches = CUNYAIModule::friendly_player_model.researches_;
-    }
-
-    potentially_weak_team.addToBuildFAP(buildFAP, true, potentially_weak_team_researches);
-    team_creating_problems.addToBuildFAP(buildFAP, false, team_creating_problems_researches);
-
-    auto buildfap_temp = buildFAP; // restore the buildfap temp.
-
-    if (team_creating_problems.flyer_count_ > 0) {
-        // test sunkens
-        buildfap_temp.clear();
-        buildfap_temp = buildFAP; // restore the buildfap temp.
+    //if (team_creating_problems.flyer_count_ > 0) {
+        //Test a baseline with Sunks
+        CombatSimulator baselineWithSunks = buildSim;
         StoredUnit su = StoredUnit(UnitTypes::Zerg_Sunken_Colony);
         // enemy units do not change.
-        UnitInventory friendly_units_under_consideration; // new every time.
         for (int i = 0; i < 5; ++i) {
-            friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
+            baselineWithSunks.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
         }
-        friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-        buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        benifit_of_shooting_ground_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
-        buildfap_temp.clear();
-        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticWrite("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
-
+        baselineWithSunks.runSimulation();
+        int gainInBaseline = baselineWithSunks.getScoreGap(testSelf);
 
         // test fake anti-air sunkens
-        buildfap_temp.clear();
-        buildfap_temp = buildFAP; // restore the buildfap temp.
+        CombatSimulator baselineWithSpores = buildSim;
+        StoredUnit su = StoredUnit(UnitTypes::Zerg_Spore_Colony);
         // enemy units do not change.
-        UnitInventory friendly_units_under_consideration2; // new every time.
         for (int i = 0; i < 5; ++i) {
-            friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
+            baselineWithSpores.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
         }
-        friendly_units_under_consideration2.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-        buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        benifit_of_shooting_air_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
-        buildfap_temp.clear();
-        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticWrite("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
-        return benifit_of_shooting_air_targets >= benifit_of_shooting_ground_targets;
-    }
+        int gainInBaseline = baselineWithSpores.getScoreGap();
+        baselineWithSpores.runSimulation();
 
-    return false;
+        return baselineWithSpores.getScoreGap(testSelf) >= baselineWithSunks.getScoreGap(testSelf);
+    //}
+
 }
 
-//Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
-bool AssemblyManager::testPotentialAirVunerability(const ResearchInventory &ri, const bool &test_for_self_weakness) {
-    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
-                                                                       //add friendly units under consideration to FAP in loop, resetting each time.
+bool AssemblyManager::testAirAttackBest(const bool testSelf) const {
+    UnitType build_type = UnitTypes::None;
+    CombatSimulator buildSim;
+    buildSim.addPlayersToMiniSimulation();
 
-    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
-    int value_of_flyers = 0;
-    int value_of_ground = 0;
-    UnitInventory potentially_weak_team;
-    ResearchInventory potentially_weak_team_researches;
-    UnitInventory team_creating_problems;
-    ResearchInventory team_creating_problems_researches;
+    // This has two magic numbers that deserve discussion (68 and 33). The thought process is that hydras and mutalisks have unit values of 206.25 and 425 respectively. 
+    // So we need to add equal values to the simulation to ensure that we do not bias it too strongly. The LCM is 14025 which can be equally made by 68 hydras or 33 mutas.
 
-    if (test_for_self_weakness) {
-        potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
-        potentially_weak_team_researches = CUNYAIModule::friendly_player_model.researches_;
-        team_creating_problems = CUNYAIModule::enemy_player_model.units_;
-        team_creating_problems_researches = CUNYAIModule::enemy_player_model.researches_;
-    }
-    else {
-        potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
-        potentially_weak_team_researches = CUNYAIModule::enemy_player_model.researches_;
-        team_creating_problems = CUNYAIModule::friendly_player_model.units_;
-        team_creating_problems_researches = CUNYAIModule::friendly_player_model.researches_;
-    }
-
-    potentially_weak_team.addToBuildFAP(buildFAP, true, potentially_weak_team_researches);
-    team_creating_problems.addToBuildFAP(buildFAP, false, team_creating_problems_researches);
-
-    auto buildfap_temp = buildFAP; // restore the buildfap temp.
-
-    // test ground hydras.
-    buildfap_temp.clear();
-    buildfap_temp = buildFAP; // restore the buildfap temp.
+    //Test a baseline with hydras
+    CombatSimulator baselineWithHydras = buildSim;
     StoredUnit su = StoredUnit(UnitTypes::Zerg_Hydralisk);
+    for (int i = 0; i < 68; ++i) {
+        baselineWithHydras.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
+    }
+    baselineWithHydras.runSimulation();
+    int gainInBaseline = baselineWithHydras.getScoreGap(testSelf);
+
+    // test mutalisks
+    CombatSimulator baselineWithMutas = buildSim;
+    StoredUnit su = StoredUnit(UnitTypes::Zerg_Mutalisk);
     // enemy units do not change.
-    UnitInventory friendly_units_under_consideration; // new every time.
-    for (int i = 0; i < 5; ++i) {
-        friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
+    for (int i = 0; i < 33; ++i) {
+        baselineWithMutas.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
     }
-    friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-    buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-    value_of_ground = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
-    buildfap_temp.clear();
-    //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticWrite("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+    int gainInBaseline = baselineWithMutas.getScoreGap();
+    baselineWithMutas.runSimulation();
 
-
-    // test flying hydras.
-    buildfap_temp.clear();
-    buildfap_temp = buildFAP; // restore the buildfap temp.
-                              // enemy units do not change.
-    UnitInventory friendly_units_under_consideration2; // new every time.
-    for (int i = 0; i < 5; ++i) {
-        friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
-    }
-    friendly_units_under_consideration2.addFlyingToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-    buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-    value_of_flyers = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
-    buildfap_temp.clear();
-    //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticWrite("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
-
-
-    return value_of_flyers >= value_of_ground;
+    return baselineWithMutas.getScoreGap(testSelf) >= baselineWithHydras.getScoreGap(testSelf);
 }
 
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.

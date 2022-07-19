@@ -4,7 +4,7 @@
 #include "Source/FAP/FAP/include/FAP.hpp"
 #include "BWAPI.h"
 #include "Source/CUNYAIModule.h"
-#include "Source/UnitInventory.h"
+#include "UnitInventory.h"
 #include <random> // C++ base random is low quality.
 
 class CombatSimulator {
@@ -32,8 +32,9 @@ public:
     const auto getFriendlySim(); //Get the friendly sim - for looking only. Make sure you have Ran the sim before using.
     const auto getEnemySim(); //Get the enemy sim - for looking only. Make sure you have RAN the sim before using.
 
-    int getFriendlyScore(); //Returns the first player, the friendly player's score.
-    int getEnemyScore(); //Returns the second player, the enemy player's score. Duration is an optional number of frames.
+    int getFriendlyScore() const; //Returns the first player, the friendly player's score.
+    int getEnemyScore() const; //Returns the second player, the enemy player's score. Duration is an optional number of frames.
+    int getScoreGap(bool friendly = true) const;
     void runSimulation(int duration = FAP_SIM_DURATION); //runs simulation updates scores.
 
     bool unitDeadInFuture(const StoredUnit &unit, const int & number_of_frames_voted_death) const; // returns true if the unit has a MA forcast that implies it will be alive in X frames.

@@ -120,8 +120,8 @@ public:
 
     void setMaxUnit(const UnitType &ut, const int max); //Sets the maximum number of units to MAX.
 
-    static bool testActiveAirProblem(const ResearchInventory & ri, const bool & test_for_self_weakness);  // returns true if weak against air. Tests explosive damage.
-    static bool testPotentialAirVunerability(const ResearchInventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
+    bool testActiveAirDefenseBest(const bool testSelfForWeakness = true) const; //Returns true if my units would do more damage if they only shot up. Plugging in false will consider if the enemy is better off with anti-air defenses.
+    bool testAirAttackBest(const bool testSelfForWeakness = true) const; //Returns true if my units would do more damage if they flew. Plugging in false will consider if the enemy is better off with air units.
 
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);     // print the assembly cycle we're thinking about.
 

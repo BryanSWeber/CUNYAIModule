@@ -1,4 +1,5 @@
-#include "Source\CombatSimulator.h"
+#include "Source/CombatSimulator.h"
+#include "Source/UnitInventory.h"
 #include <numeric>
 
 
@@ -108,6 +109,14 @@ auto CombatSimulator::createModifiedFAPVersion(const StoredUnit u, const Researc
         ;
 }
 
+int CombatSimulator::getScoreGap(bool friendly) const
+{
+    if (friendly)
+        return getFriendlyScore() - getEnemyScore();
+    else
+        return getEnemyScore() - getFriendlyScore();
+}
+
 void CombatSimulator::runSimulation(int duration = FAP_SIM_DURATION)
 {
     // Run Sim
@@ -194,12 +203,12 @@ const auto CombatSimulator::getEnemySim()
     return internalFAP_.getState().second;
 }
 
-int CombatSimulator::getFriendlyScore()
+int CombatSimulator::getFriendlyScore() const
 {
     return friendly_fap_score_;
 }
 
-int CombatSimulator::getEnemyScore()
+int CombatSimulator::getEnemyScore() const
 {
     return enemy_fap_score_;
 }
