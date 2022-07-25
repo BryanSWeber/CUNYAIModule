@@ -787,16 +787,14 @@ bool AssemblyManager::testActiveAirDefenseBest(const bool testSelf) const {
             baselineWithSunks.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
         }
         baselineWithSunks.runSimulation();
-        int gainInBaseline = baselineWithSunks.getScoreGap(testSelf);
 
         // test fake anti-air sunkens
         CombatSimulator baselineWithSpores = buildSim;
-        StoredUnit su = StoredUnit(UnitTypes::Zerg_Spore_Colony);
+        StoredUnit su2 = StoredUnit(UnitTypes::Zerg_Spore_Colony);
         // enemy units do not change.
         for (int i = 0; i < 5; ++i) {
-            baselineWithSpores.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
+            baselineWithSpores.addExtraUnitToSimulation(su2, testSelf); //add unit we are interested in to the inventory:
         }
-        int gainInBaseline = baselineWithSpores.getScoreGap();
         baselineWithSpores.runSimulation();
 
         return baselineWithSpores.getScoreGap(testSelf) >= baselineWithSunks.getScoreGap(testSelf);
@@ -819,16 +817,14 @@ bool AssemblyManager::testAirAttackBest(const bool testSelf) const {
         baselineWithHydras.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
     }
     baselineWithHydras.runSimulation();
-    int gainInBaseline = baselineWithHydras.getScoreGap(testSelf);
 
     // test mutalisks
     CombatSimulator baselineWithMutas = buildSim;
-    StoredUnit su = StoredUnit(UnitTypes::Zerg_Mutalisk);
+    StoredUnit su2 = StoredUnit(UnitTypes::Zerg_Mutalisk);
     // enemy units do not change.
     for (int i = 0; i < 33; ++i) {
-        baselineWithMutas.addExtraUnitToSimulation(su, testSelf); //add unit we are interested in to the inventory:
+        baselineWithMutas.addExtraUnitToSimulation(su2, testSelf); //add unit we are interested in to the inventory:
     }
-    int gainInBaseline = baselineWithMutas.getScoreGap();
     baselineWithMutas.runSimulation();
 
     return baselineWithMutas.getScoreGap(testSelf) >= baselineWithHydras.getScoreGap(testSelf);

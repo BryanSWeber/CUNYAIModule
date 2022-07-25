@@ -9,6 +9,7 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "CombatSimulator.h"
 #include <random> // C++ base random is low quality.
+#include <vector>
 
 using namespace std;
 using namespace BWAPI;
@@ -16,6 +17,7 @@ using namespace BWAPI;
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
 class MapInventory;
 class Reservation;
+class CombatSimulator;
 
 struct StoredUnit {
 
@@ -233,7 +235,7 @@ struct UnitInventory {
     UnitInventory getBuildingInventory() const;
 
 
-    void updatePredictedStatus(CombatSimulator cs); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void updatePredictedStatus(const CombatSimulator cs); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     //Gets a pointer to a stored unit when provided the unit pointer.
     StoredUnit* getStoredUnit(const Unit & u);

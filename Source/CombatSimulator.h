@@ -1,11 +1,14 @@
 #pragma once
 // Class engages in several types of combat simulation. Serves as a wrapper between FAP and my existing inventories.
 // The first player should always be the "friendly" one. The second player will always be the hostile one.
-#include "Source/FAP/FAP/include/FAP.hpp"
+#include "FAP/FAP/include/FAP.hpp"
 #include "BWAPI.h"
-#include "Source/CUNYAIModule.h"
+#include "CUNYAIModule.h"
 #include "UnitInventory.h"
 #include <random> // C++ base random is low quality.
+
+struct StoredUnit;
+int FAP_SIM_DURATION;
 
 class CombatSimulator {
 

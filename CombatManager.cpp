@@ -5,6 +5,7 @@
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
 #include "Source\CombatSimulator.h"
+#include "Source\UnitInventory.h"
 #include "Source\Diagnostics.h"
 #include <bwem.h>
 

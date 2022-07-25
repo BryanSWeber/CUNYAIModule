@@ -6,6 +6,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Build.h"
 #include "Source\Diagnostics.h"
+#include "Source\UnitInventory.h"
 #include <string>
 
 

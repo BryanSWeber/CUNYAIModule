@@ -1011,7 +1011,7 @@ void StoredUnit::updateFAPvalueDead()
     updated_fap_this_frame_ = true;
 }
 
-void UnitInventory::updatePredictedStatus(CombatSimulator cs)
+void UnitInventory::updatePredictedStatus(const CombatSimulator cs)
 {
     for (auto &u : unit_map_) {
         u.second.updated_fap_this_frame_ = false;

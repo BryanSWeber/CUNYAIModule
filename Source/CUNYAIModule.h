@@ -14,6 +14,7 @@
 #include "WorkerManager.h"
 #include "CombatManager.h"
 #include "BaseManager.h"
+#include "CombatSimulator.h"
 #include <bwem.h>
 #include "BWEB\BWEB.h"
 #include <functional>
@@ -21,7 +22,7 @@
 //#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
 #include <chrono> // for in-game frame clock.
 
-#define LARVA_BUILD_TIME 342
+#define LARVA_BUILD_TIME 342 // how long larva take to build
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
@@ -304,8 +305,6 @@ public:
     bool checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv);
 
     static double bindBetween(double x, double lower_bound, double upper_bound);
-    // Gets total value of FAP structure using StoredUnits. If friendly player option is chose, it uses P1, the standard for friendly player.
-    static int getFAPScore(FAP::FastAPproximation<StoredUnit*>& fap, bool friendly_player);
     static bool checkMiniFAPForecast(UnitInventory & ui, UnitInventory & ei, const bool equality_is_win);
     // Tells if we will be dealing more damage than we recieve, proportionally or total.
     static bool checkSuperiorFAPForecast(const UnitInventory & ui, const UnitInventory & ei, const bool equality_is_win = false);

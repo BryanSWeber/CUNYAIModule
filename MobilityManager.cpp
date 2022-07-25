@@ -2,6 +2,7 @@
 
 # include "Source\Diagnostics.h"
 # include "Source\MobilityManager.h"
+# include "Source/UnitInventory.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
 # include <math.h>

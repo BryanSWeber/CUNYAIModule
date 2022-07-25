@@ -3,6 +3,7 @@
 #include "Source/Diagnostics.h"
 #include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
+#include "Source/UnitInventory.h"
 #include <chrono>
 #include <map>
 

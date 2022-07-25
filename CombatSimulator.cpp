@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Source/CombatSimulator.h"
 #include "Source/UnitInventory.h"
 #include <numeric>
@@ -57,7 +59,7 @@ auto CombatSimulator::createFAPVersion(const StoredUnit u,const ResearchInventor
         ;
 }
 
-auto CombatSimulator::createModifiedFAPVersion(const StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos = Positions::Origin, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None)
+auto CombatSimulator::createModifiedFAPVersion(const StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos, const UpgradeType &upgrade, const TechType &tech)
 {
     int armor_upgrades = ri.getUpLevel(u.type_.armorUpgrade()) +
         2 * (u.type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating)) +
@@ -117,7 +119,7 @@ int CombatSimulator::getScoreGap(bool friendly) const
         return getEnemyScore() - getFriendlyScore();
 }
 
-void CombatSimulator::runSimulation(int duration = FAP_SIM_DURATION)
+void CombatSimulator::runSimulation(int duration)
 {
     // Run Sim
     if(duration)
@@ -162,7 +164,7 @@ Position CombatSimulator::positionMCFAP(const StoredUnit su)
 }
 
 
-void CombatSimulator::addExtraUnitToSimulation(StoredUnit u, bool friendly = true)
+void CombatSimulator::addExtraUnitToSimulation(StoredUnit u, bool friendly)
 {
     if(friendly)
         internalFAP_.addIfCombatUnitPlayer1(createFAPVersion(u, CUNYAIModule::friendly_player_model.researches_));
@@ -181,7 +183,7 @@ void CombatSimulator::addPlayersToSimulation()
 
 }
 
-void CombatSimulator::addPlayersToMiniSimulation(const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None)
+void CombatSimulator::addPlayersToMiniSimulation(const UpgradeType &upgrade, const TechType &tech)
 {
     for (auto &u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         Position pos = positionMiniFAP(true);
