@@ -31,7 +31,7 @@ struct StoredUnit {
     StoredUnit(const Unit &unit);
     StoredUnit();
 
-    void updateFAPvalue(FAP::FAPUnit<StoredUnit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    void updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
     void updateStoredUnit(const Unit &unit);
 
@@ -235,7 +235,7 @@ struct UnitInventory {
     UnitInventory getBuildingInventory() const;
 
 
-    void updatePredictedStatus(const CombatSimulator cs); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void updatePredictedStatus(bool friendly = true); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     //Gets a pointer to a stored unit when provided the unit pointer.
     StoredUnit* getStoredUnit(const Unit & u);

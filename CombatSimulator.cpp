@@ -40,7 +40,7 @@ auto CombatSimulator::createFAPVersion(StoredUnit u,const ResearchInventory & ri
     int units_inside_object = 2 + (u.type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
 
     return FAP::makeUnit<StoredUnit*>()
-        .setData(u)
+        .setData(&u)
         .setUnitType(u.type_)
         .setPosition(u.pos_)
         .setHealth(u.health_)
@@ -92,7 +92,7 @@ auto CombatSimulator::createModifiedFAPVersion(StoredUnit u, const ResearchInven
     int units_inside_object = 2 + (u.type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present. // Needs to extend for every race. Needs to include an indicator for self.
 
     return FAP::makeUnit<StoredUnit*>()
-        .setData(u)
+        .setData(&u)
         .setUnitType(u.type_)
         .setPosition(chosen_pos)
         .setHealth(u.health_)
@@ -129,12 +129,12 @@ void CombatSimulator::runSimulation(int duration)
 
     // Update scores
     if (internalFAP_.getState().first && !internalFAP_.getState().first->empty())
-        friendly_fap_score_ = std::accumulate(internalFAP_.getState().first->begin(), internalFAP_.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + unitWeight(FAPunit)); });
+        friendly_fap_score_ = std::accumulate(internalFAP_.getState().first->begin(), internalFAP_.getState().first->end(), 0, [this](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + unitWeight(FAPunit)); });
     else
         friendly_fap_score_ = 0;
 
     if (internalFAP_.getState().second && !internalFAP_.getState().second->empty())
-        enemy_fap_score_ = std::accumulate(internalFAP_.getState().second->begin(), internalFAP_.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + unitWeight(FAPunit)); });
+        enemy_fap_score_ = std::accumulate(internalFAP_.getState().second->begin(), internalFAP_.getState().second->end(), 0, [this](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + unitWeight(FAPunit)); });
     else
         enemy_fap_score_ = 0;
 }
@@ -195,14 +195,14 @@ void CombatSimulator::addPlayersToMiniSimulation(const UpgradeType &upgrade, con
     }
 }
 
-const auto CombatSimulator::getFriendlySim()
+const std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getFriendlySim()
 {
-    return internalFAP_.getState().first;
+    return *internalFAP_.getState().first;
 }
 
-const auto CombatSimulator::getEnemySim()
+const std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getEnemySim()
 {
-    return internalFAP_.getState().second;
+    return *internalFAP_.getState().second;
 }
 
 int CombatSimulator::getFriendlyScore() const

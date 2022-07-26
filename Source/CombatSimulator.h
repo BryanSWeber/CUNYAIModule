@@ -32,8 +32,8 @@ public:
     void addPlayersToMiniSimulation(const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // Add both players into the simulation but give the friendly player some counterfactual technologies.
     void addPlayersToSimulation(); //Add both friendly and enemy players to simulation as is.
 
-    const auto getFriendlySim(); //Get the friendly sim - for looking only. Make sure you have Ran the sim before using.
-    const auto getEnemySim(); //Get the enemy sim - for looking only. Make sure you have RAN the sim before using.
+    const std::vector<FAP::FAPUnit<StoredUnit*>> getFriendlySim(); //Get the friendly sim - for looking only. Make sure you have Ran the sim before using.
+    const std::vector<FAP::FAPUnit<StoredUnit*>> getEnemySim(); //Get the enemy sim - for looking only. Make sure you have RAN the sim before using.
 
     int getFriendlyScore() const; //Returns the first player, the friendly player's score.
     int getEnemyScore() const; //Returns the second player, the enemy player's score. Duration is an optional number of frames.

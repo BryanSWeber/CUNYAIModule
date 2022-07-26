@@ -81,7 +81,7 @@ public:
     void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim. Higher rank = better!
     static bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
-    static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit in the sim by +weight (w can be negative to penalize), when conditions are met.
+    static void weightUnitSim(const bool & condition, const UnitType &unit, const int &weight); //Increases the weight of the unit in the sim by +weight (w can be negative to penalize), when conditions are met.
     static void applyWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
 

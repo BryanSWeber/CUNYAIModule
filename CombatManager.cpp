@@ -346,8 +346,8 @@ void CombatManager::onFrame()
     // Update FAPS with units, runs sim, and reports issues.
     CUNYAIModule::mainCombatSim.addPlayersToSimulation();
     CUNYAIModule::mainCombatSim.runSimulation();
-    CUNYAIModule::friendly_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getFriendlySim());
-    CUNYAIModule::enemy_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getEnemySim());
+    CUNYAIModule::friendly_player_model.units_.updatePredictedStatus();
+    CUNYAIModule::enemy_player_model.units_.updatePredictedStatus(false);
 
     Diagnostics::drawAllFutureDeaths(CUNYAIModule::friendly_player_model.units_);
     Diagnostics::drawAllFutureDeaths(CUNYAIModule::enemy_player_model.units_);

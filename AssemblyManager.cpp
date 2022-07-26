@@ -473,7 +473,7 @@ bool AssemblyManager::reserveOptimalCombatUnit(const Unit &morph_canidate, map<U
     return false;
 }
 
-void AssemblyManager::weightUnitSim(const bool & condition, const UnitType & unit, const double & weight)
+void AssemblyManager::weightUnitSim(const bool & condition, const UnitType & unit, const int & weight)
 {
     if (condition)
         if (assemblyCycle_.find(unit) != assemblyCycle_.end())

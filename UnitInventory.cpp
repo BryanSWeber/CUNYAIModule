@@ -996,7 +996,7 @@ bool StoredUnit::isLongRangeLock() {
     return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
 }
 
-void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> &fap_unit)
+void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
 
     double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
@@ -1011,19 +1011,27 @@ void StoredUnit::updateFAPvalueDead()
     updated_fap_this_frame_ = true;
 }
 
-void UnitInventory::updatePredictedStatus(const CombatSimulator cs)
+void UnitInventory::updatePredictedStatus(bool friendly)
 {
     for (auto &u : unit_map_) {
         u.second.updated_fap_this_frame_ = false;
     }
 
-
-    for (auto fu : cs.getEnemySim()) {
-        if (fu.data) {
-            StoredUnit::updateFAPvalue(fu);
+    if (friendly) {
+        for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
+            if (fu.data) {
+                StoredUnit::updateFAPvalue(fu);
+            }
         }
     }
-
+    else {
+        for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
+            if (fu.data) {
+                StoredUnit::updateFAPvalue(fu);
+            }
+        }
+    }
+}
     for (auto &u : unit_map_) {
         if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
     }
