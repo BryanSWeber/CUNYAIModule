@@ -12,9 +12,9 @@
 #include "LearningManager.h"
 #include "TechManager.h"
 #include "WorkerManager.h"
+#include "CombatSimulator.h"
 #include "CombatManager.h"
 #include "BaseManager.h"
-#include "CombatSimulator.h"
 #include "BWEB\BWEB.h"
 #include <bwem.h>
 #include <functional>
