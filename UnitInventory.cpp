@@ -1027,7 +1027,7 @@ void UnitInventory::updatePredictedStatus(const CombatSimulator cs)
     for (auto &u : unit_map_) {
         if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
     }
-    vector<FAP::FAPUnit<StoredUnit*>> &fap_vector
+    //vector<FAP::FAPUnit<StoredUnit*>> &fap_vector
 }
 
 StoredUnit* UnitInventory::getStoredUnit(const Unit & unit)

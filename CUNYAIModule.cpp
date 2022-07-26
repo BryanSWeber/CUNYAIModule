@@ -25,9 +25,6 @@
 #include <stdio.h>  //for removal of files.
 #include <filesystem>
 
-
-// CUNYAI V2.00
-
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;

@@ -8,7 +8,7 @@
 #include <random> // C++ base random is low quality.
 
 struct StoredUnit;
-int FAP_SIM_DURATION;
+constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 
 class CombatSimulator {
 
@@ -21,8 +21,8 @@ private:
     int enemy_fap_score_;
     double unitWeight(FAP::FAPUnit<StoredUnit*> FAPunit); //Grabs the value of a unit from the FAP object.
 
-    auto createFAPVersion(const StoredUnit u, const ResearchInventory & ri); // Returns a FAP stored Unit that has measured all details from the research inventory.
-    auto createModifiedFAPVersion(const StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos = Positions::Origin, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // creates a FAP object for the stored unit with new contents.
+    auto createFAPVersion(StoredUnit u, const ResearchInventory & ri); // Returns a FAP stored Unit that has measured all details from the research inventory.
+    auto createModifiedFAPVersion(StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos = Positions::Origin, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // creates a FAP object for the stored unit with new contents.
 
     Position positionMiniFAP(const bool friendly);
     Position positionMCFAP(const StoredUnit su);

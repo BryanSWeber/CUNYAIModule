@@ -7,11 +7,13 @@
 #include "Source\CombatSimulator.h"
 #include "Source\UnitInventory.h"
 #include "Source\Diagnostics.h"
+#include "Source/FAP/FAP/include/FAP.hpp"
 #include <bwem.h>
 
 
 UnitInventory CombatManager::scout_squad_;
 UnitInventory CombatManager::liabilities_squad_;
+CombatSimulator CUNYAIModule::mainCombatSim;
 
 bool CombatManager::grandStrategyScript(const Unit & u) {
 
@@ -347,8 +349,8 @@ void CombatManager::onFrame()
     CUNYAIModule::friendly_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getFriendlySim());
     CUNYAIModule::enemy_player_model.units_.updatePredictedStatus(CUNYAIModule::mainCombatSim.getEnemySim());
 
-    Diagnostics::drawAllFutureDeaths(enemy.units_);
-    Diagnostics::drawAllFutureDeaths(friendly.units_);
+    Diagnostics::drawAllFutureDeaths(CUNYAIModule::friendly_player_model.units_);
+    Diagnostics::drawAllFutureDeaths(CUNYAIModule::enemy_player_model.units_);
 
 }
 

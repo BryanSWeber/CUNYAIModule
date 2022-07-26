@@ -14,7 +14,7 @@
 using namespace std;
 using namespace BWAPI;
 
-// Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
+//Forward declarations of relevant classes.
 class MapInventory;
 class Reservation;
 class CombatSimulator;
@@ -136,10 +136,10 @@ struct StoredUnit {
     int circumference_remaining_;
 
     Unit bwapi_unit_;
-private:
-    //prevent automatic conversion for any other built-in types such as bool, int, etc
-    template<typename T>
-    operator T () const;
+//private:
+//    //prevent automatic conversion for any other built-in types such as bool, int, etc
+//    template<typename T>
+//    operator T () const;
 };
 
 struct UnitInventory {

@@ -4,6 +4,11 @@
 #include "UnitInventory.h"
 #include <bwem.h>
 #include "FAP/FAP/include/FAP.hpp"
+#include "CombatSimulator.h"
+
+class CombatSimulator;
+class FastAPproximation;
+struct StoredUnit;
 
 class CombatManager {
 private:

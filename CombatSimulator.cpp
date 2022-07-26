@@ -10,7 +10,7 @@ double CombatSimulator::unitWeight(FAP::FAPUnit<StoredUnit*> FAPunit)
     return  FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields);
 }
 
-auto CombatSimulator::createFAPVersion(const StoredUnit u,const ResearchInventory & ri)
+auto CombatSimulator::createFAPVersion(StoredUnit u,const ResearchInventory & ri)
 {
     int armor_upgrades = ri.getUpLevel(u.type_.armorUpgrade()) + 2 * (u.type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
@@ -59,7 +59,7 @@ auto CombatSimulator::createFAPVersion(const StoredUnit u,const ResearchInventor
         ;
 }
 
-auto CombatSimulator::createModifiedFAPVersion(const StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos, const UpgradeType &upgrade, const TechType &tech)
+auto CombatSimulator::createModifiedFAPVersion(StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos, const UpgradeType &upgrade, const TechType &tech)
 {
     int armor_upgrades = ri.getUpLevel(u.type_.armorUpgrade()) +
         2 * (u.type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating)) +
@@ -92,7 +92,7 @@ auto CombatSimulator::createModifiedFAPVersion(const StoredUnit u, const Researc
     int units_inside_object = 2 + (u.type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present. // Needs to extend for every race. Needs to include an indicator for self.
 
     return FAP::makeUnit<StoredUnit*>()
-        .setData(this)
+        .setData(u)
         .setUnitType(u.type_)
         .setPosition(chosen_pos)
         .setHealth(u.health_)

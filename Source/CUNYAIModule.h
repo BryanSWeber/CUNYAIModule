@@ -15,11 +15,9 @@
 #include "CombatManager.h"
 #include "BaseManager.h"
 #include "CombatSimulator.h"
-#include <bwem.h>
 #include "BWEB\BWEB.h"
+#include <bwem.h>
 #include <functional>
-
-//#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
 #include <chrono> // for in-game frame clock.
 
 #define LARVA_BUILD_TIME 342 // how long larva take to build
@@ -29,7 +27,6 @@ constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every f
 constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 constexpr bool PRINT_WD = false; // print a file to the current working directory.
 constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring movement and reatreating.
