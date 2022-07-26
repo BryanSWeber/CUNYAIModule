@@ -139,13 +139,7 @@ void CombatSimulator::runSimulation(int duration)
         enemy_fap_score_ = 0;
 }
 
-bool CombatSimulator::unitDeadInFuture(const StoredUnit & unit, const int & number_of_frames_voted_death) const
-{
-    return unit.count_of_consecutive_predicted_deaths_ >= number_of_frames_voted_death;
-}
-
-
-Position CombatSimulator::positionMiniFAP(const bool friendly)
+Position CombatSimulator::createPositionMiniFAP(const bool friendly)
 {
     std::uniform_int_distribution<int> small_map(miniMap_ * friendly, miniMap_ + miniMap_ * friendly);     // default values for output.
     int rand_x = small_map(generator_);
@@ -155,7 +149,7 @@ Position CombatSimulator::positionMiniFAP(const bool friendly)
 
 
 
-Position CombatSimulator::positionMCFAP(const StoredUnit su)
+Position CombatSimulator::createPositionMCFAP(const StoredUnit su)
 {
     std::uniform_int_distribution<int> small_noise(static_cast<int>(-CUNYAIModule::getProperSpeed(su.type_)) * 4, static_cast<int>(CUNYAIModule::getProperSpeed(su.type_)) * 4);     // default values for output.
     int rand_x = small_noise(generator_);
@@ -186,11 +180,11 @@ void CombatSimulator::addPlayersToSimulation()
 void CombatSimulator::addPlayersToMiniSimulation(const UpgradeType &upgrade, const TechType &tech)
 {
     for (auto &u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        Position pos = positionMiniFAP(true);
+        Position pos = createPositionMiniFAP(true);
         internalFAP_.addIfCombatUnitPlayer1(createModifiedFAPVersion(u.second, CUNYAIModule::friendly_player_model.researches_, pos, upgrade, tech));
     }
     for (auto &u : CUNYAIModule::enemy_player_model.units_.unit_map_) {
-        Position pos = positionMiniFAP(false);
+        Position pos = createPositionMiniFAP(false);
         internalFAP_.addIfCombatUnitPlayer2(createModifiedFAPVersion(u.second, CUNYAIModule::enemy_player_model.researches_, pos));
     }
 }

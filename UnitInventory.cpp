@@ -1017,24 +1017,22 @@ void UnitInventory::updatePredictedStatus(bool friendly)
         u.second.updated_fap_this_frame_ = false;
     }
 
-    for (auto &u : unit_map_) {
-        if (friendly) {
-            for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
-                if (fu.data) {
-                    u.second.updateFAPvalue(fu);
-                    u.second.updated_fap_this_frame_ = true;
-                }
-            }
-        }
-        else {
-            for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
-                if (fu.data) {
-                    u.second.updateFAPvalue(fu);
-                    u.second.updated_fap_this_frame_ = true;
-                }
+    //This section takes advantage of the fact that the fap units store the pointers themselves. This way we don't have to do a n^2 lookup. We just look at the fu and directly adjust the pointer.
+    if (friendly) {
+        for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
+            if (fu.data) {
+                fu.data->updateFAPvalue(fu);
             }
         }
     }
+    else {
+        for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
+            if (fu.data) {
+                fu.data->updateFAPvalue(fu);
+            }
+        }
+    }
+
 
     for (auto &u : unit_map_) {
         if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
