@@ -98,7 +98,7 @@ struct StoredUnit {
     StoredUnit(Phase p) : phase_(p) {}
     operator Phase () const { return phase_; }
 
-    bool unitDeadInFuture(const int & numberOfConsecutiveDeadSims) const; // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+    bool unitDeadInFuture(const int & numberOfConsecutiveDeadSims = 4) const; // returns true if the unit has a MA forcast that implies it will be alive in X frames.
 
     //Needed commands for workers.
     void startMine(Stored_Resource &new_resource);

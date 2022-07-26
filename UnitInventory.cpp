@@ -1017,21 +1017,25 @@ void UnitInventory::updatePredictedStatus(bool friendly)
         u.second.updated_fap_this_frame_ = false;
     }
 
-    if (friendly) {
-        for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
-            if (fu.data) {
-                StoredUnit::updateFAPvalue(fu);
+    for (auto &u : unit_map_) {
+        if (friendly) {
+            for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
+                if (fu.data) {
+                    u.second.updateFAPvalue(fu);
+                    u.second.updated_fap_this_frame_ = true;
+                }
+            }
+        }
+        else {
+            for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
+                if (fu.data) {
+                    u.second.updateFAPvalue(fu);
+                    u.second.updated_fap_this_frame_ = true;
+                }
             }
         }
     }
-    else {
-        for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
-            if (fu.data) {
-                StoredUnit::updateFAPvalue(fu);
-            }
-        }
-    }
-}
+
     for (auto &u : unit_map_) {
         if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
     }

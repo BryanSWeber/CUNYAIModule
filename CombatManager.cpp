@@ -13,7 +13,6 @@
 
 UnitInventory CombatManager::scout_squad_;
 UnitInventory CombatManager::liabilities_squad_;
-CombatSimulator CUNYAIModule::mainCombatSim;
 
 bool CombatManager::grandStrategyScript(const Unit & u) {
 

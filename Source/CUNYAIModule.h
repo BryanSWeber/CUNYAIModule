@@ -302,7 +302,6 @@ public:
     bool checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv);
 
     static double bindBetween(double x, double lower_bound, double upper_bound);
-    static bool checkMiniFAPForecast(UnitInventory & ui, UnitInventory & ei, const bool equality_is_win);
     // Tells if we will be dealing more damage than we recieve, proportionally or total.
     static bool checkSuperiorFAPForecast(const UnitInventory & ui, const UnitInventory & ei, const bool equality_is_win = false);
     // Tells the size of the surviving forces after a fight. The fodder setting also includes the results of surviving units that cannot defend themselves, such as a nexus.

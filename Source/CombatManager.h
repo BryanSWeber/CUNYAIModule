@@ -7,8 +7,6 @@
 #include "CombatSimulator.h"
 
 class CombatSimulator;
-class FastAPproximation;
-struct StoredUnit;
 
 class CombatManager {
 private:
