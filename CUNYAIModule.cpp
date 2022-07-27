@@ -147,7 +147,6 @@ void CUNYAIModule::onStart()
     currentMapInventory.onStart();
     onStartMapClock.clockFinish("Map Inventory (OnStart)");
 
-
     my_reservation = Reservation();
     onStartClock.clockFinish("onStart");
 }
@@ -170,18 +169,10 @@ void CUNYAIModule::onFrame()
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
 
-    // Game time;
-    int t_game = Broodwar->getFrameCount(); // still need this for mining script.
-    bool attempted_morph_larva_this_frame = false;
-    bool attempted_morph_lurker_this_frame = false;
-    bool attempted_morph_guardian_this_frame = false;
-
     DiagnosticTimer playerUpdatesClock;
     // Update Players:
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
     friendly_player_model.updateSelfOnFrame(); 
-    enemy_player_model.units_.drawAllLocations();
-    enemy_player_model.units_.drawAllLastSeens();
     Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
     //Update neutral units
     Player* neutral_player;
@@ -190,15 +181,18 @@ void CUNYAIModule::onFrame()
     }
     neutral_player_model.updateOtherOnFrame(*neutral_player);
     Diagnostics::drawAllHitPoints(neutral_player_model.units_);
+    //Draw Diagnostics
+    enemy_player_model.units_.drawAllLocations();
+    enemy_player_model.units_.drawAllLastSeens();
     neutral_player_model.units_.drawAllLocations();
     playerUpdatesClock.clockFinish("Player Models Updated On Frame");
 
+
+    //Update the combat manager
     DiagnosticTimer combatOnFrame;
     combat_manager.onFrame();
     combatOnFrame.clockFinish("Combat Updated");
 
-    onFrameWritePlayerModel(friendly_player_model, "friendly");
-    onFrameWritePlayerModel(enemy_player_model, "enemy");
 
     //Knee-jerk states: gas, supply.
     gas_starved = (workermanager.checkGasOutlet() && workermanager.getMinWorkers() > workermanager.getGasWorkers() //You must have more mineral gatherers than gas miners, otherwise you are simply eco starved.
@@ -210,66 +204,34 @@ void CUNYAIModule::onFrame()
 
     //bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
-    //auto end_playermodel = std::chrono::high_resolution_clock::now();
-    //playermodel_time = end_playermodel - startPlayerModelOnFrame;
-
-
-    auto start_map = std::chrono::high_resolution_clock::now();
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, currentMapInventory);
     land_inventory.drawMineralRemaining();
 
-    //Update important variables.  Enemy stock has a lot of dependencies, updated above.
-    currentMapInventory.updateVision_Count();
+    //Update workers.
+    DiagnosticTimer workerOnFrame;
+    workermanager.onFrame();
+    workerOnFrame.clockFinish("Workers Updated");
 
-    workermanager.updateGas_Workers();
-    workermanager.updateMin_Workers();
-    workermanager.updateWorkersClearing();
-    workermanager.updateWorkersLongDistanceMining();
-    workermanager.updateWorkersOverstacked();
-    workermanager.updateExcessCapacity();
+    //Update Map.
+    currentMapInventory.onFrame();
 
-    currentMapInventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()) );
-    currentMapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(currentMapInventory.getExpoTilePositions().size()) );
-    currentMapInventory.updateScreen_Position();
-    currentMapInventory.mainCurrentMap();
-    //currentMapInventory.createAirThreatField(enemy_player_model);
-    //currentMapInventory.createGroundThreatField(enemy_player_model);
-    currentMapInventory.createDetectField(enemy_player_model);
-    //currentMapInventory.createVisionField(enemy_player_model);
-    //currentMapInventory.createBlindField(enemy_player_model);
-    currentMapInventory.createThreatField(enemy_player_model);
-    currentMapInventory.createThreatBufferField(enemy_player_model);
-    currentMapInventory.createExtraWideBufferField(enemy_player_model);
-    currentMapInventory.createOccupationField();
-    currentMapInventory.createSurroundField(enemy_player_model);
-    //currentMapInventory.DiagnosticSurroundTiles();
-    currentMapInventory.DiagnosticThreatTiles();
+    //Update Resources.
+    land_inventory.onFrame();
 
     basemanager.updateBases();
-
-    if (t_game == 0) {
-        //update local resources
-        //current_MapInventory.updateMapVeinsOut(current_MapInventory.start_positions_[0], current_MapInventory.enemy_base_ground_, current_MapInventory.map_out_from_enemy_ground_);
-        ResourceInventory mineral_inventory = ResourceInventory(Broodwar->getStaticMinerals());
-        ResourceInventory geyser_inventory = ResourceInventory(Broodwar->getStaticGeysers());
-        land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
-        currentMapInventory.getExpoTilePositions(); // prime this once on game start.
-        
-        Diagnostics::issueCheats();
-    }
 
     Diagnostics::onFrameWritePlayerModel(friendly_player_model);
 
     techmanager.updateCanMakeTechExpenditures();
     techmanager.updateOptimalTech();
 
-    if(army_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling))
+    if (army_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling)) {
         assemblymanager.updateOptimalCombatUnit();
+    }
     assemblymanager.updatePotentialBuilders();
-
-
+    
     if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
         bool need_gas_now = false;
         learnedPlan.inspectCurrentBuild().getNextGasCost() ? need_gas_now = true : need_gas_now = false;
@@ -287,26 +249,8 @@ void CUNYAIModule::onFrame()
     my_reservation.confirmOngoingReservations();
     Diagnostics::drawReservations(my_reservation, currentMapInventory.screen_position_);
 
-    vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
-
-    //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
-    int map_x = Broodwar->mapWidth();
-    int map_y = Broodwar->mapHeight();
-    int map_area = map_x * map_y; // map area in tiles.
-
-   // if (Broodwar->mapWidth() && Broodwar->mapHeight()) {
-    //current_MapInventory.createThreatField(enemy_player_model);
-    //current_MapInventory.createAttractField(enemy_player_model);
-    //current_MapInventory.createExploreField();
-    //current_MapInventory.createAAField(enemy_player_model);
-    // }
-
-     //current_MapInventory.DiagnosticField(current_MapInventory.pf_explore_);
-     //current_MapInventory.DiagnosticTile();
 
 
-    //auto end_map = std::chrono::high_resolution_clock::now();
-    //map_time = end_map - start_map;
 
     // Display the game status indicators at the top of the screen
     if constexpr (DIAGNOSTIC_MODE) {
@@ -317,7 +261,7 @@ void CUNYAIModule::onFrame()
 
     // Prevent spamming by only running our onFrame once every number of latency frames.
     // Latency frames are the number of frames before commands are processed.
-    if (t_game % Broodwar->getLatencyFrames() != 0) {
+    if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0) {
         return;
     }
 
@@ -408,6 +352,7 @@ void CUNYAIModule::onFrame()
     } // closure: unit iterator
 
     //Upgrade loop- happens AFTER buildings.
+    vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
     for (auto &u : Broodwar->self()->getUnits())
     {
         if (!checkUnitTouchable(u)) continue; // can we mess with it at all?
@@ -458,6 +403,10 @@ void CUNYAIModule::onFrame()
     //}
 
     //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
+
+    onFrameWritePlayerModel(friendly_player_model, "friendly");
+    onFrameWritePlayerModel(enemy_player_model, "enemy");
+
     onFrameClock.clockFinish("On Frame Total");
 } // closure: Onframe
 

@@ -50,25 +50,8 @@ private:
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
     void DiagnosticField(double pf[256][256]); //Diagnostic to show "potential fields"
-    void DiagnosticField(int pf[256][256]);  //Diagnostic to show "potential fields"
-    void DiagnosticField(bool pf[256][256]); //Diagnostic to show "potential fields"
-
-public:
-    MapInventory();
-    MapInventory(const UnitInventory &ui, const ResourceInventory &ri);
-
-    void onStart();
-
-    int nScouts = 2; // How many scouts will we have? Set by fiat.
-    Position screen_position_;
-
-    int my_portion_of_the_map_;
-    int expo_portion_of_the_map_;
-
-    //Marks Data for each area if it is "ground safe"
-    void updateGroundDangerousAreas();
-    vector<TilePosition> MapInventory::getExpoTilePositions(); //returns all possible expos and starting bases, found with BWEM.
-    vector<TilePosition> getInsideWallTilePositions(); //Returns the plausible macro hatch positions only.
+    void DiagnosticField(int pf[256][256]);  //Overload: Diagnostic to show "potential fields"
+    void DiagnosticField(bool pf[256][256]); //Overload: Diagnostic to show "potential fields"
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
@@ -77,23 +60,32 @@ public:
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
 
-    int vision_tile_count_;
+public:
+    MapInventory();
+    MapInventory(const UnitInventory &ui, const ResourceInventory &ri);
 
-    // Updates the count of our vision total, in tiles
-    void updateVision_Count();
+    void onStart(); //Run this on game start.  Note game start does not actually have everything loaded - frame 0 is when the map is "ready" for most accessing.
+    void onFrame(); //Run this every frame to update based on new information.
+
+    int nScouts = 2; // How many scouts will we have? Set by fiat.
+    Position screen_position_;
+
+    //int expo_portion_of_the_map_;
+
+    //Marks Data for each area if it is "ground safe"
+    void updateGroundDangerousAreas();
+    vector<TilePosition> MapInventory::getExpoTilePositions(); //returns all possible expos and starting bases, found with BWEM.
+    vector<TilePosition> getInsideWallTilePositions(); //Returns the plausible macro hatch positions only.
+
     // Updates our screen poisition. A little gratuitous but nevertheless useful.
     void updateScreen_Position();
-    // Updates the (safe) log gas ratios, ln(gas)/(ln(min)+ln(gas))
-    double getGasRatio();
-    // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
-    double getLn_Supply_Ratio();
 
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
     void MapInventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
     void MapInventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades. Currently flawed.
-    void MapInventory::updateUnwalkableWithBuildings();
+    //void MapInventory::updateUnwalkableWithBuildings();
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
     void MapInventory::updateSmoothPos();
@@ -102,9 +94,6 @@ public:
 
     // simply gets the value in FIELD at a particular POS.
     static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
-
-    // Simply gets the distance between two points using cpp, will not fail if a spot is inside a building.
-    int getDistanceBetween(const Position A, const Position B) const;
 
     //Distance from enemy base in pixels, called a lot.
     int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const; 
@@ -176,20 +165,28 @@ public:
     void assignScoutDestinations();
     void assignAirDestinations();
     //returns true if a position is being scouted or marched towards. checks for area ID matchs.
-    bool isScoutingPosition(const Position & pos);
-    bool isMarchingPosition(const Position & pos);
-    Position getClosestInVector(vector<Position>& posVector); // This command returns the closest position to my safe_base_.
-    Position getFurthestInVector(vector<Position>& posVector); // This command returns the furthest position to my safe_base_.
-    bool isStartPosition(const Position & p); //returns true if the position is a start position.
-    double distanceTransformation(const int currentDistance); //transforms the distance into a weighted distance based on time of game, distance from enemy, and size of map.
-    double distanceTransformation(const double distanceFromTarget);  //transforms the distance into a weighted distance based on time of game, distance from enemy, and size of map. Overload.
+    bool isScoutingPosition(const Position & pos) const;
+    bool isMarchingPosition(const Position & pos) const;
+    Position getClosestInVector(vector<Position>& posVector) const; // This command returns the closest position to my safe_base_.
+    Position getFurthestInVector(vector<Position>& posVector) const; // This command returns the furthest position to my safe_base_.
+    bool isStartPosition(const Position & p)  const; //returns true if the position is a start position.
+    double distanceTransformation(const int currentDistance) const; //returns 0.3 if 0 or 100/distacnce. Intended to be replaced by something smarter.
+    double distanceTransformation(const double distanceFromTarget) const;  //returns 0.3 if 0 or 100/distacnce. Intended to be replaced by something smarter. Overload.
     void assignLateArmyMovement(const Position closest_enemy);
     void assignLateAirMovement(const Position closest_enemy);
     void assignLateScoutMovement(const Position closest_enemy);
-    Position getEarlyGameScoutPosition();
-    Position getEarlyGameArmyPosition();
-    Position getEarlyGameAirPosition();
-    Position getDistanceWeightedPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
+
+    Position getEarlyGameScoutPosition() const;
+    Position getEarlyGameArmyPosition() const;
+    Position getEarlyGameAirPosition() const;
+    Position getDistanceWeightedPosition(const Position & target_pos ) const; //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
+    
+    int getDistanceBetween(const Position A, const Position B) const; // Simply gets the distance between two points using cpp, will not fail if a spot is inside a building.
+
+    double getGasRatio() const;     // gets the (safe) log gas ratios, ln(gas)/(ln(min)+ln(gas))
+    double getLn_Supply_Ratio() const; // gets the (safe) log of our supply total. Returns very high int instead of infinity.
+    int getMyMapPortion() const; // Gets the distance from spawn of the map that "belongs" to me, currently about 1/nth of the map where N is the number of bases.
+
     //static bool isTileDetected(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
     //static bool isTileAirThreatened(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
     //static bool isTileGroundThreatened(const Position &p);
@@ -208,4 +205,5 @@ public:
     Position getEnemyBaseAir();
     Position getFrontLineBase();
     vector<Position> getScoutingBases();
+
 };

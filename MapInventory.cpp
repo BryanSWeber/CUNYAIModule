@@ -20,8 +20,6 @@ using namespace std;
 MapInventory::MapInventory() {};
 MapInventory::MapInventory(const UnitInventory &ui, const ResourceInventory &ri) {
 
-    updateVision_Count();
-
     //Fields:
     vector< vector<int> > pf_threat_;
     vector< vector<int> > pf_attract_;
@@ -76,6 +74,30 @@ void MapInventory::onStart()
     updateMapVeins();
 }
 
+void MapInventory::onFrame()
+{
+    //currentMapInventory.updateVision_Count();
+    updateScreen_Position();
+    mainCurrentMap();
+    //createAirThreatField(enemy_player_model);
+    //createGroundThreatField(enemy_player_model);
+    createDetectField(CUNYAIModule::enemy_player_model);
+    //currentMapInventory.createVisionField(enemy_player_model);
+    //currentMapInventory.createBlindField(enemy_player_model);
+    createThreatField(CUNYAIModule::enemy_player_model);
+    createThreatBufferField(CUNYAIModule::enemy_player_model);
+    createExtraWideBufferField(CUNYAIModule::enemy_player_model);
+    createOccupationField();
+    createSurroundField(CUNYAIModule::enemy_player_model);
+    //DiagnosticSurroundTiles();
+    DiagnosticThreatTiles();
+
+
+    if (Broodwar->getFrameCount() == 0) {
+        getExpoTilePositions(); // prime this once on game start.
+    }
+}
+
 //Marks Data for each area if it is "ground safe"
 void MapInventory::updateGroundDangerousAreas()
 {
@@ -85,7 +107,8 @@ void MapInventory::updateGroundDangerousAreas()
 };
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
-double MapInventory::getGasRatio() {
+double MapInventory::getGasRatio() const 
+{
     // Normally:
     if (Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0) {
         return static_cast<double>(Broodwar->self()->gas()) / static_cast<double>(Broodwar->self()->minerals() + Broodwar->self()->gas());
@@ -96,7 +119,8 @@ double MapInventory::getGasRatio() {
 };
 
 // Evaluates ln(supply_excess)/ln(supply_available). Returns 0 if supply available is 0.  Considers overlords in production as well as finished ones.
-double MapInventory::getLn_Supply_Ratio() {
+double MapInventory::getLn_Supply_Ratio() const 
+{
     int supply_total_ = 0;
     int supply_used_ = 0; //includes production.
 
@@ -117,27 +141,27 @@ double MapInventory::getLn_Supply_Ratio() {
         return 0;
     } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. 
 };
-
-// Updates the count of our vision total, in tiles
-void MapInventory::updateVision_Count() {
-    int map_x = BWAPI::Broodwar->mapWidth();
-    int map_y = BWAPI::Broodwar->mapHeight();
-
-    int map_area = map_x * map_y; // map area in tiles.
-    int total_tiles = 0;
-    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
-        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
-            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
-                total_tiles += 1;
-            }
-        }
-    } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
-
-    if (total_tiles == 0) {
-        total_tiles = 1;
-    } // catch some odd case where you are dead anyway. Rather not crash.
-    vision_tile_count_ = total_tiles;
-}
+//
+//// Updates the count of our vision total, in tiles
+//void MapInventory::updateVision_Count() {
+//    int map_x = BWAPI::Broodwar->mapWidth();
+//    int map_y = BWAPI::Broodwar->mapHeight();
+//
+//    int map_area = map_x * map_y; // map area in tiles.
+//    int total_tiles = 0;
+//    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
+//        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
+//            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
+//                total_tiles += 1;
+//            }
+//        }
+//    } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
+//
+//    if (total_tiles == 0) {
+//        total_tiles = 1;
+//    } // catch some odd case where you are dead anyway. Rather not crash.
+//    vision_tile_count_ = total_tiles;
+//}
 
 void MapInventory::updateScreen_Position()
 {
@@ -1510,7 +1534,8 @@ void MapInventory::DiagnosticExtraWideBufferTiles()
     DiagnosticField(pfExtraWideBuffer_);
 }
 
-Position MapInventory::getEarlyGameScoutPosition() {
+Position MapInventory::getEarlyGameScoutPosition()  const 
+{
     // need to consider we could send 2 scouts to same position if it is unscouted. So filter by unexplore and unscouted and if nothing, then just try unexplored.
 
     vector<Position> viable_options;
@@ -1540,7 +1565,8 @@ Position MapInventory::getEarlyGameScoutPosition() {
     }
 }
 
-Position MapInventory::getEarlyGameArmyPosition() {
+Position MapInventory::getEarlyGameArmyPosition()  const
+{
     vector<Position> viable_options;
     for (auto i : Broodwar->getStartLocations()) {
         if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
@@ -1557,7 +1583,8 @@ Position MapInventory::getEarlyGameArmyPosition() {
     }
 }
 
-Position MapInventory::getEarlyGameAirPosition() {
+Position MapInventory::getEarlyGameAirPosition()  const 
+{
     vector<Position> viable_options;
     for (auto i : Broodwar->getStartLocations()) {
         if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
@@ -1574,7 +1601,8 @@ Position MapInventory::getEarlyGameAirPosition() {
     }
 }
 
-Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) {
+Position MapInventory::getDistanceWeightedPosition(const Position & target_pos)  const 
+{
     //From Dolphin Bot 2018 (with paraphrasing):
     double total_distance = 0;
     double sum_log_p = 0;
@@ -1714,15 +1742,18 @@ void MapInventory::assignAirDestinations() {
     }
 }
 
-bool MapInventory::isScoutingPosition(const Position &pos) {
+bool MapInventory::isScoutingPosition(const Position &pos)  const
+{
     return scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 }
 
-bool MapInventory::isMarchingPosition(const Position &pos) {
+bool MapInventory::isMarchingPosition(const Position &pos)   const
+{
     return static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
 }
 
-Position MapInventory::getClosestInVector(vector<Position> &posVector){
+Position MapInventory::getClosestInVector(vector<Position> &posVector)  const
+{
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MAX;
     for (auto p : posVector) {
@@ -1734,7 +1765,8 @@ Position MapInventory::getClosestInVector(vector<Position> &posVector){
     return pos_holder;
 }
 
-Position MapInventory::getFurthestInVector(vector<Position> &posVector) {
+Position MapInventory::getFurthestInVector(vector<Position> &posVector)   const
+{
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MIN;
     for (auto p : posVector) {
@@ -1746,7 +1778,8 @@ Position MapInventory::getFurthestInVector(vector<Position> &posVector) {
     return pos_holder;
 }
 
-bool MapInventory::isStartPosition(const Position &p) {
+bool MapInventory::isStartPosition(const Position &p)   const
+{
     for (auto s : Broodwar->getStartLocations()) {
         if (TilePosition(p) == TilePosition(s))
             return true;
@@ -1754,10 +1787,12 @@ bool MapInventory::isStartPosition(const Position &p) {
     return false;
 }
 
-double MapInventory::distanceTransformation(const int distanceFromTarget) {
+double MapInventory::distanceTransformation(const int distanceFromTarget)   const
+{
         return distanceFromTarget ==  0 ? 0.30 : 100.0/static_cast<double>(distanceFromTarget);
 }
-double MapInventory::distanceTransformation(const double distanceFromTarget) {
+double MapInventory::distanceTransformation(const double distanceFromTarget)   const
+{
     return distanceFromTarget == 0 ? 0.30 : 100.0 / distanceFromTarget;
 }
 
@@ -1863,3 +1898,8 @@ vector<Position> MapInventory::getScoutingBases()
 {
     return scouting_bases_;
 }
+
+int MapInventory::getMyMapPortion() const
+{
+    return CUNYAIModule::convertTileDistanceToPixelDistance(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()));;
+}; 

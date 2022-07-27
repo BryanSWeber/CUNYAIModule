@@ -233,22 +233,6 @@ void UnitInventory::drawAllLastSeens() const
     }
 }
 
-//Marks as red if it's on a minitile that ground units should not be at.
-void UnitInventory::drawAllMisplacedGroundUnits() const
-{
-    if constexpr (DIAGNOSTIC_MODE) {
-        for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
-            if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::currentMapInventory.screen_position_) && !e->second.type_.isBuilding()) {
-                if (CUNYAIModule::currentMapInventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1) {
-                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
-                }
-                else if (CUNYAIModule::currentMapInventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 0) {
-                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue, true); // Mark as RED if not in a walkable spot.
-                }
-            }
-        }
-    }
-}
 
 // Updates the count of units.
 bool UnitInventory::addStoredUnit(const Unit &unit) {

@@ -50,6 +50,8 @@ public:
     ResourceInventory(); // for blank construction.
     ResourceInventory(const Unitset &unit_set);
 
+    void onFrame(); //Run this on frame. Technically only updates on frame 0, but could be updated again.
+
     std::map <Unit, Stored_Resource> ResourceInventory_;
 
     void addStored_Resource(Unit unit);     // Updates the count of resource units.
@@ -62,7 +64,6 @@ public:
     void updateResourceInventory(UnitInventory & ui, UnitInventory & ei, MapInventory &inv); // updates values of units in mine.
     void updateMines(); //counts number of viable gas mines and local mineral patches.
     void drawMineralRemaining() const;
-    void drawUnreachablePatch(const MapInventory & inv) const;;
     friend ResourceInventory operator + (const ResourceInventory & lhs, const ResourceInventory& rhs);
     friend ResourceInventory operator - (const ResourceInventory & lhs, const ResourceInventory & rhs);
 

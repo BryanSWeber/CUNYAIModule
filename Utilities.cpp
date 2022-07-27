@@ -1564,127 +1564,127 @@ int CUNYAIModule::getChargableDistance(const Unit & u)
 }
 
 
-//finds nearest choke or best location within 100 minitiles.
-Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const MapInventory &inv ) {
-    WalkPosition e_position = WalkPosition( final );
-    WalkPosition wk_postion = WalkPosition( initial );
-    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
-
-    int max_observed = CUNYAIModule::currentMapInventory.map_veins_[wk_postion.x][wk_postion.y];
-    Position nearest_choke; 
-
-    for ( auto i = 0; i < 100; ++i ) {
-        for ( int x = -1; x <= 1; ++x ) {
-            for ( int y = -1; y <= 1; ++y ) {
-
-                int testing_x = wk_postion.x + x;
-                int testing_y = wk_postion.y + y;
-
-                if ( !(x == 0, y == 0) &&
-                    testing_x < map_dim.x &&
-                    testing_y < map_dim.y &&
-                    testing_x > 0 &&
-                    testing_y > 0 ) { // check for being within reference space.
-
-                    int temp = CUNYAIModule::currentMapInventory.map_veins_[testing_x][testing_y];
-
-                    if ( temp >= max_observed ) {
-                        max_observed = temp;
-                        nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-                        wk_postion = WalkPosition( nearest_choke ); //search from there.
-                        if ( max_observed > 175 ) {
-                            return nearest_choke;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    //another attempt
-    //int x_dist_to_e = e_position.x - wk_postion.x;
-    //int y_dist_to_e = e_position.y - wk_postion.y;
-
-    //int dx = x_dist_to_e > 0 ? 1 : -1;
-    //int dy = y_dist_to_e > 0 ? 1 : -1;
-
-    //for ( auto i = 0; i < 50; ++i ) {
-    //    for ( int x = 0; x <= 1; ++x ) {
-    //        for ( int y = 0; y <= 1; ++y ) {
-
-    //            int testing_x = wk_postion.x + x * dx;
-    //            int testing_y = wk_postion.y + y * dy;
-
-    //            if ( !(x == 0, y == 0) &&
-    //                testing_x < map_dim.x &&
-    //                testing_y < map_dim.y &&
-    //                testing_x > 0 &&
-    //                testing_y > 0 ) { // check for being within reference space.
-
-    //                int temp = inv.map_veins_[testing_x][testing_y];
-
-    //                if ( temp > max_observed ) {
-    //                    max_observed = temp;
-    //                    nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-    //                    wk_postion = WalkPosition( nearest_choke ); //search from there.
-    //                    if ( max_observed > 275 ) {
-    //                        return nearest_choke;
-    //                        break;
-    //                    }
-    //                }
-    //                else if ( y_dist_to_e == 0 || abs( x_dist_to_e / y_dist_to_e ) > 1 ) {
-    //                    dx = x_dist_to_e > 0 ? 1 : -1;
-    //                }
-    //                else {
-    //                    dy = y_dist_to_e > 0 ? 1 : -1;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-     //another attempt
-    //int x_dist_to_e, y_dist_to_e, dx, dy, x_inc, y_inc;
-
-    //dx = x_dist_to_e > 0 ? 1 : -1;
-    //dy = y_dist_to_e > 0 ? 1 : -1;
-
-    //for ( auto i = 0; i < 50; ++i ) {
-
-    //    x_dist_to_e = e_position.x - wk_postion.x;
-    //    y_dist_to_e = e_position.y - wk_postion.y;
-
-    //    int testing_x = wk_postion.x + dx;
-    //    int testing_y = wk_postion.y + dy;
-
-    //    if ( testing_x < map_dim.x &&
-
-    //        testing_y < map_dim.y &&
-    //        testing_x > 0 &&
-    //        testing_y > 0 ) { // check for being within reference space.
-
-    //        int temp = inv.map_veins_[testing_x][testing_y];
-
-    //        if ( temp > max_observed ) {
-    //            max_observed = temp;
-    //            nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-    //            wk_postion = WalkPosition( nearest_choke ); //search from there.
-    //            if ( max_observed > 275 ) {
-    //                return nearest_choke;
-    //                break;
-    //            }
-    //        }
-    //        else if ( abs(y_dist_to_e / x_dist_to_e) < 1 ) {
-    //            dx += x_dist_to_e > 0 ? 1 : -1;
-    //        }
-    //        else {
-    //            dy += y_dist_to_e > 0 ? 1 : -1;
-    //        }
-    //    }
-    //}
-
-    return nearest_choke;
-}
+////finds nearest choke or best location within 100 minitiles.
+//Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const MapInventory &inv ) {
+//    WalkPosition e_position = WalkPosition( final );
+//    WalkPosition wk_postion = WalkPosition( initial );
+//    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+//
+//    int max_observed = CUNYAIModule::currentMapInventory.map_veins_[wk_postion.x][wk_postion.y];
+//    Position nearest_choke; 
+//
+//    for ( auto i = 0; i < 100; ++i ) {
+//        for ( int x = -1; x <= 1; ++x ) {
+//            for ( int y = -1; y <= 1; ++y ) {
+//
+//                int testing_x = wk_postion.x + x;
+//                int testing_y = wk_postion.y + y;
+//
+//                if ( !(x == 0, y == 0) &&
+//                    testing_x < map_dim.x &&
+//                    testing_y < map_dim.y &&
+//                    testing_x > 0 &&
+//                    testing_y > 0 ) { // check for being within reference space.
+//
+//                    int temp = CUNYAIModule::currentMapInventory.map_veins_[testing_x][testing_y];
+//
+//                    if ( temp >= max_observed ) {
+//                        max_observed = temp;
+//                        nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//                        wk_postion = WalkPosition( nearest_choke ); //search from there.
+//                        if ( max_observed > 175 ) {
+//                            return nearest_choke;
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    //another attempt
+//    //int x_dist_to_e = e_position.x - wk_postion.x;
+//    //int y_dist_to_e = e_position.y - wk_postion.y;
+//
+//    //int dx = x_dist_to_e > 0 ? 1 : -1;
+//    //int dy = y_dist_to_e > 0 ? 1 : -1;
+//
+//    //for ( auto i = 0; i < 50; ++i ) {
+//    //    for ( int x = 0; x <= 1; ++x ) {
+//    //        for ( int y = 0; y <= 1; ++y ) {
+//
+//    //            int testing_x = wk_postion.x + x * dx;
+//    //            int testing_y = wk_postion.y + y * dy;
+//
+//    //            if ( !(x == 0, y == 0) &&
+//    //                testing_x < map_dim.x &&
+//    //                testing_y < map_dim.y &&
+//    //                testing_x > 0 &&
+//    //                testing_y > 0 ) { // check for being within reference space.
+//
+//    //                int temp = inv.map_veins_[testing_x][testing_y];
+//
+//    //                if ( temp > max_observed ) {
+//    //                    max_observed = temp;
+//    //                    nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//    //                    wk_postion = WalkPosition( nearest_choke ); //search from there.
+//    //                    if ( max_observed > 275 ) {
+//    //                        return nearest_choke;
+//    //                        break;
+//    //                    }
+//    //                }
+//    //                else if ( y_dist_to_e == 0 || abs( x_dist_to_e / y_dist_to_e ) > 1 ) {
+//    //                    dx = x_dist_to_e > 0 ? 1 : -1;
+//    //                }
+//    //                else {
+//    //                    dy = y_dist_to_e > 0 ? 1 : -1;
+//    //                }
+//    //            }
+//    //        }
+//    //    }
+//    //}
+//     //another attempt
+//    //int x_dist_to_e, y_dist_to_e, dx, dy, x_inc, y_inc;
+//
+//    //dx = x_dist_to_e > 0 ? 1 : -1;
+//    //dy = y_dist_to_e > 0 ? 1 : -1;
+//
+//    //for ( auto i = 0; i < 50; ++i ) {
+//
+//    //    x_dist_to_e = e_position.x - wk_postion.x;
+//    //    y_dist_to_e = e_position.y - wk_postion.y;
+//
+//    //    int testing_x = wk_postion.x + dx;
+//    //    int testing_y = wk_postion.y + dy;
+//
+//    //    if ( testing_x < map_dim.x &&
+//
+//    //        testing_y < map_dim.y &&
+//    //        testing_x > 0 &&
+//    //        testing_y > 0 ) { // check for being within reference space.
+//
+//    //        int temp = inv.map_veins_[testing_x][testing_y];
+//
+//    //        if ( temp > max_observed ) {
+//    //            max_observed = temp;
+//    //            nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//    //            wk_postion = WalkPosition( nearest_choke ); //search from there.
+//    //            if ( max_observed > 275 ) {
+//    //                return nearest_choke;
+//    //                break;
+//    //            }
+//    //        }
+//    //        else if ( abs(y_dist_to_e / x_dist_to_e) < 1 ) {
+//    //            dx += x_dist_to_e > 0 ? 1 : -1;
+//    //        }
+//    //        else {
+//    //            dy += y_dist_to_e > 0 ? 1 : -1;
+//    //        }
+//    //    }
+//    //}
+//
+//    return nearest_choke;
+//}
 
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {

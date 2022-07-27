@@ -228,7 +228,7 @@ struct UnitInventory {
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllLastSeens() const;
-    void drawAllMisplacedGroundUnits() const;
+
     UnitInventory getInventoryAtArea(const int areaID) const;
     UnitInventory getCombatInventoryAtArea(const int areaID) const;
     UnitInventory getBuildingInventoryAtArea(const int areaID) const;
