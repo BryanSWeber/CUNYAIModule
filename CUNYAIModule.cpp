@@ -247,7 +247,7 @@ void CUNYAIModule::onFrame()
     }
 
     my_reservation.confirmOngoingReservations();
-    Diagnostics::drawReservations(my_reservation, currentMapInventory.screen_position_);
+    Diagnostics::drawReservations(my_reservation, Broodwar->getScreenPosition());
 
 
 
@@ -320,14 +320,14 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange());
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        Diagnostics::drawCircle(c, CUNYAIModule::currentMapInventory.screen_position_, 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, currentMapInventory.screen_position_, Colors::Cyan);
+                        Diagnostics::drawCircle(c, Broodwar->getScreenPosition(), 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, Broodwar->getScreenPosition(), Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        Diagnostics::drawCircle(c, CUNYAIModule::currentMapInventory.screen_position_, 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, currentMapInventory.screen_position_, c, Colors::Cyan);
+                        Diagnostics::drawCircle(c, Broodwar->getScreenPosition(), 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, Broodwar->getScreenPosition(), c, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
                 }

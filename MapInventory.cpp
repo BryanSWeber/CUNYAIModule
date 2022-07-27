@@ -77,19 +77,14 @@ void MapInventory::onStart()
 void MapInventory::onFrame()
 {
     //currentMapInventory.updateVision_Count();
-    updateScreen_Position();
     mainCurrentMap();
-    //createAirThreatField(enemy_player_model);
-    //createGroundThreatField(enemy_player_model);
+    setSafeBase();
     createDetectField(CUNYAIModule::enemy_player_model);
-    //currentMapInventory.createVisionField(enemy_player_model);
-    //currentMapInventory.createBlindField(enemy_player_model);
     createThreatField(CUNYAIModule::enemy_player_model);
     createThreatBufferField(CUNYAIModule::enemy_player_model);
     createExtraWideBufferField(CUNYAIModule::enemy_player_model);
     createOccupationField();
     createSurroundField(CUNYAIModule::enemy_player_model);
-    //DiagnosticSurroundTiles();
     DiagnosticThreatTiles();
 
 
@@ -162,11 +157,6 @@ double MapInventory::getLn_Supply_Ratio() const
 //    } // catch some odd case where you are dead anyway. Rather not crash.
 //    vision_tile_count_ = total_tiles;
 //}
-
-void MapInventory::updateScreen_Position()
-{
-    screen_position_ = Broodwar->getScreenPosition();
-}
 
 //In Tiles?
 void MapInventory::updateBuildablePos()
@@ -345,7 +335,7 @@ void MapInventory::updateMapVeins() {
 //    return map[startloc.x][startloc.y];
 //}
 
-int MapInventory::getFieldValue(const Position & pos, const vector<vector<int>>& field)
+int MapInventory::getFieldValue(const Position & pos, const vector<vector<int>>& field) const
 {
     TilePosition startloc = TilePosition(pos);
     return field[startloc.x][startloc.y];
@@ -989,7 +979,8 @@ Position MapInventory::getBaseWithMostSurvivors(const bool &friendly, const bool
     return strongest_base;
 }
 
-Position MapInventory::getBasePositionNearest(Position &p) {
+Position MapInventory::getBasePositionNearest(const Position &p) const
+{
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
@@ -1001,7 +992,8 @@ Position MapInventory::getBasePositionNearest(Position &p) {
     return closest_base;
 }
 
-vector<TilePosition> MapInventory::getExpoTilePositions() {
+vector<TilePosition> MapInventory::getExpoTilePositions() const
+{
     std::vector<TilePosition> expo_positions;
     for (auto & area : BWEM::Map::Instance().Areas()) {
         for (auto & base : area.Bases()) {
@@ -1011,7 +1003,7 @@ vector<TilePosition> MapInventory::getExpoTilePositions() {
     return expo_positions;
 }
 
-vector<TilePosition> MapInventory::getInsideWallTilePositions() {
+vector<TilePosition> MapInventory::getInsideWallTilePositions()  const{
     std::vector<TilePosition> macroPositions;
     BWEB::Path distanceBetweenWallAndStart;
     distanceBetweenWallAndStart.createUnitPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()));
@@ -1081,19 +1073,6 @@ void MapInventory::mainCurrentMap() {
         front_line_base_ = suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
     }
 
-    // Update Safe Base
-        //otherwise go to your safest base - the one with least deaths near it and most units.
-    Position suspected_safe_base = Positions::Origin;
-
-    suspected_safe_base = getBaseWithMostSurvivors(true, false);
-
-    if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
-        safe_base_ = suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
-    }
-    else {
-        safe_base_ = front_line_base_;
-    }
-
 }
 
 //void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
@@ -1153,7 +1132,7 @@ void MapInventory::mainCurrentMap() {
 //}
 
 
-vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units)
+vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units) const
 {
     vector<int> return_vector;
 
@@ -1399,11 +1378,12 @@ void MapInventory::createSurroundField(PlayerModel & enemy_player)
 //    return pfVisible_[t.x][t.y];
 //}
 
-const int MapInventory::getDetectField(TilePosition & t) {
+const int MapInventory::getDetectField(const TilePosition & t) const
+{
     return pfDetectThreat_[t.x][t.y];
 }
 
-const int MapInventory::getOccupationField(TilePosition & t)
+const int MapInventory::getOccupationField(const TilePosition & t) const
 {
     return pfOccupation_[t.x][t.y];
 }
@@ -1413,17 +1393,17 @@ const int MapInventory::getOccupationField(TilePosition & t)
 //    return pfBlindness_[t.x][t.y];
 //}
 
-const bool MapInventory::isInBufferField(TilePosition & t)
+bool MapInventory::isInBufferField(const TilePosition & t) const
 {
     return pfThreatBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::isInExtraWideBufferField(TilePosition & t)
+bool MapInventory::isInExtraWideBufferField(const TilePosition & t) const
 {
     return pfExtraWideBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::isInSurroundField(TilePosition & t)
+bool MapInventory::isInSurroundField(const TilePosition & t) const
 {
     return pfSurroundSquare_[t.x][t.y];
 }
@@ -1433,11 +1413,12 @@ void MapInventory::setSurroundField(TilePosition & t, bool newVal)
     pfSurroundSquare_[t.x][t.y] = newVal;
 }
 
-void MapInventory::DiagnosticField(double pf[256][256]) {
+void MapInventory::DiagnosticField(const double pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }) + Position(16, 16), "%4.2f", pf[i][j]);
                     }
@@ -1447,11 +1428,12 @@ void MapInventory::DiagnosticField(double pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticField(int pf[256][256]) {
+void MapInventory::DiagnosticField(const int pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
                     }
@@ -1461,11 +1443,12 @@ void MapInventory::DiagnosticField(int pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticField(bool pf[256][256]) {
+void MapInventory::DiagnosticField(const bool pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j]) {
                         Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
                     }
@@ -1475,12 +1458,13 @@ void MapInventory::DiagnosticField(bool pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticTile() {
+void MapInventory::DiagnosticTile() const
+{
     if (DIAGNOSTIC_MODE) {
             //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
             for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
@@ -1488,48 +1472,29 @@ void MapInventory::DiagnosticTile() {
     }
 }
 
-//void MapInventory::DiagnosticAirThreats()
-//{
-//    DiagnosticField(pfAirThreat_);
-//}
-//
-//void MapInventory::DiagnosticGroundThreats()
-//{
-//    DiagnosticField(pfGroundThreat_);
-//}
-//
-//void MapInventory::DiagnosticVisibleTiles()
-//{
-//    DiagnosticField(pfVisible_);
-//}
 
-void MapInventory::DiagnosticOccupiedTiles()
+void MapInventory::DiagnosticOccupiedTiles() const
 {
     DiagnosticField(pfOccupation_);
 }
 
-void MapInventory::DiagnosticDetectedTiles()
+void MapInventory::DiagnosticDetectedTiles() const
 {
     DiagnosticField(pfDetectThreat_);
 }
 
-//void MapInventory::DiagnosticBlindTiles()
-//{
-//    DiagnosticField(pfBlindness_);
-//}
-
-void MapInventory::DiagnosticThreatTiles()
+void MapInventory::DiagnosticThreatTiles() const
 {
     DiagnosticField(pfThreat_);
 }
 
-void MapInventory::DiagnosticSurroundTiles()
+void MapInventory::DiagnosticSurroundTiles() const
 {
     DiagnosticField(pfSurroundSquare_);
 }
 
 
-void MapInventory::DiagnosticExtraWideBufferTiles()
+void MapInventory::DiagnosticExtraWideBufferTiles() const
 {
     DiagnosticField(pfExtraWideBuffer_);
 }
@@ -1747,12 +1712,7 @@ bool MapInventory::isScoutingPosition(const Position &pos)  const
     return scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 }
 
-bool MapInventory::isMarchingPosition(const Position &pos)   const
-{
-    return static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
-}
-
-Position MapInventory::getClosestInVector(vector<Position> &posVector)  const
+Position MapInventory::getClosestInVector(const vector<Position> &posVector)  const
 {
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MAX;
@@ -1765,7 +1725,7 @@ Position MapInventory::getClosestInVector(vector<Position> &posVector)  const
     return pos_holder;
 }
 
-Position MapInventory::getFurthestInVector(vector<Position> &posVector)   const
+Position MapInventory::getFurthestInVector(const vector<Position> &posVector)   const
 {
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MIN;
@@ -1854,12 +1814,12 @@ void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
 //    return CUNYAIModule::currentMapInventory.pfVisible_[TilePosition(p).x][TilePosition(p).y] > 0;
 //}
 
-bool MapInventory::isTileThreatened(const TilePosition & tp)
+bool MapInventory::isTileThreatened(const TilePosition & tp) const
 {
     return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y] > 0;
 }
 
-double MapInventory::getTileThreat(const TilePosition & tp)
+double MapInventory::getTileThreat(const TilePosition & tp) const
 {
     return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y];
 }
@@ -1874,27 +1834,27 @@ int MapInventory::getExpoPositionScore(const Position & p)
 }
 
 
-Position MapInventory::getSafeBase()
+Position MapInventory::getSafeBase() const
 {
     return safe_base_;
 }
 
-Position MapInventory::getEnemyBaseGround()
+Position MapInventory::getEnemyBaseGround() const
 {
     return enemy_base_ground_;
 }
 
-Position MapInventory::getEnemyBaseAir()
+Position MapInventory::getEnemyBaseAir() const
 {
     return enemy_base_air_;
 }
 
-Position MapInventory::getFrontLineBase()
+Position MapInventory::getFrontLineBase() const
 {
     return front_line_base_;
 }
 
-vector<Position> MapInventory::getScoutingBases()
+vector<Position> MapInventory::getScoutingBases() const
 {
     return scouting_bases_;
 }
@@ -1903,3 +1863,17 @@ int MapInventory::getMyMapPortion() const
 {
     return CUNYAIModule::convertTileDistanceToPixelDistance(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()));;
 }; 
+
+void MapInventory::setSafeBase() {
+    // Update Safe Base
+    Position suspected_safe_base = Positions::Origin;
+
+    suspected_safe_base = getBaseWithMostSurvivors(true, false);
+
+    if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
+        safe_base_ = suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    }
+    else {
+        safe_base_ = front_line_base_;
+    }
+}

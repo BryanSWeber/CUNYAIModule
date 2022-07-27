@@ -192,7 +192,7 @@ void ResourceInventory::updateMines() {
 void ResourceInventory::drawMineralRemaining() const
 {
     for (auto u : ResourceInventory_) {
-        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, Broodwar->getScreenPosition());
     }
 
 }

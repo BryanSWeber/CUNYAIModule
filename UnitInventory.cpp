@@ -191,20 +191,20 @@ void UnitInventory::drawAllWorkerTasks() const
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
             if (u.second.locked_mine_ && !u.second.isAssignedResource() && !u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, Colors::White);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::White);
             }
             else if (u.second.isAssignedMining()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, Colors::Green);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Green);
             }
             else if (u.second.isAssignedGas()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, Colors::Brown);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Brown);
             }
             else if (u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, Colors::Blue);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Blue);
             }
 
             if (u.second.isAssignedBuilding()) {
-                Diagnostics::drawDot(u.second.pos_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Purple);
+                Diagnostics::drawDot(u.second.pos_, Broodwar->getScreenPosition(), Colors::Purple);
             }
         }
     }
@@ -215,10 +215,10 @@ void UnitInventory::drawAllLocations() const
 {
     for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
         if (e->second.valid_pos_) {
-            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::currentMapInventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
+            Diagnostics::drawCircle(e->second.pos_, Broodwar->getScreenPosition(), (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
         }
         else if (!e->second.valid_pos_) {
-            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::currentMapInventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
+            Diagnostics::drawCircle(e->second.pos_, Broodwar->getScreenPosition(), (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
         }
 
     }

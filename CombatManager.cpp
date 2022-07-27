@@ -58,7 +58,7 @@ bool CombatManager::combatScript(const Unit & u)
         int search_radius = getSearchRadius(u);
 
         //if(!u->getType().isWorker())
-        //    Diagnostics::drawCircle(u->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
+        //    Diagnostics::drawCircle(u->getPosition(), Broodwar->getScreenPosition(), search_radius, Colors::Green);
 
         UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
         UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
@@ -87,8 +87,8 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc.updateUnitInventorySummary();
             enemy_loc.updateUnitInventorySummary();
 
-            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
+            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, Broodwar->getScreenPosition(), CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, Broodwar->getScreenPosition(), search_radius, Colors::Green);
 
             //If we can fight, our unit type will determine our behavior.
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {

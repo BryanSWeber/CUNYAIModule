@@ -644,7 +644,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
     for (auto p = CUNYAIModule::land_inventory.ResourceInventory_.begin(); p != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); ++p) {
-        if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
+        if (CUNYAIModule::isOnScreen(p->second.pos_, Broodwar->getScreenPosition())) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
             Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
@@ -715,11 +715,11 @@ void Diagnostics::onFrame()
     //}
 
     for (auto & j : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        printPhase(j.second, CUNYAIModule::currentMapInventory.screen_position_);
+        printPhase(j.second, Broodwar->getScreenPosition());
     }
 
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
-    drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
+    drawDestination(CUNYAIModule::friendly_player_model.units_, Broodwar->getScreenPosition(), Colors::Grey);
 
     //Diagnostic_Watch_Expos();
     if (Broodwar->getFrameCount() % (24 * 60) == 0) {
@@ -727,23 +727,23 @@ void Diagnostics::onFrame()
         onFrameWritePlayerModel(CUNYAIModule::enemy_player_model);
     }
 
-    //drawTiles(CUNYAIModule::currentMapInventory.screen_position_);
+    //drawTiles(Broodwar->getScreenPosition());
     //for (auto e : CUNYAIModule::currentMapInventory.getExpoTilePositions())
-    //    drawCircle(Position(e), CUNYAIModule::currentMapInventory.screen_position_, 250);
+    //    drawCircle(Position(e), Broodwar->getScreenPosition(), 250);
 }
 
 void Diagnostics::drawAllVelocities(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        Diagnostics::drawLine(u.second.pos_, destination, CUNYAIModule::currentMapInventory.screen_position_, Colors::Green);
+        Diagnostics::drawLine(u.second.pos_, destination, Broodwar->getScreenPosition(), Colors::Green);
     }
 }
 
 void Diagnostics::drawAllHitPoints(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawHitPoints(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawHitPoints(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -751,7 +751,7 @@ void Diagnostics::drawAllHitPoints(const UnitInventory ui)
 void Diagnostics::drawAllMAFAPaverages(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawFAP(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawFAP(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -759,7 +759,7 @@ void Diagnostics::drawAllMAFAPaverages(const UnitInventory ui)
 void Diagnostics::drawAllFutureDeaths(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawEstimatedDeath(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -767,7 +767,7 @@ void Diagnostics::drawAllFutureDeaths(const UnitInventory ui)
 void Diagnostics::drawAllLastDamage(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawLastDamage(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawLastDamage(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -776,7 +776,7 @@ void Diagnostics::drawAllLastDamage(const UnitInventory ui)
 void Diagnostics::drawAllSpamGuards(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawSpamGuard(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawSpamGuard(u.second, Broodwar->getScreenPosition());
     }
 }
 
