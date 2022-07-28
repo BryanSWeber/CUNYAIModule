@@ -982,11 +982,10 @@ bool StoredUnit::isLongRangeLock() {
 
 void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
+    double proportion_anticipated_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
 
-    double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
-    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health);
-
-    fap_unit.data->updated_fap_this_frame_ = true;
+    future_fap_value_ = static_cast<int>(stock_value_ * proportion_anticipated_health);
+    updated_fap_this_frame_ = true;
 }
 
 void StoredUnit::updateFAPvalueDead()
@@ -1006,6 +1005,7 @@ void UnitInventory::updatePredictedStatus(bool friendly)
         for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
             if (fu.data) {
                 fu.data->updateFAPvalue(fu);
+                Diagnostics::drawCircle(fu.data->pos_, Broodwar->getScreenPosition(), (fu.data->type_.dimensionUp() + fu.data->type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             }
         }
     }

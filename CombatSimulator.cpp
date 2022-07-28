@@ -10,7 +10,7 @@ double CombatSimulator::unitWeight(FAP::FAPUnit<StoredUnit*> FAPunit)
     return  FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields);
 }
 
-auto CombatSimulator::createFAPVersion(StoredUnit u,const ResearchInventory & ri)
+auto CombatSimulator::createFAPVersion(StoredUnit &u,const ResearchInventory & ri)
 {
     int armor_upgrades = ri.getUpLevel(u.type_.armorUpgrade()) + 2 * (u.type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
@@ -59,7 +59,7 @@ auto CombatSimulator::createFAPVersion(StoredUnit u,const ResearchInventory & ri
         ;
 }
 
-auto CombatSimulator::createModifiedFAPVersion(StoredUnit u, const ResearchInventory &ri, const Position & chosen_pos, const UpgradeType &upgrade, const TechType &tech)
+auto CombatSimulator::createModifiedFAPVersion(StoredUnit &u, const ResearchInventory &ri, const Position & chosen_pos, const UpgradeType &upgrade, const TechType &tech)
 {
     int armor_upgrades = ri.getUpLevel(u.type_.armorUpgrade()) +
         2 * (u.type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating)) +
@@ -189,12 +189,12 @@ void CombatSimulator::addPlayersToMiniSimulation(const UpgradeType &upgrade, con
     }
 }
 
-const std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getFriendlySim()
+std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getFriendlySim()
 {
     return *internalFAP_.getState().first;
 }
 
-const std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getEnemySim()
+std::vector<FAP::FAPUnit<StoredUnit*>> CombatSimulator::getEnemySim()
 {
     return *internalFAP_.getState().second;
 }

@@ -78,7 +78,7 @@ void MapInventory::onFrame()
 {
     //currentMapInventory.updateVision_Count();
     mainCurrentMap();
-    setSafeBase();
+    assignSafeBase();
     createDetectField(CUNYAIModule::enemy_player_model);
     createThreatField(CUNYAIModule::enemy_player_model);
     createThreatBufferField(CUNYAIModule::enemy_player_model);
@@ -192,67 +192,67 @@ void MapInventory::updateUnwalkable() {
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
-void MapInventory::updateSmoothPos() {
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-    int choke_score = 0;
-    bool changed_a_value_last_cycle;
-
-    // first, define matrixes to recieve the walkable locations for every minitile.
-    smoothed_barriers_ = unwalkable_barriers_;
-
-    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles.
-        changed_a_value_last_cycle = false;
-        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
-            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
-
-                 // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
-                 // Repeat untill finished.
-
-                if (smoothed_barriers_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
-                    // Predefine grid we will search over.
-                    bool local_grid[3][3]; // WAY BETTER!
-
-                    local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
-                    local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
-
-                    local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
-                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y] < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
-                    local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
-
-                    local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
-                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
-                    local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
-
-                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-                    bool opposing_tiles =
-                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
-                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
-                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
-                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
-                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
-                    //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
-                    //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
-                    //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
-
-                    bool open_path =
-                        (!local_grid[0][0] && !local_grid[2][2]) ||
-                        (!local_grid[1][0] && !local_grid[1][2]) ||
-                        (!local_grid[2][0] && !local_grid[0][2]) ||
-                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
-
-
-                    changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
-                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * (iter + open_path * (99 - 2 * iter));
-                }
-            }
-        }
-        if (changed_a_value_last_cycle == false) {
-            return; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-    }
-}
+//void MapInventory::updateSmoothPos() {
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
+//    int choke_score = 0;
+//    bool changed_a_value_last_cycle;
+//
+//    // first, define matrixes to recieve the walkable locations for every minitile.
+//    smoothed_barriers_ = unwalkable_barriers_;
+//
+//    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles.
+//        changed_a_value_last_cycle = false;
+//        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+//            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
+//
+//                 // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
+//                 // Repeat untill finished.
+//
+//                if (smoothed_barriers_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
+//                    // Predefine grid we will search over.
+//                    bool local_grid[3][3]; // WAY BETTER!
+//
+//                    local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+//                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
+//                    local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
+//
+//                    local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
+//                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y] < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
+//                    local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
+//
+//                    local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+//                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
+//                    local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
+//
+//                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+//                    bool opposing_tiles =
+//                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+//                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+//                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+//                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+//                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
+//                    //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+//                    //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+//                    //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
+//
+//                    bool open_path =
+//                        (!local_grid[0][0] && !local_grid[2][2]) ||
+//                        (!local_grid[1][0] && !local_grid[1][2]) ||
+//                        (!local_grid[2][0] && !local_grid[0][2]) ||
+//                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
+//
+//
+//                    changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
+//                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * (iter + open_path * (99 - 2 * iter));
+//                }
+//            }
+//        }
+//        if (changed_a_value_last_cycle == false) {
+//            return; // if we did nothing last cycle, we don't need to punish ourselves.
+//        }
+//    }
+//}
 
 void MapInventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
@@ -1648,10 +1648,10 @@ void MapInventory::assignArmyDestinations() {
 
     if (enemy_found_) {
         if (currently_visible_enemy) {
-            assignLateArmyMovement(currently_visible_enemy->pos_);
+            sendArmyTowardsPosition(currently_visible_enemy->pos_);
         }
         else {
-            assignLateArmyMovement(Positions::Origin);
+            sendArmyTowardsPosition(Positions::Origin);
         }
     }
     else {
@@ -1666,17 +1666,17 @@ void MapInventory::assignScoutDestinations() {
 
     if (enemy_start_location_found_) {
         if (currently_visible_enemy) {
-            assignLateScoutMovement(currently_visible_enemy->pos_);
+            sendScoutTowardsPosition(currently_visible_enemy->pos_);
         }
         else {
-            assignLateScoutMovement(Positions::Origin);
+            sendScoutTowardsPosition(Positions::Origin);
         }
 
     }
     else {
         // create scouting position if bases are empty.
         if (scouting_bases_.empty()) {
-            for (int i = 0; i < nScouts; i++) {
+            for (int i = 0; i < nScouts_; i++) {
                 scouting_bases_.push_back(Positions::Origin);
             }
         }
@@ -1694,10 +1694,10 @@ void MapInventory::assignAirDestinations() {
 
     if (enemy_found_) {
         if (currently_visible_air) {
-            assignLateAirMovement(currently_visible_air->pos_);
+            sendAntiAirTowardsPosition(currently_visible_air->pos_);
         }
         else {
-            assignLateAirMovement(Positions::Origin);
+            sendAntiAirTowardsPosition(Positions::Origin);
         }
     }
     else {
@@ -1756,7 +1756,7 @@ double MapInventory::distanceTransformation(const double distanceFromTarget)   c
     return distanceFromTarget == 0 ? 0.30 : 100.0 / distanceFromTarget;
 }
 
-void MapInventory::assignLateArmyMovement(const Position closest_enemy){
+void MapInventory::sendArmyTowardsPosition(const Position closest_enemy){
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_ground_ = closest_enemy;
     }
@@ -1765,7 +1765,7 @@ void MapInventory::assignLateArmyMovement(const Position closest_enemy){
     }
 }
 
-void MapInventory::assignLateAirMovement(const Position closest_enemy) {
+void MapInventory::sendAntiAirTowardsPosition(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_air_ = closest_enemy;
     }
@@ -1774,7 +1774,7 @@ void MapInventory::assignLateAirMovement(const Position closest_enemy) {
     }
 }
 
-void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
+void MapInventory::sendScoutTowardsPosition(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to hunt near the closest enemy if we've seen 'em!
         for (auto& p : scouting_bases_) {
             if (Broodwar->isVisible(TilePosition(p)) || discovered_enemy_this_frame_)
@@ -1864,7 +1864,7 @@ int MapInventory::getMyMapPortion() const
     return CUNYAIModule::convertTileDistanceToPixelDistance(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()));;
 }; 
 
-void MapInventory::setSafeBase() {
+void MapInventory::assignSafeBase() {
     // Update Safe Base
     Position suspected_safe_base = Positions::Origin;
 
