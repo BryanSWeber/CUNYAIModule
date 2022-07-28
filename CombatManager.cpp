@@ -343,10 +343,11 @@ int CombatManager::getSearchRadius(const Unit & u)
 void CombatManager::onFrame()
 {
     // Update FAPS with units, runs sim, and reports issues.
-    CUNYAIModule::mainCombatSim.addPlayersToSimulation();
-    CUNYAIModule::mainCombatSim.runSimulation();
-    CUNYAIModule::friendly_player_model.units_.updatePredictedStatus();
-    CUNYAIModule::enemy_player_model.units_.updatePredictedStatus(false);
+    CombatSimulator mainCombatSim;
+    mainCombatSim.addPlayersToSimulation();
+    mainCombatSim.runSimulation();
+    CUNYAIModule::friendly_player_model.units_.updateWithPredictedStatus(mainCombatSim);
+    CUNYAIModule::enemy_player_model.units_.updateWithPredictedStatus(mainCombatSim, false);
 
     Diagnostics::drawAllFutureDeaths(CUNYAIModule::friendly_player_model.units_);
     Diagnostics::drawAllFutureDeaths(CUNYAIModule::enemy_player_model.units_);

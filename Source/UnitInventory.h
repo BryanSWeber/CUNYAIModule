@@ -235,7 +235,7 @@ struct UnitInventory {
     UnitInventory getBuildingInventory() const;
 
 
-    void updatePredictedStatus(bool friendly = true); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void updateWithPredictedStatus(CombatSimulator sim, bool friendly = true); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     //Gets a pointer to a stored unit when provided the unit pointer.
     StoredUnit* getStoredUnit(const Unit & u);

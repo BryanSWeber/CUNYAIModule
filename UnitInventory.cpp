@@ -984,9 +984,6 @@ void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
     double proportion_anticipated_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
 
-    if(type_ == UnitTypes::Zerg_Zergling || bwapi_unit_->getType().getRace() != Races::Zerg)
-        Diagnostics::writeMap(pos_, "HP: " + to_string(proportion_anticipated_health) + "% value:" + to_string(stock_value_) );
-
     this->future_fap_value_ = static_cast<int>(stock_value_ * proportion_anticipated_health);
     this->updated_fap_this_frame_ = true;
 }
@@ -997,7 +994,7 @@ void StoredUnit::updateFAPvalueDead()
     updated_fap_this_frame_ = true;
 }
 
-void UnitInventory::updatePredictedStatus(bool friendly)
+void UnitInventory::updateWithPredictedStatus(CombatSimulator sim, bool friendly)
 {
     //None of them have been updated this frame yet.
     for (auto &u : unit_map_) {
@@ -1008,14 +1005,14 @@ void UnitInventory::updatePredictedStatus(bool friendly)
     //Now update every single unit.
     //This section takes advantage of the fact that the fap units store the pointers themselves. This way we don't have to do a n^2 lookup. We just look at the fu and directly adjust the pointer.
     if (friendly) {
-        for (auto &fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
+        for (auto &fu : sim.getFriendlySim()) {
             if (fu.data) {
                 fu.data->updateFAPvalue(fu);
             }
         }
     }
     else {
-        for (auto &fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
+        for (auto &fu : sim.getEnemySim()) {
             if (fu.data) {
                 fu.data->updateFAPvalue(fu);
             }

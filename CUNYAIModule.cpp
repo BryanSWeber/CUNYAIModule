@@ -56,7 +56,6 @@ Reservation CUNYAIModule::my_reservation;
 LearningManager CUNYAIModule::learnedPlan;
 WorkerManager CUNYAIModule::workermanager;
 BaseManager CUNYAIModule::basemanager;
-CombatSimulator CUNYAIModule::mainCombatSim;
 
 double CUNYAIModule::supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
 double CUNYAIModule::gas_proportion = 0; // for gas levels. Gas is critical for spending but will be matched with supply.

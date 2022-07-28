@@ -97,7 +97,7 @@ void Diagnostics::drawHitPoints(const StoredUnit unit, const Position &screen_po
 void Diagnostics::drawFAP(const StoredUnit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.future_fap_value_ > 0) {
+        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && CUNYAIModule::isFightingUnit(unit)) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
