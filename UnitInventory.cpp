@@ -726,16 +726,16 @@ StoredUnit::StoredUnit(const UnitType &unittype, const bool &carrierUpgrade, con
     shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
 
     //Get unit's status. Precalculated, precached.
-    stock_value_ = getTraditionalWeight(type_, carrierUpgrade, reaverUpgrade);
+    setTraditionalWeights(type_, carrierUpgrade, reaverUpgrade);
     current_stock_value_ = stock_value_; // Precalculated, precached.
     future_fap_value_ = stock_value_;
 };
 
-int StoredUnit::getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade, const bool &reaverUpgrade){
-        int modified_supply_ = unittype.supplyRequired();
-        int modified_min_cost_ = unittype.mineralPrice();
-        int modified_gas_cost_ = unittype.gasPrice();
-        int stock_value_ = 0;
+void StoredUnit::setTraditionalWeights(const UnitType unittype, const bool &carrierUpgrade, const bool &reaverUpgrade){
+        modified_supply_ = unittype.supplyRequired();
+        modified_min_cost_ = unittype.mineralPrice();
+        modified_gas_cost_ = unittype.gasPrice();
+        stock_value_ = 0;
 
         if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
             modified_supply_ += 2;
@@ -790,7 +790,7 @@ int StoredUnit::getTraditionalWeight(const UnitType unittype, const bool &carrie
 
         stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
-        return stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
+        stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
 }
 
 
@@ -984,8 +984,11 @@ void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
     double proportion_anticipated_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
 
-    future_fap_value_ = static_cast<int>(stock_value_ * proportion_anticipated_health);
-    updated_fap_this_frame_ = true;
+    if(type_ == UnitTypes::Zerg_Zergling || bwapi_unit_->getType().getRace() != Races::Zerg)
+        Diagnostics::writeMap(pos_, "HP: " + to_string(proportion_anticipated_health) + "% value:" + to_string(stock_value_) );
+
+    this->future_fap_value_ = static_cast<int>(stock_value_ * proportion_anticipated_health);
+    this->updated_fap_this_frame_ = true;
 }
 
 void StoredUnit::updateFAPvalueDead()
@@ -996,30 +999,35 @@ void StoredUnit::updateFAPvalueDead()
 
 void UnitInventory::updatePredictedStatus(bool friendly)
 {
+    //None of them have been updated this frame yet.
     for (auto &u : unit_map_) {
         u.second.updated_fap_this_frame_ = false;
     }
 
+
+    //Now update every single unit.
     //This section takes advantage of the fact that the fap units store the pointers themselves. This way we don't have to do a n^2 lookup. We just look at the fu and directly adjust the pointer.
     if (friendly) {
-        for (auto fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
+        for (auto &fu : CUNYAIModule::mainCombatSim.getFriendlySim()) {
             if (fu.data) {
                 fu.data->updateFAPvalue(fu);
-                Diagnostics::drawCircle(fu.data->pos_, Broodwar->getScreenPosition(), (fu.data->type_.dimensionUp() + fu.data->type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             }
         }
     }
     else {
-        for (auto fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
+        for (auto &fu : CUNYAIModule::mainCombatSim.getEnemySim()) {
             if (fu.data) {
                 fu.data->updateFAPvalue(fu);
             }
         }
     }
 
-
+    //If they are not in the FAP, they must be dead.
     for (auto &u : unit_map_) {
-        if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
+        if (!u.second.updated_fap_this_frame_) {
+            u.second.updateFAPvalueDead();
+        } // Plot their last known position.
+
     }
     //vector<FAP::FAPUnit<StoredUnit*>> &fap_vector
 }

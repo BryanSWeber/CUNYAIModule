@@ -24,7 +24,7 @@ struct StoredUnit {
     //Creates a steryotyped ideal of the unit. For comparisons.
     StoredUnit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
 
-    static int getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
+    void setTraditionalWeights(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
     //static int getGrownWeight(const UnitType unittype, const bool & carrierUpgrade, const bool & reaverUpgrade);
 
     // Creates an enemy unit object, an abbreviated version of the original.
@@ -248,8 +248,6 @@ struct UnitInventory {
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
-    static Position positionMCFAP(const StoredUnit & su);
-    static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
     void printUnitInventory(const Player &player, const string &bonus = "");
