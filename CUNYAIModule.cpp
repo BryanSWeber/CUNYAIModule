@@ -172,14 +172,12 @@ void CUNYAIModule::onFrame()
     // Update Players:
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
     friendly_player_model.updateSelfOnFrame(); 
-    Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
     //Update neutral units
     Player* neutral_player;
     for (auto p : Broodwar->getPlayers()) {
         if (p->isNeutral()) neutral_player = &p;
     }
     neutral_player_model.updateOtherOnFrame(*neutral_player);
-    Diagnostics::drawAllHitPoints(neutral_player_model.units_);
     //Draw Diagnostics
     enemy_player_model.units_.drawAllLocations();
     enemy_player_model.units_.drawAllLastSeens();
@@ -214,12 +212,18 @@ void CUNYAIModule::onFrame()
     workerOnFrame.clockFinish("Workers Updated");
 
     //Update Map.
+    DiagnosticTimer mapOnFrame;
     currentMapInventory.onFrame();
+    mapOnFrame.clockFinish("Map Updated");
 
     //Update Resources.
+    DiagnosticTimer landOnFrame;
     land_inventory.onFrame();
+    landOnFrame.clockFinish("Land Resources Updated");
 
+    DiagnosticTimer basesOnFrame;
     basemanager.updateBases();
+    basesOnFrame.clockFinish("Bases Updated");
 
     Diagnostics::onFrameWritePlayerModel(friendly_player_model);
 

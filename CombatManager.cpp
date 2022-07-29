@@ -349,8 +349,8 @@ void CombatManager::onFrame()
     CUNYAIModule::friendly_player_model.units_.updateWithPredictedStatus(mainCombatSim);
     CUNYAIModule::enemy_player_model.units_.updateWithPredictedStatus(mainCombatSim, false);
 
-    Diagnostics::drawAllFutureDeaths(CUNYAIModule::friendly_player_model.units_);
-    Diagnostics::drawAllFutureDeaths(CUNYAIModule::enemy_player_model.units_);
+    Diagnostics::drawAllMAFAPaverages(CUNYAIModule::friendly_player_model.units_);
+    Diagnostics::drawAllMAFAPaverages(CUNYAIModule::enemy_player_model.units_);
 
 }
 
