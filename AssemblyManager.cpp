@@ -1272,7 +1272,6 @@ TilePosition AssemblyManager::updateExpoPosition()
 
             bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
 
-
             if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && mobile.checkSafeEscapePath(Position(p)) && meets_gas_requirements) {
                 expo_score = score_temp;
                 base_expo = p;

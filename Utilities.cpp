@@ -1197,7 +1197,7 @@ ResourceInventory CUNYAIModule::getResourceInventoryInArea(const ResourceInvento
 //Searches a research inventory for those resources that are both <350 away from a presumed base location and in the same area.
 ResourceInventory CUNYAIModule::getResourceInventoryAtBase(const ResourceInventory &ri, const Position &origin) {
     ResourceInventory ri_area = getResourceInventoryInArea(ri, origin);
-    ResourceInventory ri_distance = getResourceInventoryInRadius(ri, origin, 350);
+    ResourceInventory ri_distance = getResourceInventoryInRadius(ri, origin, 400);
     ResourceInventory ri_out;
 
     for (auto r_outer : ri_area.ResourceInventory_) {
