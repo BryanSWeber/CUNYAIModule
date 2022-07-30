@@ -25,7 +25,7 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
 
     approach(e_pos);
     if (caution)
-        unit_->move(pos_ + attract_vector_ + escape(TilePosition(pos_ + attract_vector_)));
+        unit_->move(escape(TilePosition(pos_ + attract_vector_)));
     if (unit_->move(pos_ + attract_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
@@ -587,7 +587,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         i++;
                     else {
                         if(caution)
-                            unit_->move(Position(newPath.getTiles()[i]) + escape(newPath.getTiles()[i]));
+                            unit_->move(escape(newPath.getTiles()[i]));
                         else
                             unit_->move(Position(newPath.getTiles()[i]));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
@@ -608,7 +608,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         i++;
                     else {
                         if (caution)
-                            unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
+                            unit_->move(escape(TilePosition(cpp[i]->Center())));
                         else
                             unit_->move(Position(cpp[i]->Center()));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
