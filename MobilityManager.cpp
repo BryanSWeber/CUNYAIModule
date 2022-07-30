@@ -24,7 +24,7 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
     }
 
     approach(e_pos);
-    if (caution)
+    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_ + attract_vector_)))
         unit_->move(pos_ + attract_vector_ + escape(TilePosition(pos_ + attract_vector_)));
     if (unit_->move(pos_ + attract_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
@@ -325,6 +325,7 @@ Position Mobility::escape(TilePosition tp) {
     TilePosition bestTile = TilePositions::Origin;
     double base_threat = CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(pos_));
     retreat_vector_ = Positions::Origin;
+    int baseDist = INT_MAX;
 
     SpiralOut spiral;
     int n = 15; // how far in one direction should we search for a tile?
@@ -340,19 +341,31 @@ Position Mobility::escape(TilePosition tp) {
 
         double new_threat = CUNYAIModule::currentMapInventory.getTileThreat(target_tile);
 
-
-        //If it's a perfect tile, switch to it. Exit upon finding a good one.
-        if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
-            bestTile = target_tile;
-            CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
-            retreat_vector_ = Position(tp) - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
-            return retreat_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
-        }
+        ////If it's a perfect tile, switch to it. Exit upon finding a good one.
+        //if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
+        //    bestTile = target_tile;
+        //    CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
+        //    retreat_vector_ = Position(tp) - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+        //    return retreat_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
+        //}
 
         //If it's a better tile, move there at the end of this.
-        if (new_threat < base_threat && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
-            bestTile = target_tile;
-            base_threat = new_threat;
+        if (new_threat <= base_threat && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
+            int newDist = target_tile.getDistance(TilePosition(pos_)); //Don't calculate distances you don't have to, but if they're equal and not better don't switch.
+
+            if (new_threat == base_threat) { 
+                if (newDist < baseDist) {
+                    bestTile = target_tile;
+                    base_threat = new_threat;
+                    baseDist = newDist;
+                }
+            }
+            
+            if (new_threat < base_threat) {
+                bestTile = target_tile;
+                base_threat = new_threat;
+                baseDist = newDist;
+            }
             retreat_vector_ = Position(tp) - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
         }
     }
@@ -586,7 +599,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                     if (too_close && i < newPath.getTiles().size())
                         i++;
                     else {
-                        if(caution)
+                        if(caution && CUNYAIModule::currentMapInventory.isTileThreatened(newPath.getTiles()[i]))
                             unit_->move(Position(newPath.getTiles()[i]) + escape(newPath.getTiles()[i]));
                         else
                             unit_->move(Position(newPath.getTiles()[i]));
@@ -607,7 +620,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                     if (too_close && i < cpp.size() - 1)
                         i++;
                     else {
-                        if (caution)
+                        if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(cpp[i]->Center())))
                             unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
                         else
                             unit_->move(Position(cpp[i]->Center()));
