@@ -9,6 +9,7 @@
 using namespace std;
 using namespace BWAPI;
 
+#define BUFFER_SIZE 4
 
 //Might benifit from seperatating maps entirely.
 //Several types of maps:
@@ -44,8 +45,7 @@ private:
     //double pfBlindness_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's vision. Counts down from 2 to 0.
     double pfThreat_[256][256] = { 0 }; // which areas are under threat? Consider that melee units can MOVE so give a buffer around melee units.
     int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
-    double pfThreatBuffer_[256][256] = { 0 }; // The region about 2 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
-    double pfExtraWideBuffer_[256][256] = { 0 }; // The region about 4 tiles out of sight of the opponent's threat field. Counts down from 2 to 0.
+    double pfThreatBuffer_[256][256] = { 0 }; // The region about BUFFER_SIZE tiles out of sight of the opponent's threat field. Counts down from 4 to 0.
     bool pfSurroundSquare_[256][256] = { 0 }; //Is the square a viable square to move a unit to and improve the surround?
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
@@ -141,7 +141,6 @@ public:
     //void createVisionField(PlayerModel & enemy_player);
     void createOccupationField(); //Marks all the tiles you have occupied.
     void createThreatBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField
-    void createExtraWideBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField, this is even wider than the threat buffer field.
     //void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
     void createThreatField(PlayerModel & enemy_player); // This marks all potentially threatened OR visible squares.
     void createSurroundField(PlayerModel & enemy_player); //Must run after createThreatBuffer and CreatOccupationField
@@ -152,7 +151,6 @@ public:
     //const double getVisionField(TilePosition &t);
     const int getOccupationField(TilePosition &t); // returns 1 for occupation by small units, 2 for larger units, and the sum for more.
     const bool isInBufferField(TilePosition & t);
-    const bool isInExtraWideBufferField(TilePosition &t);
     //const double getBlindField(TilePosition &t);
     const bool isInSurroundField(TilePosition &t);
     void setSurroundField(TilePosition &t, bool newVal);

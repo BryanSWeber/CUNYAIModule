@@ -79,10 +79,10 @@ public:
     //Gets a lurker ready to move. Returns TRUE if the lurker needed fixing.
     bool prepareLurkerToMove();
 
-    // gives a vector that has the direction towards higher values on the field.  returns a direction.
-    Position getVectorTowardsField(const vector<vector<int>>& field) const;
-    // gives a vector that has the direction towards lower values on the field.  returns a direction.
-    Position getVectorAwayField(const vector<vector<int>>& field) const;
+    //// gives a vector that has the direction towards higher values on the field.  returns a direction.
+    //Position getVectorTowardsField(const vector<vector<int>>& field) const;
+    //// gives a vector that has the direction towards lower values on the field.  returns a direction.
+    //Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     // Moves to a location, if caution is TRUE then it will cancel an order to move to a threatened area and instead find the nearest suitable surround.
     bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase, const bool caution = false);

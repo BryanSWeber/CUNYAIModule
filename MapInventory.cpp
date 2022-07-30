@@ -1317,16 +1317,7 @@ void MapInventory::createThreatBufferField(PlayerModel & enemy_player)
     for (auto i = 0; i < 256; i++)
         std::fill(pfThreatBuffer_[i], pfThreatBuffer_[i] + 256, 0);
 
-    overfillField(pfThreat_, pfThreatBuffer_, 2);
-
-}
-
-void MapInventory::createExtraWideBufferField(PlayerModel & enemy_player)
-{
-    for (auto i = 0; i < 256; i++)
-        std::fill(pfExtraWideBuffer_[i], pfExtraWideBuffer_[i] + 256, 0);
-
-    overfillField(pfThreat_, pfExtraWideBuffer_, 5);
+    overfillField(pfThreat_, pfThreatBuffer_, BUFFER_SIZE);
 
 }
 
@@ -1392,11 +1383,6 @@ const int MapInventory::getOccupationField(TilePosition & t)
 const bool MapInventory::isInBufferField(TilePosition & t)
 {
     return pfThreatBuffer_[t.x][t.y] > 0.0;
-}
-
-const bool MapInventory::isInExtraWideBufferField(TilePosition & t)
-{
-    return pfExtraWideBuffer_[t.x][t.y] > 0.0;
 }
 
 const bool MapInventory::isInSurroundField(TilePosition & t)
@@ -1504,11 +1490,6 @@ void MapInventory::DiagnosticSurroundTiles()
     DiagnosticField(pfSurroundSquare_);
 }
 
-
-void MapInventory::DiagnosticExtraWideBufferTiles()
-{
-    DiagnosticField(pfExtraWideBuffer_);
-}
 
 Position MapInventory::getEarlyGameScoutPosition() {
     // need to consider we could send 2 scouts to same position if it is unscouted. So filter by unexplore and unscouted and if nothing, then just try unexplored.

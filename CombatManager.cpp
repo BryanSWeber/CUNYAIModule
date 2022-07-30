@@ -71,7 +71,7 @@ bool CombatManager::combatScript(const Unit & u)
             return false;
 
         // if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
-        if (isCollectingForces(friend_loc, enemy_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInExtraWideBufferField(u->getTilePosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
+        if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInBufferField(u->getTilePosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
             return mobility.surroundLogic();
 
         //If there are potential targets, must fight.
@@ -101,7 +101,7 @@ bool CombatManager::combatScript(const Unit & u)
                 //bool worker_time_and_place = false;
                 UnitInventory expanded_friend_loc = friend_loc;
                 bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
-                bool positionedForAttack = CUNYAIModule::currentMapInventory.isInExtraWideBufferField(TilePosition(u->getPosition())) > 0.0;
+                bool positionedForAttack = CUNYAIModule::currentMapInventory.isInBufferField(TilePosition(u->getPosition()));
                 if (e_closest_threat && e_closest_threat->type_.isWorker()) {
                     expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                     expanded_friend_loc.updateUnitInventorySummary();
@@ -127,7 +127,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break; 
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if (isCollectingForces(friend_loc, enemy_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && positionedForAttack && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
+                    if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && positionedForAttack && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
                         mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
                         return true; // now the lurker should be burrowed.
                     }
@@ -312,7 +312,7 @@ void CombatManager::removeLiablity(const Unit & u)
     liabilities_squad_.updateUnitInventorySummary();
 }
 
-bool CombatManager::isCollectingForces(const UnitInventory & ui, const UnitInventory &ei)
+bool CombatManager::isGoingToBeExpensiveFight(const UnitInventory & ui, const UnitInventory &ei)
 {
     //return ui.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > ui.unit_map_.size() / 5;
     return (ui.stock_both_up_and_down_ - ui.future_fap_stock_) > (ei.stock_both_up_and_down_ - ei.future_fap_stock_);
