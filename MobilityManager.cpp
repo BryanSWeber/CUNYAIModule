@@ -25,7 +25,7 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
 
     approach(e_pos);
     if (caution)
-        unit_->move(escape(TilePosition(pos_ + attract_vector_)));
+        unit_->move(pos_ + attract_vector_ + escape(TilePosition(pos_ + attract_vector_)));
     if (unit_->move(pos_ + attract_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
@@ -190,7 +190,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
             if (target->exists())
                 unit_->attack(target);
             else
-                unit_->attack(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
+                unit_->attack(pos_ + getVectorFromUnitToEnemyDestination(target) + getVectorFromUnitToBeyondEnemy(target));
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
@@ -311,7 +311,7 @@ Position Mobility::encircle(const Position p) {
         if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && dis(gen) > 0.5) { // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
-            encircle_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            encircle_vector_ = p - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
             return encircle_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
         }
 
@@ -345,7 +345,7 @@ Position Mobility::escape(TilePosition tp) {
         if (!CUNYAIModule::currentMapInventory.isTileThreatened(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
-            retreat_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            retreat_vector_ = Position(tp) - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
             return retreat_vector_; // shift to surround, move to the center of the tile and not to the corners or something strange.
         }
 
@@ -353,7 +353,7 @@ Position Mobility::escape(TilePosition tp) {
         if (new_threat < base_threat && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
             bestTile = target_tile;
             base_threat = new_threat;
-            retreat_vector_ = getVectorToDestination(Position(bestTile) + Position(16, 16)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            retreat_vector_ = Position(tp) - Position(bestTile) + Position(16, 16); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
         }
     }
 
@@ -587,7 +587,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         i++;
                     else {
                         if(caution)
-                            unit_->move(escape(newPath.getTiles()[i]));
+                            unit_->move(Position(newPath.getTiles()[i]) + escape(newPath.getTiles()[i]));
                         else
                             unit_->move(Position(newPath.getTiles()[i]));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
@@ -608,7 +608,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         i++;
                     else {
                         if (caution)
-                            unit_->move(escape(TilePosition(cpp[i]->Center())));
+                            unit_->move(Position(cpp[i]->Center()) + escape(TilePosition(cpp[i]->Center())));
                         else
                             unit_->move(Position(cpp[i]->Center()));
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
@@ -694,18 +694,18 @@ Position getEnemyVector(Unit e) {
 }
 
 
-Position Mobility::getVectorToDestination(Position & p)
+Position Mobility::getVectorFromUnitToDestination(Position & p)
 {
     return p - pos_;
 }
 
-Position Mobility::getVectorToEnemyDestination(Unit e) {
+Position Mobility::getVectorFromUnitToEnemyDestination(Unit e) {
     Position his_destination = e->getPosition() + getEnemyVector(e);
     return his_destination - pos_;
 }
 
-Position Mobility::getVectorToBeyondEnemy(Unit e) {
-    Position p = getVectorToEnemyDestination(e);
+Position Mobility::getVectorFromUnitToBeyondEnemy(Unit e) {
+    Position p = getVectorFromUnitToEnemyDestination(e);
     double angle_to_enemy = atan2(p.y, p.x);
     return Position(static_cast<int>(cos(angle_to_enemy) * (e->getType().width() + e->getType().height() + 32) ), static_cast<int>(sin(angle_to_enemy) *  (e->getType().width() + e->getType().height() + 32) ));
 }

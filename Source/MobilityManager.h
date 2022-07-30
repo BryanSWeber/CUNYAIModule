@@ -104,9 +104,9 @@ public:
     bool isMoreOpen(TilePosition &tp);
 
     //Seriously, this is easy to flip around sometimes. 
-    Position getVectorToDestination(Position &p);
-    Position getVectorToEnemyDestination(Unit e);
-    Position getVectorToBeyondEnemy(Unit e);
+    Position getVectorFromUnitToDestination(Position &p);
+    Position getVectorFromUnitToEnemyDestination(Unit e);
+    Position getVectorFromUnitToBeyondEnemy(Unit e);
 };
 
 // returns the total, nondirected speed of an enemy unit. Highly variable.
