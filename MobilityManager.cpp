@@ -355,7 +355,7 @@ Position Mobility::getVectorOutOfThreat(const Position p) {
                 base_threat = new_threat;
                 baseDist = newDist;
             }
-            retreatVector = getCenterOfTile(TilePosition(Position(tp) - Position(bestTile))); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
+            retreatVector = getCenterOfTile(Position(tp) - Position(bestTile)); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
         }
     }
 
