@@ -24,7 +24,7 @@ public:
     static void drawVisibilityData();
     static void showPlayers();
     static void showForces();
-    static void drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
+    static void drawLine(const Position &s_pos, const Position &f_pos, Color col);
     static void drawTiles(const Position & screen_pos, Color col);
     static void watchTile(TilePosition & tp);
     static void drawDestination(const UnitInventory & ui, const Position & screen_pos, Color col);

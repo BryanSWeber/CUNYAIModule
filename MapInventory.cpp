@@ -82,7 +82,6 @@ void MapInventory::onFrame()
     createDetectField(CUNYAIModule::enemy_player_model);
     createThreatField(CUNYAIModule::enemy_player_model);
     createThreatBufferField(CUNYAIModule::enemy_player_model);
-    createExtraWideBufferField(CUNYAIModule::enemy_player_model);
     createOccupationField();
     createSurroundField(CUNYAIModule::enemy_player_model);
     DiagnosticThreatTiles();
@@ -1389,7 +1388,7 @@ bool MapInventory::isInBufferField(const TilePosition & t) const
     return pfThreatBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::isInSurroundField(TilePosition & t)
+bool MapInventory::isInSurroundField(const TilePosition & t) const
 {
     return pfSurroundSquare_[t.x][t.y];
 }
@@ -1451,7 +1450,7 @@ void MapInventory::DiagnosticTile() const
         for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
             for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
-                    Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
+                    Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
         }
@@ -1480,7 +1479,7 @@ void MapInventory::DiagnosticSurroundTiles() const
 }
 
 
-Position MapInventory::getEarlyGameScoutPosition() {
+Position MapInventory::getEarlyGameScoutPosition() const {
     // need to consider we could send 2 scouts to same position if it is unscouted. So filter by unexplore and unscouted and if nothing, then just try unexplored.
 
     vector<Position> viable_options;

@@ -82,7 +82,6 @@ private:
     void createDetectField(PlayerModel & enemy_player); //Marks all tiles that are pluasibly detected by enemy player.
     void createOccupationField(); //Marks all the tiles you have occupied.
     void createThreatBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField
-    void createExtraWideBufferField(PlayerModel & enemy_player); // Must run after CreateThreatField, this is even wider than the threat buffer field.
     void createThreatField(PlayerModel & enemy_player); // This marks all potentially threatened OR visible squares.
     void createSurroundField(PlayerModel & enemy_player); //Must run after createThreatBuffer and CreatOccupationField
 
@@ -142,7 +141,6 @@ public:
 
     bool isTileThreatened(const TilePosition & tp) const; //Returns true if the tile is under threat.
     bool isInBufferField(const TilePosition & t) const; //Returns true if the tile is in a buffer field.
-    bool isInExtraWideBufferField(const TilePosition &t) const; //Returns true if the tile is in an EXTRA WIDE buffer field.
     bool isInSurroundField(const TilePosition &t) const; //Returns true if the tile is in a surround field.
     bool isStartPosition(const Position & p)  const; //returns true if the position is a start position.
     bool isOnIsland(const Position A) const;  //Is this place pathable from home? Will not return error if your base IS the island.
@@ -153,5 +151,4 @@ public:
     void DiagnosticDetectedTiles() const;    //Draw some of the important stuff we have stored.
     void DiagnosticSurroundTiles() const;    //Draw some of the important stuff we have stored.
     void DiagnosticThreatTiles() const;    //Draw some of the important stuff we have stored.
-    void DiagnosticExtraWideBufferTiles() const;    //Draw some of the important stuff we have stored.
 };

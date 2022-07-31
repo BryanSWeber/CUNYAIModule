@@ -28,8 +28,8 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
         unit_->move(getCenterOfTile(destination + getVectorOutOfThreat(destination)));
 
     if (unit_->move(destination)) {
-        Diagnostics::drawLine(pos_, destination, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
-        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around
+        Diagnostics::drawLine(pos_, destination, Colors::White);//Run towards it.
+        Diagnostics::drawLine(pos_, e_pos, Colors::Red);//Run around
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
@@ -192,7 +192,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
             else
                 unit_->attack(pos_ + getVectorFromUnitToEnemyDestination(target) + getVectorFromUnitToBeyondEnemy(target));
         }
-        Diagnostics::drawLine(pos_, target->getPosition(), Broodwar->getScreenPosition(), color);
+        Diagnostics::drawLine(pos_, target->getPosition(), color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
 

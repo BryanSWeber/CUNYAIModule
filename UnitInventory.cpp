@@ -191,16 +191,16 @@ void UnitInventory::drawAllWorkerTasks() const
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
             if (u.second.locked_mine_ && !u.second.isAssignedResource() && !u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::White);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Colors::White);
             }
             else if (u.second.isAssignedMining()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Green);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Colors::Green);
             }
             else if (u.second.isAssignedGas()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Brown);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Colors::Brown);
             }
             else if (u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Broodwar->getScreenPosition(), Colors::Blue);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), Colors::Blue);
             }
 
             if (u.second.isAssignedBuilding()) {

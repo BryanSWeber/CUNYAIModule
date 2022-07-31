@@ -8,9 +8,9 @@
 #include <map>
 
 // This function limits the drawing that needs to be done by the bot.
-void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
+void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::isOnScreen(s_pos, screen_pos) || CUNYAIModule::isOnScreen(f_pos, screen_pos)) {
+        if (CUNYAIModule::isOnScreen(s_pos, Broodwar->getScreenPosition()) || CUNYAIModule::isOnScreen(f_pos, Broodwar->getScreenPosition())) {
             Broodwar->drawLineMap(s_pos, f_pos, col);
         }
     }
@@ -43,7 +43,7 @@ void Diagnostics::drawDestination(const UnitInventory &ui, const Position &scree
         for (auto u : ui.unit_map_) {
             Position fin = u.second.pos_;
             Position start = u.second.bwapi_unit_->getTargetPosition();
-            drawLine(start, fin, screen_pos, col);
+            drawLine(start, fin, col);
         }
     }
 }
@@ -635,7 +635,7 @@ void Diagnostics::drawAllVelocities(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        Diagnostics::drawLine(u.second.pos_, destination, Broodwar->getScreenPosition(), Colors::Green);
+        Diagnostics::drawLine(u.second.pos_, destination, Colors::Green);
     }
 }
 

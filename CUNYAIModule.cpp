@@ -324,13 +324,13 @@ void CUNYAIModule::onFrame()
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
                         Diagnostics::drawCircle(c, Broodwar->getScreenPosition(), 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, Broodwar->getScreenPosition(), Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
                         Diagnostics::drawCircle(c, Broodwar->getScreenPosition(), 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, Broodwar->getScreenPosition(), c, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, Broodwar->getScreenPosition(), Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
                 }
