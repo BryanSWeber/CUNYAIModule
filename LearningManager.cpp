@@ -4,6 +4,7 @@
 # include "Source\LearningManager.h"
 # include "Source\Diagnostics.h"
 # include "Source\Build.h"
+# include "Source/UnitInventory.h"
 # include <fstream>
 # include <BWAPI.h>
 # include <cstdlib>

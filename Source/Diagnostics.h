@@ -30,6 +30,7 @@ public:
     static void drawDestination(const UnitInventory & ui, const Position & screen_pos, Color col);
     static void drawDot(const Position & s_pos, const Position & screen_pos, Color col);
     static void drawCircle(const Position & s_pos, const Position & screen_pos, const int & radius, Color col);
+    static void drawBar(const Position & s_pos, const UnitType uType, const int barAmountComplete, const int barAmountFull, const Color colTop, const Color colUnder); //Draws a bar underneath unit. Note that if multiple bars are being drawn, there may be strange overlap, BW does not draw them all in the order expected.
     static void drawHitPoints(const StoredUnit unit, const Position & screen_pos);
     static void drawFAP(const StoredUnit unit, const Position & screen_pos);
     static void drawEstimatedDeath(const StoredUnit unit, const Position & screen_pos);
@@ -111,6 +112,7 @@ public:
     {
         auto clockFinish = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clockFinish - clockStart).count();
-        std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
+        if constexpr (DIAGNOSTIC_MODE)
+            if(duration >= 15) std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
     }
 };

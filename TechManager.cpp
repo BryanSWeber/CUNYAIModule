@@ -40,13 +40,10 @@ void TechManager::updateOptimalTech() {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if (!checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first) && CUNYAIModule::countUnitsAvailableToPerform(potential_up.first) > 0 || potential_up.first == UpgradeTypes::None) {
             // Add units into relevant simulation.
-            FAP::FastAPproximation<StoredUnit*> upgradeFAP; 
-            CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
-            CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
-
-            upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot always be ran... medics & firebats vs air causes a lockup.
-            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
-            upgradeFAP.clear();
+            CombatSimulator upgradeSim;
+            upgradeSim.addPlayersToMiniSimulation(potential_up.first);
+            upgradeSim.runSimulation();
+            int score = upgradeSim.getScoreGap();
             evaluateWeightsFor(potential_up.first);
             potential_up.second = static_cast<int>( ((24.0 * 20.0 - 1) * upgrade_cycle_[potential_up.first] + score) / (24.0 * 20.0) ); //moving average over 24*20 * 1 simulations. Long because the asymtotics really do not take hold easily.
         }

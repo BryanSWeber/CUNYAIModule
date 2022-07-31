@@ -2,6 +2,7 @@
 
 # include "Source\Diagnostics.h"
 # include "Source\MobilityManager.h"
+# include "Source/UnitInventory.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
 # include <math.h>
@@ -28,7 +29,7 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
 
     if (unit_->move(destination)) {
         Diagnostics::drawLine(pos_, destination, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
-        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
+        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
@@ -71,13 +72,13 @@ bool Mobility::surroundLogic()
 Position Mobility::getVectorAwayFromNeighbors()
 {
     UnitInventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
-    
+
     Position central_pos = Positions::Origin;
     for (auto u : u_loc.unit_map_) {
         central_pos += u.second.pos_ - pos_;
     }
 
-    Position vector_away = Positions::Origin - (central_pos - pos_); 
+    Position vector_away = Positions::Origin - (central_pos - pos_);
     double theta = atan2(vector_away.y, vector_away.x); // we want to go away from them.
     return Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
 }
@@ -94,7 +95,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
 
     //auto path = BWEM::Map::Instance().GetPath(pos_, e_unit.pos_); // maybe useful later.
     int helpful_u = ui.stock_fighting_total_;
-    int helpful_e = ei.stock_fighting_total_; 
+    int helpful_e = ei.stock_fighting_total_;
     int max_dist_no_priority = INT_MAX;
     //int max_dist = passed_distance; // copy, to be modified later.
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()));
@@ -167,7 +168,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = max( ei.max_range_, CUNYAIModule::getFunctionalRange(unit_)) + CUNYAIModule::convertTileDistanceToPixelDistance(3); 
+    temp_max_divable = max( ei.max_range_, CUNYAIModule::getFunctionalRange(unit_)) + CUNYAIModule::convertTileDistanceToPixelDistance(3);
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, SecondOrderThreats);
     }
@@ -191,7 +192,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
             else
                 unit_->attack(pos_ + getVectorFromUnitToEnemyDestination(target) + getVectorFromUnitToBeyondEnemy(target));
         }
-        Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, color);
+        Diagnostics::drawLine(pos_, target->getPosition(), Broodwar->getScreenPosition(), color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
 
@@ -224,7 +225,7 @@ bool Mobility::Retreat_Logic() {
     else {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
     }
-     
+
 }
 
 bool Mobility::Scatter_Logic(const Position pos)
@@ -303,7 +304,7 @@ Position Mobility::getVectorToEmptySurroundField(const Position p) {
         //bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
         bool slowExit = dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
         //If it's a better tile, switch to it. Exit upon finding a good one.
-        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && slowExit) { 
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && slowExit) {
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
@@ -342,14 +343,14 @@ Position Mobility::getVectorOutOfThreat(const Position p) {
         if (new_threat <= base_threat && isMoreOpen(target_tile) && isTileApproachable(target_tile)) {
             int newDist = target_tile.getDistance(TilePosition(p)); //Don't calculate distances you don't have to, but if they're equal and not better don't switch.
 
-            if (new_threat == base_threat) { 
+            if (new_threat == base_threat) {
                 if (newDist < baseDist) {
                     bestTile = target_tile;
                     base_threat = new_threat;
                     baseDist = newDist;
                 }
             }
-            
+
             if (new_threat < base_threat) {
                 bestTile = target_tile;
                 base_threat = new_threat;
@@ -673,7 +674,7 @@ bool Mobility::isMoreOpen(TilePosition & tp)
     if (unit_->getType().size() == UnitSizeTypes::Small)
         is_more_open = ((CUNYAIModule::currentMapInventory.getOccupationField(tp) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) || CUNYAIModule::currentMapInventory.getOccupationField(tp) == 0) && BWEB::Map::isWalkable(tp)) || unit_->getType().isFlyer();
     else
-        is_more_open = ((CUNYAIModule::currentMapInventory.getOccupationField(tp) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 || CUNYAIModule::currentMapInventory.getOccupationField(tp) == 0) && BWEB::Map::isWalkable(tp)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer. 
+        is_more_open = ((CUNYAIModule::currentMapInventory.getOccupationField(tp) < CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) - 1 || CUNYAIModule::currentMapInventory.getOccupationField(tp) == 0) && BWEB::Map::isWalkable(tp)) || unit_->getType().isFlyer(); //Do not transfer unless it is better by at least 2 or more, Reasoning: if you have 1 med & 1 small, it does not pay to transfer.
 
     return is_more_open;
 }

@@ -4,7 +4,10 @@
 #include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
+#include "Source\CombatSimulator.h"
+#include "Source\UnitInventory.h"
 #include "Source\Diagnostics.h"
+#include "Source/FAP/FAP/include/FAP.hpp"
 #include <bwem.h>
 
 
@@ -55,7 +58,7 @@ bool CombatManager::combatScript(const Unit & u)
         int search_radius = getSearchRadius(u);
 
         //if(!u->getType().isWorker())
-        //    Diagnostics::drawCircle(u->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
+        //    Diagnostics::drawCircle(u->getPosition(), Broodwar->getScreenPosition(), search_radius, Colors::Green);
 
         UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
         UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
@@ -84,8 +87,8 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc.updateUnitInventorySummary();
             enemy_loc.updateUnitInventorySummary();
 
-            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
+            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, Broodwar->getScreenPosition(), CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+            //Diagnostics::drawCircle(e_closest_demanding_response->pos_, Broodwar->getScreenPosition(), search_radius, Colors::Green);
 
             //If we can fight, our unit type will determine our behavior.
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
@@ -113,7 +116,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.ResourceInventory_.empty()) {
-                        bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
+                        bool unit_dead_next_check = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->unitDeadInFuture(14);
                         if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
                             return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
@@ -336,6 +339,20 @@ int CombatManager::getSearchRadius(const Unit & u)
     totalSearchRadius = max({ CUNYAIModule::friendly_player_model.units_.max_range_, 192, totalSearchRadius });
 
     return totalSearchRadius;
+}
+
+void CombatManager::onFrame()
+{
+    // Update FAPS with units, runs sim, and reports issues.
+    CombatSimulator mainCombatSim;
+    mainCombatSim.addPlayersToSimulation();
+    mainCombatSim.runSimulation();
+    CUNYAIModule::friendly_player_model.units_.updateWithPredictedStatus(mainCombatSim);
+    CUNYAIModule::enemy_player_model.units_.updateWithPredictedStatus(mainCombatSim, false);
+
+    Diagnostics::drawAllMAFAPaverages(CUNYAIModule::friendly_player_model.units_);
+    Diagnostics::drawAllMAFAPaverages(CUNYAIModule::enemy_player_model.units_);
+
 }
 
 bool CombatManager::getMacroCombatReadiness()
