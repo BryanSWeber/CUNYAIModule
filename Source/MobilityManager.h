@@ -22,12 +22,13 @@ private:
     Position repulse_vector_ = Positions::Origin;
 
     Position getVectorApproachingPosition(const Position & p);     // Gets a short vector going to a local position that should make us look at the unit just before the spam guard triggers.
-    Position getVectorOutOfThreat(const Position p);     // Gets shortest vector to an unoccupied short tile.
     Position getVectorToEmptySurroundField(const Position p);     // Returns a particular vector for a specific unit to move into a perimeter outside of enemy threat that is lower occupied. Has a limiter in it that could potentially be put elsewhere.
     Position getVectorAwayFromNeighbors();  // Gets a vector away from nearest neighbors.
     Position getVectorAwayFromEdges();     // causes a unit to avoid low-"altitude areas" - altitude refers to distance to unwalkable tiles.  In general, one prefers to be on a high altitude position, more options.
 
     bool isMoreOpen(TilePosition &tp); //Returns true if the position is less occupied than pos_.
+
+    Position getSafestPositionNear(const Position p);     // Gets unoccupied position furthest away from threat, then sorted by shortest walk from p.
 
     Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 
