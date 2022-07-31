@@ -184,7 +184,7 @@ bool CombatManager::scoutScript(const Unit & u)
         Mobility mobility = Mobility(u);
             StoredUnit* closest = CUNYAIModule::getClosestStoredLinear(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2, UnitTypes::AllUnits, UnitTypes::None);
             if (closest)
-                return mobility.moveTo(u->getPosition(), u->getPosition() - mobility.approach(closest->pos_) + mobility.avoid_edges(), StoredUnit::Phase::PathingOut);
+                return mobility.Scatter_Logic(closest->pos_);
     }
     return false;
 }

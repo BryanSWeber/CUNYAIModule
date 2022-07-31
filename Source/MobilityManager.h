@@ -2,9 +2,15 @@
 
 #include "CUNYAIModule.h"
 #include "UnitInventory.h"
+#include "Diagnostics.h"
 #include <bwem.h>
 
 //Movement and Combat Functions
+// Style notes: All functions to privately return a LOCATION, or a VECTOR.  So a safe position relative to position X that avoids low ground should be safe(avoidlow(x)), or this is what I am shooting for.
+// Public functions should simply do work and return TRUE if they work as intended.
+// SimplePathing does not type the unit in all cases?
+// Everything should take positions, even if it has to convert to tileposition.
+
 class Mobility {
 private:
     Position pos_;
@@ -12,18 +18,18 @@ private:
     StoredUnit* stored_unit_;
     UnitType u_type_;
     double distance_metric_;
-    Position stutter_vector_ = Positions::Origin;
-    Position attune_vector_ = Positions::Origin;
-    Position cohesion_vector_ = Positions::Origin;
-    Position centralization_vector_ = Positions::Origin;
-    Position seperation_vector_ = Positions::Origin;
     Position attract_vector_ = Positions::Origin;
     Position repulse_vector_ = Positions::Origin;
-    Position retreat_vector_ = Positions::Origin;
-    Position walkability_vector_ = Positions::Origin;
-    Position encircle_vector_ = Positions::Origin;
 
-    int rng_direction_; // send unit in a random tilt direction if blocked
+    Position getVectorApproachingPosition(const Position & p);     // Gets a short vector going to a local position that should make us look at the unit just before the spam guard triggers.
+    Position getVectorOutOfThreat(const Position p);     // Gets shortest vector to an unoccupied short tile.
+    Position getVectorToEmptySurroundField(const Position p);     // Returns a particular vector for a specific unit to move into a perimeter outside of enemy threat that is lower occupied. Has a limiter in it that could potentially be put elsewhere.
+    Position getVectorAwayFromNeighbors();  // Gets a vector away from nearest neighbors.
+    Position getVectorAwayFromEdges();     // causes a unit to avoid low-"altitude areas" - altitude refers to distance to unwalkable tiles.  In general, one prefers to be on a high altitude position, more options.
+
+    bool isMoreOpen(TilePosition &tp); //Returns true if the position is less occupied than pos_.
+
+    Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 
 public:
     //When we think about moving a unit, don't do it yourself, use the mobility wrapper.
@@ -37,71 +43,33 @@ public:
         if (found_item) {
             stored_unit_ = found_item;
         }
+        else {
+            Diagnostics::DiagnosticText("Just tried to mobilize a unit that did not exist.");
+        }
     };
 
-    // Basic retreat logic
-    bool Retreat_Logic();
-    // Scatter (from given position, or if blank, any present storms or spells)
-    bool Scatter_Logic(const Position pos = Positions::Origin);
-    // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
-    bool Tactical_Logic(UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
-    //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution = false);
-    // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
-    bool BWEM_Movement(const bool & in_or_out);
+    bool Retreat_Logic();     // Basic retreat logic
+    bool Scatter_Logic(const Position pos = Positions::Origin); // Scatter (from given position, or if blank, any present storms or spells)
+    bool Tactical_Logic(UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color); // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
+    bool simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution = false);     //Forces a unit to move in a nearly straight line to the position. Caution indicates not to move into potentially threatened squares.
+    bool BWEM_Movement(const bool & moveOut); // Uses choke points when outside of local area, otherwise uses basic rules of attraction. True means move out, false means move home.
+    bool surroundLogic();     // Orders unit to move to its nearest more-empty surrounding position.
 
-    // Surrounds by moving to the surround field.
-    bool surroundLogic();
 
-    // Causes a unit to move away from its neighbors.
-    Position isolate();
-    // Returns a particular vector for a specific unit to move into a perimeter outside of enemy threat that is lower occupied.
-    Position encircle();
-    // Encircle a particular position.
-    Position encircle(const Position p);
-    // Overload: encircle a particular tile position.
-    Position encircle(const TilePosition & tp);
+    bool checkSafeEscapePath(const Position & finish);     //Checks if all areas between here and the finish - except the first area - are safe, since we are trying to run.
+    bool checkSafeGroundPath(const Position & finish);     //Checks all areas between here and the finish for safety, including the first.
 
-    // Causes a unit to move into a location outside of enemy threat, perimeter nonwithstanding.
-    Position escape(TilePosition tp);
-    // causes a unit to avoid low-altitude areas.
-    Position avoid_edges();
-    // causes a unit to move towards a position.
-    Position approach(const Position & p);
+    bool prepareLurkerToAttack(const Position position_of_target);     //Gets a lurker ready to attack a particular position. Returns TRUE if the lurker needed fixing.
+    bool prepareLurkerToMove();     //Gets a lurker ready to move. Returns TRUE if the lurker needed fixing.
 
-    //Checks if all except the first area are safe, since we are trying to run.
-    bool checkSafeEscapePath(const Position & finish);
-    //Checks first area for safety.
-    bool checkSafeGroundPath(const Position & finish);
+    bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase, const bool caution = false);     // Moves to a location, if caution is TRUE then it will cancel an order to move to a threatened area and instead find the nearest suitable surround.
 
-    //Gets a lurker ready to attack a particular position. Returns TRUE if the lurker needed fixing.
-    bool prepareLurkerToAttack(const Position position_of_target);
-    //Gets a lurker ready to move. Returns TRUE if the lurker needed fixing.
-    bool prepareLurkerToMove();
-
-    //// gives a vector that has the direction towards higher values on the field.  returns a direction.
-    //Position getVectorTowardsField(const vector<vector<int>>& field) const;
-    //// gives a vector that has the direction towards lower values on the field.  returns a direction.
-    //Position getVectorAwayField(const vector<vector<int>>& field) const;
-
-    // Moves to a location, if caution is TRUE then it will cancel an order to move to a threatened area and instead find the nearest suitable surround.
-    bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase, const bool caution = false);
-    //Return the nearest safe tileposition - uses encircle.
-    TilePosition nearestSafe(const TilePosition &tp);
-
-    // gives how far the unit can move in one second.
-    int getDistanceMetric();
-
-    //Checks if a particular tile is worth running to (for attacking or retreating). Heuristic, needs work.
-    bool isTileApproachable(const TilePosition tp);
-
-    Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
+    bool isTileApproachable(const TilePosition tp);     //Checks if a particular tile is worth running to (for attacking or retreating). Heuristic, needs work.
 
     bool checkGoingDifferentDirections(Unit e);
 
-    bool checkEnemyApproachingUs(Unit e);
-    bool checkEnemyApproachingUs(StoredUnit & e);
-    bool isMoreOpen(TilePosition &tp);
+    bool checkEnemyApproachingUs(Unit e); //Unused
+    bool checkEnemyApproachingUs(StoredUnit & e);//Unused
 
     //Seriously, this is easy to flip around sometimes. 
     Position getVectorFromUnitToDestination(Position &p);
@@ -109,18 +77,12 @@ public:
     Position getVectorFromUnitToBeyondEnemy(Unit e);
 };
 
-// returns the total, nondirected speed of an enemy unit. Highly variable.
-double getEnemySpeed(Unit e);
-
-//returns the vector of an enemy unit.
-Position getEnemyVector(Unit e);
-
-bool checkSameDirection(const Position vector_a, const Position vector_b);
-// returns true if the angles are within 90 degrees of each other (0.5*pi)
-bool checkAngleSimilar(double angle1, double angle2);
-
-//returns the center of a tile rather than the top right corner.
-Position getCenterTile(const TilePosition tpos);
+double getEnemySpeed(Unit e); // returns the total, nondirected speed of an enemy unit. Highly variable.
+Position getEnemyVector(Unit e); //returns the vector of an enemy unit.
+bool checkSameDirection(const Position vector_a, const Position vector_b); // returns true if the angles are within 90 degrees of each other (0.5*pi)
+bool checkAngleSimilar(double angle1, double angle2); // returns true if the angles are within 90 degrees of each other (0.5*pi)
+Position getCenterOfTile(const TilePosition tpos); //returns the center of a tile rather than the top right corner.
+Position getCenterOfTile(const Position pos); //Adjusts to center of tile rather than another position.
 
 class SpiralOut { // from SO
 protected:

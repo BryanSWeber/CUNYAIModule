@@ -1415,7 +1415,7 @@ void MapInventory::DiagnosticField(int pf[256][256]) {
             for (int j = 0; j < 256; ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
                     if (pf[i][j] > 0) {
-                        Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
+                        Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
                     }
                 }
             }
@@ -1429,7 +1429,7 @@ void MapInventory::DiagnosticField(bool pf[256][256]) {
             for (int j = 0; j < 256; ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
                     if (pf[i][j]) {
-                        Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
+                        Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
                     }
                 }
             }
@@ -1443,7 +1443,7 @@ void MapInventory::DiagnosticTile() {
         for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
             for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
-                    Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
+                    Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
         }
