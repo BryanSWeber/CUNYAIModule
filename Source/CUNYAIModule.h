@@ -12,23 +12,21 @@
 #include "LearningManager.h"
 #include "TechManager.h"
 #include "WorkerManager.h"
+#include "CombatSimulator.h"
 #include "CombatManager.h"
 #include "BaseManager.h"
-#include <bwem.h>
 #include "BWEB\BWEB.h"
+#include <bwem.h>
 #include <functional>
-
-//#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
 #include <chrono> // for in-game frame clock.
 
-#define LARVA_BUILD_TIME 342
+#define LARVA_BUILD_TIME 342 // how long larva take to build
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool ANALYSIS_MODE = true; // Printing game logs, game status every few frames, etc.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 constexpr bool PRINT_WD = false; // print a file to the current working directory.
 constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring movement and reatreating.
@@ -183,7 +181,7 @@ public:
     static int getChargableDistance(const Unit &u);
 
     //gets the nearest choke by simple counting along in the direction of the final unit.
-    static Position getNearestChoke(const Position & initial, const Position &final, const MapInventory & inv);
+    //static Position getNearestChoke(const Position & initial, const Position &final, const MapInventory & inv);
 
     //Strips the RACE_ from the front of the unit type string.
     static const char * noRaceName(const char *name);
@@ -303,9 +301,6 @@ public:
     bool checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv);
 
     static double bindBetween(double x, double lower_bound, double upper_bound);
-    // Gets total value of FAP structure using StoredUnits. If friendly player option is chose, it uses P1, the standard for friendly player.
-    static int getFAPScore(FAP::FastAPproximation<StoredUnit*>& fap, bool friendly_player);
-    static bool checkMiniFAPForecast(UnitInventory & ui, UnitInventory & ei, const bool equality_is_win);
     // Tells if we will be dealing more damage than we recieve, proportionally or total.
     static bool checkSuperiorFAPForecast(const UnitInventory & ui, const UnitInventory & ei, const bool equality_is_win = false);
     // Tells the size of the surviving forces after a fight. The fodder setting also includes the results of surviving units that cannot defend themselves, such as a nexus.

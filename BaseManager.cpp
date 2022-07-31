@@ -1,6 +1,7 @@
 #include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
 #include "Source/Diagnostics.h"
+#include "Source/UnitInventory.h"
 #include "Source/AssemblyManager.h"
 #include "Source/MobilityManager.h"
 

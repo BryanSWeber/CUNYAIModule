@@ -111,6 +111,7 @@
     <ClCompile Include="Build.cpp" />
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="CombatManager.cpp" />
+    <ClCompile Include="CombatSimulator.cpp" />
     <ClCompile Include="CUNYAIModule.cpp" />
     <ClCompile Include="CUNYClient.cpp" />
     <ClCompile Include="Diagnostics.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="Source\BWEB\Wall.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\CombatManager.h" />
+    <ClInclude Include="Source\CombatSimulator.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Diagnostics.h" />
     <ClInclude Include="Source\MobilityManager.h" />

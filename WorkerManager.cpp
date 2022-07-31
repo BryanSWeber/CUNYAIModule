@@ -10,7 +10,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-bool WorkerManager::isEmptyWorker(const Unit &unit) {
+bool WorkerManager::isEmptyWorker(const Unit &unit)  const {
     bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
     return !laden_worker;
 }
@@ -261,7 +261,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     miner.stopMine();
 
     for (auto& r = CUNYAIModule::land_inventory.ResourceInventory_.begin(); r != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::currentMapInventory.getFrontLineBase().getDistance(r->second.pos_) < CUNYAIModule::currentMapInventory.my_portion_of_the_map_) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::currentMapInventory.getFrontLineBase().getDistance(r->second.pos_) < CUNYAIModule::currentMapInventory.getMyMapPortion()) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
@@ -276,7 +276,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     return false;
 }
 
-bool WorkerManager::checkBlockingMinerals(const Unit & unit, UnitInventory & ui)
+bool WorkerManager::checkBlockingMinerals(const Unit & unit, UnitInventory & ui) const
 {
     bool already_assigned = false;
     StoredUnit& miner = ui.unit_map_.find(unit)->second;
@@ -291,14 +291,14 @@ bool WorkerManager::checkBlockingMinerals(const Unit & unit, UnitInventory & ui)
     return false;
 }
 
-bool WorkerManager::checkGasDump() {
+bool WorkerManager::checkGasDump()  const {
     return AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Hydralisk, false) ||
         AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Mutalisk, false) ||
         AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Ultralisk, false);
 }
 
 //Returns True if there is an out for gas. Does not consider all possible gas outlets.
-bool WorkerManager::checkGasOutlet() {
+bool WorkerManager::checkGasOutlet()  const {
     if (CUNYAIModule::techmanager.checkTechAvail() && max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas() }) > CUNYAIModule::my_reservation.getExcessGas()) return true;
     if (checkGasDump()) return true;
     if (CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Lair) > 0) true; //Tier 2 means gas is always possible. 
@@ -310,8 +310,6 @@ bool WorkerManager::checkGasOutlet() {
 bool WorkerManager::workerWork(const Unit &u) {
 
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(u); // we will want DETAILED information about this unit.
-    int t_game = Broodwar->getFrameCount();
-
 
     // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
     bool was_gas = miner.isAssignedGas();
@@ -546,27 +544,37 @@ void WorkerManager::updateExcessCapacity()
 
 }
 
-int WorkerManager::getGasWorkers()
+int WorkerManager::getGasWorkers() const
 {
     return gas_workers_;
 }
 
-int WorkerManager::getMinWorkers()
+int WorkerManager::getMinWorkers() const
 {
     return min_workers_;
 }
 
-bool WorkerManager::checkExcessGasCapacity()
+bool WorkerManager::checkExcessGasCapacity() const
 {
     return excess_gas_capacity_;
 }
 
-int WorkerManager::getDistanceWorkers()
+int WorkerManager::getDistanceWorkers() const
 {
     return workers_distance_mining_;
 }
 
-int WorkerManager::getOverstackedWorkers()
+int WorkerManager::getOverstackedWorkers() const
 {
     return workers_overstacked_;
+}
+
+void WorkerManager::onFrame()
+{
+    updateGas_Workers();
+    updateMin_Workers();
+    updateWorkersClearing();
+    updateWorkersLongDistanceMining();
+    updateWorkersOverstacked();
+    updateExcessCapacity();
 }

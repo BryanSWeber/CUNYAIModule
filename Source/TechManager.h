@@ -2,6 +2,7 @@
 #include "CUNYAIModule.h"
 #include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "CombatSimulator.h"
 
 using namespace BWAPI;
 

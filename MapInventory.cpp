@@ -20,8 +20,6 @@ using namespace std;
 MapInventory::MapInventory() {};
 MapInventory::MapInventory(const UnitInventory &ui, const ResourceInventory &ri) {
 
-    updateVision_Count();
-
     //Fields:
     vector< vector<int> > pf_threat_;
     vector< vector<int> > pf_attract_;
@@ -76,6 +74,25 @@ void MapInventory::onStart()
     updateMapVeins();
 }
 
+void MapInventory::onFrame()
+{
+    //currentMapInventory.updateVision_Count();
+    mainCurrentMap();
+    assignSafeBase();
+    createDetectField(CUNYAIModule::enemy_player_model);
+    createThreatField(CUNYAIModule::enemy_player_model);
+    createThreatBufferField(CUNYAIModule::enemy_player_model);
+    createExtraWideBufferField(CUNYAIModule::enemy_player_model);
+    createOccupationField();
+    createSurroundField(CUNYAIModule::enemy_player_model);
+    DiagnosticThreatTiles();
+
+
+    if (Broodwar->getFrameCount() == 0) {
+        getExpoTilePositions(); // prime this once on game start.
+    }
+}
+
 //Marks Data for each area if it is "ground safe"
 void MapInventory::updateGroundDangerousAreas()
 {
@@ -85,7 +102,8 @@ void MapInventory::updateGroundDangerousAreas()
 };
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
-double MapInventory::getGasRatio() {
+double MapInventory::getGasRatio() const 
+{
     // Normally:
     if (Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0) {
         return static_cast<double>(Broodwar->self()->gas()) / static_cast<double>(Broodwar->self()->minerals() + Broodwar->self()->gas());
@@ -96,7 +114,8 @@ double MapInventory::getGasRatio() {
 };
 
 // Evaluates ln(supply_excess)/ln(supply_available). Returns 0 if supply available is 0.  Considers overlords in production as well as finished ones.
-double MapInventory::getLn_Supply_Ratio() {
+double MapInventory::getLn_Supply_Ratio() const 
+{
     int supply_total_ = 0;
     int supply_used_ = 0; //includes production.
 
@@ -117,32 +136,27 @@ double MapInventory::getLn_Supply_Ratio() {
         return 0;
     } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. 
 };
-
-// Updates the count of our vision total, in tiles
-void MapInventory::updateVision_Count() {
-    int map_x = BWAPI::Broodwar->mapWidth();
-    int map_y = BWAPI::Broodwar->mapHeight();
-
-    int map_area = map_x * map_y; // map area in tiles.
-    int total_tiles = 0;
-    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
-        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
-            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
-                total_tiles += 1;
-            }
-        }
-    } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
-
-    if (total_tiles == 0) {
-        total_tiles = 1;
-    } // catch some odd case where you are dead anyway. Rather not crash.
-    vision_tile_count_ = total_tiles;
-}
-
-void MapInventory::updateScreen_Position()
-{
-    screen_position_ = Broodwar->getScreenPosition();
-}
+//
+//// Updates the count of our vision total, in tiles
+//void MapInventory::updateVision_Count() {
+//    int map_x = BWAPI::Broodwar->mapWidth();
+//    int map_y = BWAPI::Broodwar->mapHeight();
+//
+//    int map_area = map_x * map_y; // map area in tiles.
+//    int total_tiles = 0;
+//    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
+//        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
+//            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
+//                total_tiles += 1;
+//            }
+//        }
+//    } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
+//
+//    if (total_tiles == 0) {
+//        total_tiles = 1;
+//    } // catch some odd case where you are dead anyway. Rather not crash.
+//    vision_tile_count_ = total_tiles;
+//}
 
 //In Tiles?
 void MapInventory::updateBuildablePos()
@@ -178,67 +192,67 @@ void MapInventory::updateUnwalkable() {
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
-void MapInventory::updateSmoothPos() {
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-    int choke_score = 0;
-    bool changed_a_value_last_cycle;
-
-    // first, define matrixes to recieve the walkable locations for every minitile.
-    smoothed_barriers_ = unwalkable_barriers_;
-
-    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles.
-        changed_a_value_last_cycle = false;
-        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
-            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
-
-                 // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
-                 // Repeat untill finished.
-
-                if (smoothed_barriers_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
-                    // Predefine grid we will search over.
-                    bool local_grid[3][3]; // WAY BETTER!
-
-                    local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
-                    local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
-
-                    local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
-                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y] < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
-                    local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
-
-                    local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
-                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
-                    local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
-
-                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-                    bool opposing_tiles =
-                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
-                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
-                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
-                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
-                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
-                    //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
-                    //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
-                    //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
-
-                    bool open_path =
-                        (!local_grid[0][0] && !local_grid[2][2]) ||
-                        (!local_grid[1][0] && !local_grid[1][2]) ||
-                        (!local_grid[2][0] && !local_grid[0][2]) ||
-                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
-
-
-                    changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
-                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * (iter + open_path * (99 - 2 * iter));
-                }
-            }
-        }
-        if (changed_a_value_last_cycle == false) {
-            return; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-    }
-}
+//void MapInventory::updateSmoothPos() {
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
+//    int choke_score = 0;
+//    bool changed_a_value_last_cycle;
+//
+//    // first, define matrixes to recieve the walkable locations for every minitile.
+//    smoothed_barriers_ = unwalkable_barriers_;
+//
+//    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles.
+//        changed_a_value_last_cycle = false;
+//        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+//            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
+//
+//                 // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
+//                 // Repeat untill finished.
+//
+//                if (smoothed_barriers_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
+//                    // Predefine grid we will search over.
+//                    bool local_grid[3][3]; // WAY BETTER!
+//
+//                    local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+//                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
+//                    local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
+//
+//                    local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
+//                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y] < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
+//                    local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
+//
+//                    local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+//                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
+//                    local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
+//
+//                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+//                    bool opposing_tiles =
+//                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+//                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+//                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+//                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+//                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
+//                    //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+//                    //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+//                    //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
+//
+//                    bool open_path =
+//                        (!local_grid[0][0] && !local_grid[2][2]) ||
+//                        (!local_grid[1][0] && !local_grid[1][2]) ||
+//                        (!local_grid[2][0] && !local_grid[0][2]) ||
+//                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
+//
+//
+//                    changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
+//                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * (iter + open_path * (99 - 2 * iter));
+//                }
+//            }
+//        }
+//        if (changed_a_value_last_cycle == false) {
+//            return; // if we did nothing last cycle, we don't need to punish ourselves.
+//        }
+//    }
+//}
 
 void MapInventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
@@ -321,7 +335,7 @@ void MapInventory::updateMapVeins() {
 //    return map[startloc.x][startloc.y];
 //}
 
-int MapInventory::getFieldValue(const Position & pos, const vector<vector<int>>& field)
+int MapInventory::getFieldValue(const Position & pos, const vector<vector<int>>& field) const
 {
     TilePosition startloc = TilePosition(pos);
     return field[startloc.x][startloc.y];
@@ -586,110 +600,110 @@ int MapInventory::getRadialDistanceOutFromHome(const Position A) const
 //}
 
 
-// This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
-void MapInventory::updateUnwalkableWithBuildings() {
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
-
-    //mark all occupied areas.  IAAUW
-
-    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
-            int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
-            int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
-            int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_map_) {
-        if (e.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = e.second.pos_.x + e.second.type_.dimensionLeft();
-            int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
-            int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
-            int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_map_) {
-        if (n.second.type_.isBuilding()) {
-
-            // mark the building's current position.
-            int max_x = n.second.pos_.x + n.second.type_.dimensionLeft();
-            int min_x = n.second.pos_.x - n.second.type_.dimensionRight();
-            int max_y = n.second.pos_.y + n.second.type_.dimensionUp();
-            int min_y = n.second.pos_.y - n.second.type_.dimensionDown();
-
-            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-            //respect map bounds please.
-            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-                }
-            }
-        }
-    }
-
-    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
-        // mark the building's current position.
-        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
-        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
-        int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
-        int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
-
-        WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
-        WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
-
-        //respect map bounds please.
-        WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-        WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
-
-        for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
-            for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
-            }
-        }
-
-    }
-
-}
+//// This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
+//void MapInventory::updateUnwalkableWithBuildings() {
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
+//
+//    unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
+//
+//    //mark all occupied areas.  IAAUW
+//
+//    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+//        if (u.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+//            int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+//            int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+//            int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_map_) {
+//        if (e.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = e.second.pos_.x + e.second.type_.dimensionLeft();
+//            int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
+//            int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
+//            int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_map_) {
+//        if (n.second.type_.isBuilding()) {
+//
+//            // mark the building's current position.
+//            int max_x = n.second.pos_.x + n.second.type_.dimensionLeft();
+//            int min_x = n.second.pos_.x - n.second.type_.dimensionRight();
+//            int max_y = n.second.pos_.y + n.second.type_.dimensionUp();
+//            int min_y = n.second.pos_.y - n.second.type_.dimensionDown();
+//
+//            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//            //respect map bounds please.
+//            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
+//        // mark the building's current position.
+//        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+//        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+//        int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+//        int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
+//
+//        WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+//        WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+//
+//        //respect map bounds please.
+//        WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+//        WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+//
+//        for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+//            for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+//                unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
+//            }
+//        }
+//
+//    }
+//
+//}
 
 //void MapInventory::updateLiveMapVeins(const UnitInventory &ui, const UnitInventory &ei, const ResourceInventory &ri) { // in progress.
 //
@@ -965,7 +979,8 @@ Position MapInventory::getBaseWithMostSurvivors(const bool &friendly, const bool
     return strongest_base;
 }
 
-Position MapInventory::getBasePositionNearest(Position &p) {
+Position MapInventory::getBasePositionNearest(const Position &p) const
+{
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
@@ -977,7 +992,8 @@ Position MapInventory::getBasePositionNearest(Position &p) {
     return closest_base;
 }
 
-vector<TilePosition> MapInventory::getExpoTilePositions() {
+vector<TilePosition> MapInventory::getExpoTilePositions() const
+{
     std::vector<TilePosition> expo_positions;
     for (auto & area : BWEM::Map::Instance().Areas()) {
         for (auto & base : area.Bases()) {
@@ -987,7 +1003,7 @@ vector<TilePosition> MapInventory::getExpoTilePositions() {
     return expo_positions;
 }
 
-vector<TilePosition> MapInventory::getInsideWallTilePositions() {
+vector<TilePosition> MapInventory::getInsideWallTilePositions()  const{
     std::vector<TilePosition> macroPositions;
     BWEB::Path distanceBetweenWallAndStart;
     distanceBetweenWallAndStart.createUnitPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()));
@@ -1057,19 +1073,6 @@ void MapInventory::mainCurrentMap() {
         front_line_base_ = suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
     }
 
-    // Update Safe Base
-        //otherwise go to your safest base - the one with least deaths near it and most units.
-    Position suspected_safe_base = Positions::Origin;
-
-    suspected_safe_base = getBaseWithMostSurvivors(true, false);
-
-    if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
-        safe_base_ = suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
-    }
-    else {
-        safe_base_ = front_line_base_;
-    }
-
 }
 
 //void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
@@ -1129,7 +1132,7 @@ void MapInventory::mainCurrentMap() {
 //}
 
 
-vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units)
+vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units) const
 {
     vector<int> return_vector;
 
@@ -1375,11 +1378,12 @@ void MapInventory::createSurroundField(PlayerModel & enemy_player)
 //    return pfVisible_[t.x][t.y];
 //}
 
-const int MapInventory::getDetectField(TilePosition & t) {
+const int MapInventory::getDetectField(const TilePosition & t) const
+{
     return pfDetectThreat_[t.x][t.y];
 }
 
-const int MapInventory::getOccupationField(TilePosition & t)
+const int MapInventory::getOccupationField(const TilePosition & t) const
 {
     return pfOccupation_[t.x][t.y];
 }
@@ -1389,17 +1393,17 @@ const int MapInventory::getOccupationField(TilePosition & t)
 //    return pfBlindness_[t.x][t.y];
 //}
 
-const bool MapInventory::isInBufferField(TilePosition & t)
+bool MapInventory::isInBufferField(const TilePosition & t) const
 {
     return pfThreatBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::isInExtraWideBufferField(TilePosition & t)
+bool MapInventory::isInExtraWideBufferField(const TilePosition & t) const
 {
     return pfExtraWideBuffer_[t.x][t.y] > 0.0;
 }
 
-const bool MapInventory::isInSurroundField(TilePosition & t)
+bool MapInventory::isInSurroundField(const TilePosition & t) const
 {
     return pfSurroundSquare_[t.x][t.y];
 }
@@ -1409,11 +1413,12 @@ void MapInventory::setSurroundField(TilePosition & t, bool newVal)
     pfSurroundSquare_[t.x][t.y] = newVal;
 }
 
-void MapInventory::DiagnosticField(double pf[256][256]) {
+void MapInventory::DiagnosticField(const double pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }) + Position(16, 16), "%4.2f", pf[i][j]);
                     }
@@ -1423,11 +1428,12 @@ void MapInventory::DiagnosticField(double pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticField(int pf[256][256]) {
+void MapInventory::DiagnosticField(const int pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
                     }
@@ -1437,11 +1443,12 @@ void MapInventory::DiagnosticField(int pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticField(bool pf[256][256]) {
+void MapInventory::DiagnosticField(const bool pf[256][256])  const
+{
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     if (pf[i][j]) {
                         Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
                     }
@@ -1451,12 +1458,13 @@ void MapInventory::DiagnosticField(bool pf[256][256]) {
     }
 }
 
-void MapInventory::DiagnosticTile() {
+void MapInventory::DiagnosticTile() const
+{
     if (DIAGNOSTIC_MODE) {
             //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
             for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
                     Broodwar->drawTextMap(getCenterTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
@@ -1464,53 +1472,35 @@ void MapInventory::DiagnosticTile() {
     }
 }
 
-//void MapInventory::DiagnosticAirThreats()
-//{
-//    DiagnosticField(pfAirThreat_);
-//}
-//
-//void MapInventory::DiagnosticGroundThreats()
-//{
-//    DiagnosticField(pfGroundThreat_);
-//}
-//
-//void MapInventory::DiagnosticVisibleTiles()
-//{
-//    DiagnosticField(pfVisible_);
-//}
 
-void MapInventory::DiagnosticOccupiedTiles()
+void MapInventory::DiagnosticOccupiedTiles() const
 {
     DiagnosticField(pfOccupation_);
 }
 
-void MapInventory::DiagnosticDetectedTiles()
+void MapInventory::DiagnosticDetectedTiles() const
 {
     DiagnosticField(pfDetectThreat_);
 }
 
-//void MapInventory::DiagnosticBlindTiles()
-//{
-//    DiagnosticField(pfBlindness_);
-//}
-
-void MapInventory::DiagnosticThreatTiles()
+void MapInventory::DiagnosticThreatTiles() const
 {
     DiagnosticField(pfThreat_);
 }
 
-void MapInventory::DiagnosticSurroundTiles()
+void MapInventory::DiagnosticSurroundTiles() const
 {
     DiagnosticField(pfSurroundSquare_);
 }
 
 
-void MapInventory::DiagnosticExtraWideBufferTiles()
+void MapInventory::DiagnosticExtraWideBufferTiles() const
 {
     DiagnosticField(pfExtraWideBuffer_);
 }
 
-Position MapInventory::getEarlyGameScoutPosition() {
+Position MapInventory::getEarlyGameScoutPosition()  const 
+{
     // need to consider we could send 2 scouts to same position if it is unscouted. So filter by unexplore and unscouted and if nothing, then just try unexplored.
 
     vector<Position> viable_options;
@@ -1540,7 +1530,8 @@ Position MapInventory::getEarlyGameScoutPosition() {
     }
 }
 
-Position MapInventory::getEarlyGameArmyPosition() {
+Position MapInventory::getEarlyGameArmyPosition()  const
+{
     vector<Position> viable_options;
     for (auto i : Broodwar->getStartLocations()) {
         if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
@@ -1557,7 +1548,8 @@ Position MapInventory::getEarlyGameArmyPosition() {
     }
 }
 
-Position MapInventory::getEarlyGameAirPosition() {
+Position MapInventory::getEarlyGameAirPosition()  const 
+{
     vector<Position> viable_options;
     for (auto i : Broodwar->getStartLocations()) {
         if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
@@ -1574,7 +1566,8 @@ Position MapInventory::getEarlyGameAirPosition() {
     }
 }
 
-Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) {
+Position MapInventory::getDistanceWeightedPosition(const Position & target_pos)  const 
+{
     //From Dolphin Bot 2018 (with paraphrasing):
     double total_distance = 0;
     double sum_log_p = 0;
@@ -1655,10 +1648,10 @@ void MapInventory::assignArmyDestinations() {
 
     if (enemy_found_) {
         if (currently_visible_enemy) {
-            assignLateArmyMovement(currently_visible_enemy->pos_);
+            sendArmyTowardsPosition(currently_visible_enemy->pos_);
         }
         else {
-            assignLateArmyMovement(Positions::Origin);
+            sendArmyTowardsPosition(Positions::Origin);
         }
     }
     else {
@@ -1673,17 +1666,17 @@ void MapInventory::assignScoutDestinations() {
 
     if (enemy_start_location_found_) {
         if (currently_visible_enemy) {
-            assignLateScoutMovement(currently_visible_enemy->pos_);
+            sendScoutTowardsPosition(currently_visible_enemy->pos_);
         }
         else {
-            assignLateScoutMovement(Positions::Origin);
+            sendScoutTowardsPosition(Positions::Origin);
         }
 
     }
     else {
         // create scouting position if bases are empty.
         if (scouting_bases_.empty()) {
-            for (int i = 0; i < nScouts; i++) {
+            for (int i = 0; i < nScouts_; i++) {
                 scouting_bases_.push_back(Positions::Origin);
             }
         }
@@ -1701,10 +1694,10 @@ void MapInventory::assignAirDestinations() {
 
     if (enemy_found_) {
         if (currently_visible_air) {
-            assignLateAirMovement(currently_visible_air->pos_);
+            sendAntiAirTowardsPosition(currently_visible_air->pos_);
         }
         else {
-            assignLateAirMovement(Positions::Origin);
+            sendAntiAirTowardsPosition(Positions::Origin);
         }
     }
     else {
@@ -1714,15 +1707,13 @@ void MapInventory::assignAirDestinations() {
     }
 }
 
-bool MapInventory::isScoutingPosition(const Position &pos) {
+bool MapInventory::isScoutingPosition(const Position &pos)  const
+{
     return scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 }
 
-bool MapInventory::isMarchingPosition(const Position &pos) {
-    return static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
-}
-
-Position MapInventory::getClosestInVector(vector<Position> &posVector){
+Position MapInventory::getClosestInVector(const vector<Position> &posVector)  const
+{
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MAX;
     for (auto p : posVector) {
@@ -1734,7 +1725,8 @@ Position MapInventory::getClosestInVector(vector<Position> &posVector){
     return pos_holder;
 }
 
-Position MapInventory::getFurthestInVector(vector<Position> &posVector) {
+Position MapInventory::getFurthestInVector(const vector<Position> &posVector)   const
+{
     Position pos_holder = Positions::Origin;
     int dist_holder = INT_MIN;
     for (auto p : posVector) {
@@ -1746,7 +1738,8 @@ Position MapInventory::getFurthestInVector(vector<Position> &posVector) {
     return pos_holder;
 }
 
-bool MapInventory::isStartPosition(const Position &p) {
+bool MapInventory::isStartPosition(const Position &p)   const
+{
     for (auto s : Broodwar->getStartLocations()) {
         if (TilePosition(p) == TilePosition(s))
             return true;
@@ -1754,14 +1747,16 @@ bool MapInventory::isStartPosition(const Position &p) {
     return false;
 }
 
-double MapInventory::distanceTransformation(const int distanceFromTarget) {
+double MapInventory::distanceTransformation(const int distanceFromTarget)   const
+{
         return distanceFromTarget ==  0 ? 0.30 : 100.0/static_cast<double>(distanceFromTarget);
 }
-double MapInventory::distanceTransformation(const double distanceFromTarget) {
+double MapInventory::distanceTransformation(const double distanceFromTarget)   const
+{
     return distanceFromTarget == 0 ? 0.30 : 100.0 / distanceFromTarget;
 }
 
-void MapInventory::assignLateArmyMovement(const Position closest_enemy){
+void MapInventory::sendArmyTowardsPosition(const Position closest_enemy){
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_ground_ = closest_enemy;
     }
@@ -1770,7 +1765,7 @@ void MapInventory::assignLateArmyMovement(const Position closest_enemy){
     }
 }
 
-void MapInventory::assignLateAirMovement(const Position closest_enemy) {
+void MapInventory::sendAntiAirTowardsPosition(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_air_ = closest_enemy;
     }
@@ -1779,7 +1774,7 @@ void MapInventory::assignLateAirMovement(const Position closest_enemy) {
     }
 }
 
-void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
+void MapInventory::sendScoutTowardsPosition(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to hunt near the closest enemy if we've seen 'em!
         for (auto& p : scouting_bases_) {
             if (Broodwar->isVisible(TilePosition(p)) || discovered_enemy_this_frame_)
@@ -1819,12 +1814,12 @@ void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
 //    return CUNYAIModule::currentMapInventory.pfVisible_[TilePosition(p).x][TilePosition(p).y] > 0;
 //}
 
-bool MapInventory::isTileThreatened(const TilePosition & tp)
+bool MapInventory::isTileThreatened(const TilePosition & tp) const
 {
     return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y] > 0;
 }
 
-double MapInventory::getTileThreat(const TilePosition & tp)
+double MapInventory::getTileThreat(const TilePosition & tp) const
 {
     return CUNYAIModule::currentMapInventory.pfThreat_[tp.x][tp.y];
 }
@@ -1839,27 +1834,46 @@ int MapInventory::getExpoPositionScore(const Position & p)
 }
 
 
-Position MapInventory::getSafeBase()
+Position MapInventory::getSafeBase() const
 {
     return safe_base_;
 }
 
-Position MapInventory::getEnemyBaseGround()
+Position MapInventory::getEnemyBaseGround() const
 {
     return enemy_base_ground_;
 }
 
-Position MapInventory::getEnemyBaseAir()
+Position MapInventory::getEnemyBaseAir() const
 {
     return enemy_base_air_;
 }
 
-Position MapInventory::getFrontLineBase()
+Position MapInventory::getFrontLineBase() const
 {
     return front_line_base_;
 }
 
-vector<Position> MapInventory::getScoutingBases()
+vector<Position> MapInventory::getScoutingBases() const
 {
     return scouting_bases_;
+}
+
+int MapInventory::getMyMapPortion() const
+{
+    return CUNYAIModule::convertTileDistanceToPixelDistance(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()));;
+}; 
+
+void MapInventory::assignSafeBase() {
+    // Update Safe Base
+    Position suspected_safe_base = Positions::Origin;
+
+    suspected_safe_base = getBaseWithMostSurvivors(true, false);
+
+    if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
+        safe_base_ = suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    }
+    else {
+        safe_base_ = front_line_base_;
+    }
 }

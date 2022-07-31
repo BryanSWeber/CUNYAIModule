@@ -192,25 +192,9 @@ void ResourceInventory::updateMines() {
 void ResourceInventory::drawMineralRemaining() const
 {
     for (auto u : ResourceInventory_) {
-        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, Broodwar->getScreenPosition());
     }
 
-}
-
-void ResourceInventory::drawUnreachablePatch(const MapInventory & inv) const
-{
-    if constexpr (DIAGNOSTIC_MODE) {
-        for (auto r = ResourceInventory_.begin(); r != ResourceInventory_.end() && !ResourceInventory_.empty(); r++) {
-            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
-                if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
-                    Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
-                }
-                else if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 0) {
-                    Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Blue, true); // Mark as blue if in a walkable spot.
-                }
-            }
-        }
-    }
 }
 
 int ResourceInventory::countLocalMiners()
@@ -237,6 +221,16 @@ int ResourceInventory::countLocalRefineries()
 {
     return local_refineries_;
 }
+
+void ResourceInventory::onFrame() {
+    if (Broodwar->getFrameCount() == 0) {
+        //update local resources
+        //current_MapInventory.updateMapVeinsOut(current_MapInventory.start_positions_[0], current_MapInventory.enemy_base_ground_, current_MapInventory.map_out_from_enemy_ground_);
+        ResourceInventory mineral_inventory = ResourceInventory(Broodwar->getStaticMinerals());
+        ResourceInventory geyser_inventory = ResourceInventory(Broodwar->getStaticGeysers());
+        *this = mineral_inventory + geyser_inventory; // for first initialization.
+    }
+};
 
 ResourceInventory operator+(const ResourceInventory& lhs, const ResourceInventory& rhs)
 {

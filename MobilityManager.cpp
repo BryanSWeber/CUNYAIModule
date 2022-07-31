@@ -2,6 +2,7 @@
 
 # include "Source\Diagnostics.h"
 # include "Source\MobilityManager.h"
+# include "Source/UnitInventory.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
 # include <math.h>
@@ -27,8 +28,8 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
     if (caution)
         unit_->move(pos_ + attract_vector_ + escape(TilePosition(pos_ + attract_vector_)));
     if (unit_->move(pos_ + attract_vector_)) {
-        Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
-        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
+        Diagnostics::drawLine(pos_, pos_ + attract_vector_, Broodwar->getScreenPosition(), Colors::White);//Run towards it.
+        Diagnostics::drawLine(pos_, e_pos, Broodwar->getScreenPosition(), Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
@@ -192,7 +193,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
             else
                 unit_->attack(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
         }
-        Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, color);
+        Diagnostics::drawLine(pos_, target->getPosition(), Broodwar->getScreenPosition(), color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
 

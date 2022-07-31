@@ -7,37 +7,32 @@
 #include "ReservationManager.h"
 #include "ResearchInventory.h"
 #include "FAP\FAP\include\FAP.hpp"
+#include "CombatSimulator.h"
 #include <random> // C++ base random is low quality.
+#include <vector>
 
 using namespace std;
 using namespace BWAPI;
 
-// Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
+//Forward declarations of relevant classes.
 class MapInventory;
 class Reservation;
+class CombatSimulator;
 
 struct StoredUnit {
 
     //Creates a steryotyped ideal of the unit. For comparisons.
     StoredUnit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
 
-    static int getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
-    static int getGrownWeight(const UnitType unittype, const bool & carrierUpgrade, const bool & reaverUpgrade);
+    void setTraditionalWeights(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
+    //static int getGrownWeight(const UnitType unittype, const bool & carrierUpgrade, const bool & reaverUpgrade);
 
     // Creates an enemy unit object, an abbreviated version of the original.
     StoredUnit(const Unit &unit);
     StoredUnit();
-    auto convertToFAP(const ResearchInventory &ri); // puts stored unit into the fap type.
-    auto convertToFAPPosition(const Position & chosen_pos, const ResearchInventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
-    auto convertToFAPDisabled(const Position & chosen_pos, const ResearchInventory & ri); // puts the unit in as an immobile unit.
-    auto convertToFAPAnitAir(const Position & chosen_pos, const ResearchInventory & ri); // puts the unit in as an anti-air only tool.
-    auto convertToFAPflying(const Position & chosen_pos, const ResearchInventory & ri);
 
-    static void updateFAPvalue(FAP::FAPUnit<StoredUnit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    void updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
-
-    static bool unitDeadInFuture(const StoredUnit &unit, const int & number_of_frames_voted_death); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
-
     void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
@@ -103,6 +98,8 @@ struct StoredUnit {
     StoredUnit(Phase p) : phase_(p) {}
     operator Phase () const { return phase_; }
 
+    bool unitDeadInFuture(const int & numberOfConsecutiveDeadSims = 4) const; // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+
     //Needed commands for workers.
     void startMine(Stored_Resource &new_resource);
     void startMine(Unit & new_resource);
@@ -139,10 +136,10 @@ struct StoredUnit {
     int circumference_remaining_;
 
     Unit bwapi_unit_;
-private:
-    //prevent automatic conversion for any other built-in types such as bool, int, etc
-    template<typename T>
-    operator T () const;
+//private:
+//    //prevent automatic conversion for any other built-in types such as bool, int, etc
+//    template<typename T>
+//    operator T () const;
 };
 
 struct UnitInventory {
@@ -154,8 +151,6 @@ struct UnitInventory {
     //what about their upgrades?
     //Other details?
 
-    static const int half_map_ = 120; // SC Screen size is 680 X 240
-    static std::default_random_engine generator_;  //Will be used to obtain a seed for the random number engine
 
     int stock_fliers_ = 0;
     int stock_ground_units_ = 0;
@@ -233,24 +228,14 @@ struct UnitInventory {
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllLastSeens() const;
-    void drawAllMisplacedGroundUnits() const;
+
     UnitInventory getInventoryAtArea(const int areaID) const;
     UnitInventory getCombatInventoryAtArea(const int areaID) const;
     UnitInventory getBuildingInventoryAtArea(const int areaID) const;
     UnitInventory getBuildingInventory() const;
 
 
-
-    // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.
-    void addToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory &ri); // adds to buildFAP
-    void addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
-    void addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
-    void addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
-    void addToMCFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const ResearchInventory & ri); // adds to MC fap.
-    void addToBuildFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const ResearchInventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
-
-
-    void pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void updateWithPredictedStatus(CombatSimulator sim, bool friendly = true); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     //Gets a pointer to a stored unit when provided the unit pointer.
     StoredUnit* getStoredUnit(const Unit & u);
@@ -263,8 +248,6 @@ struct UnitInventory {
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
-    static Position positionMCFAP(const StoredUnit & su);
-    static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
     void printUnitInventory(const Player &player, const string &bonus = "");

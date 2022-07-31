@@ -3,6 +3,10 @@
 #include "CUNYAIModule.h"
 #include "UnitInventory.h"
 #include <bwem.h>
+#include "FAP/FAP/include/FAP.hpp"
+#include "CombatSimulator.h"
+
+class CombatSimulator;
 
 class CombatManager {
 private:
@@ -39,7 +43,8 @@ public:
     static bool isCollectingForces(const UnitInventory &ui); //Checks if you're preparing to attack in a given UI. Tests the % of units pathing out.
     
     static bool isWorkerFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are workers. 
-    //static bool isPulledWorkersFight(const UnitInventory &friendly, const UnitInventory &enemy);      // Returns True if all enemy units are Workers or Buildings
 
     int getSearchRadius(const Unit &u); //Returns the number of pixels we should search for targets.
+
+    void onFrame(); //Updates the combat sims so inferences can be drawn.
 };

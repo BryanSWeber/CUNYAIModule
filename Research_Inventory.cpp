@@ -239,3 +239,4 @@ int inferEarliestPossible(const UnitType & ut) {
 
     return build_time;
 };
+

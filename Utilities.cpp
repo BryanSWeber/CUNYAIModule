@@ -1564,127 +1564,127 @@ int CUNYAIModule::getChargableDistance(const Unit & u)
 }
 
 
-//finds nearest choke or best location within 100 minitiles.
-Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const MapInventory &inv ) {
-    WalkPosition e_position = WalkPosition( final );
-    WalkPosition wk_postion = WalkPosition( initial );
-    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
-
-    int max_observed = CUNYAIModule::currentMapInventory.map_veins_[wk_postion.x][wk_postion.y];
-    Position nearest_choke; 
-
-    for ( auto i = 0; i < 100; ++i ) {
-        for ( int x = -1; x <= 1; ++x ) {
-            for ( int y = -1; y <= 1; ++y ) {
-
-                int testing_x = wk_postion.x + x;
-                int testing_y = wk_postion.y + y;
-
-                if ( !(x == 0, y == 0) &&
-                    testing_x < map_dim.x &&
-                    testing_y < map_dim.y &&
-                    testing_x > 0 &&
-                    testing_y > 0 ) { // check for being within reference space.
-
-                    int temp = CUNYAIModule::currentMapInventory.map_veins_[testing_x][testing_y];
-
-                    if ( temp >= max_observed ) {
-                        max_observed = temp;
-                        nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-                        wk_postion = WalkPosition( nearest_choke ); //search from there.
-                        if ( max_observed > 175 ) {
-                            return nearest_choke;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    //another attempt
-    //int x_dist_to_e = e_position.x - wk_postion.x;
-    //int y_dist_to_e = e_position.y - wk_postion.y;
-
-    //int dx = x_dist_to_e > 0 ? 1 : -1;
-    //int dy = y_dist_to_e > 0 ? 1 : -1;
-
-    //for ( auto i = 0; i < 50; ++i ) {
-    //    for ( int x = 0; x <= 1; ++x ) {
-    //        for ( int y = 0; y <= 1; ++y ) {
-
-    //            int testing_x = wk_postion.x + x * dx;
-    //            int testing_y = wk_postion.y + y * dy;
-
-    //            if ( !(x == 0, y == 0) &&
-    //                testing_x < map_dim.x &&
-    //                testing_y < map_dim.y &&
-    //                testing_x > 0 &&
-    //                testing_y > 0 ) { // check for being within reference space.
-
-    //                int temp = inv.map_veins_[testing_x][testing_y];
-
-    //                if ( temp > max_observed ) {
-    //                    max_observed = temp;
-    //                    nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-    //                    wk_postion = WalkPosition( nearest_choke ); //search from there.
-    //                    if ( max_observed > 275 ) {
-    //                        return nearest_choke;
-    //                        break;
-    //                    }
-    //                }
-    //                else if ( y_dist_to_e == 0 || abs( x_dist_to_e / y_dist_to_e ) > 1 ) {
-    //                    dx = x_dist_to_e > 0 ? 1 : -1;
-    //                }
-    //                else {
-    //                    dy = y_dist_to_e > 0 ? 1 : -1;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-     //another attempt
-    //int x_dist_to_e, y_dist_to_e, dx, dy, x_inc, y_inc;
-
-    //dx = x_dist_to_e > 0 ? 1 : -1;
-    //dy = y_dist_to_e > 0 ? 1 : -1;
-
-    //for ( auto i = 0; i < 50; ++i ) {
-
-    //    x_dist_to_e = e_position.x - wk_postion.x;
-    //    y_dist_to_e = e_position.y - wk_postion.y;
-
-    //    int testing_x = wk_postion.x + dx;
-    //    int testing_y = wk_postion.y + dy;
-
-    //    if ( testing_x < map_dim.x &&
-
-    //        testing_y < map_dim.y &&
-    //        testing_x > 0 &&
-    //        testing_y > 0 ) { // check for being within reference space.
-
-    //        int temp = inv.map_veins_[testing_x][testing_y];
-
-    //        if ( temp > max_observed ) {
-    //            max_observed = temp;
-    //            nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
-    //            wk_postion = WalkPosition( nearest_choke ); //search from there.
-    //            if ( max_observed > 275 ) {
-    //                return nearest_choke;
-    //                break;
-    //            }
-    //        }
-    //        else if ( abs(y_dist_to_e / x_dist_to_e) < 1 ) {
-    //            dx += x_dist_to_e > 0 ? 1 : -1;
-    //        }
-    //        else {
-    //            dy += y_dist_to_e > 0 ? 1 : -1;
-    //        }
-    //    }
-    //}
-
-    return nearest_choke;
-}
+////finds nearest choke or best location within 100 minitiles.
+//Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const MapInventory &inv ) {
+//    WalkPosition e_position = WalkPosition( final );
+//    WalkPosition wk_postion = WalkPosition( initial );
+//    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+//
+//    int max_observed = CUNYAIModule::currentMapInventory.map_veins_[wk_postion.x][wk_postion.y];
+//    Position nearest_choke; 
+//
+//    for ( auto i = 0; i < 100; ++i ) {
+//        for ( int x = -1; x <= 1; ++x ) {
+//            for ( int y = -1; y <= 1; ++y ) {
+//
+//                int testing_x = wk_postion.x + x;
+//                int testing_y = wk_postion.y + y;
+//
+//                if ( !(x == 0, y == 0) &&
+//                    testing_x < map_dim.x &&
+//                    testing_y < map_dim.y &&
+//                    testing_x > 0 &&
+//                    testing_y > 0 ) { // check for being within reference space.
+//
+//                    int temp = CUNYAIModule::currentMapInventory.map_veins_[testing_x][testing_y];
+//
+//                    if ( temp >= max_observed ) {
+//                        max_observed = temp;
+//                        nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//                        wk_postion = WalkPosition( nearest_choke ); //search from there.
+//                        if ( max_observed > 175 ) {
+//                            return nearest_choke;
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    //another attempt
+//    //int x_dist_to_e = e_position.x - wk_postion.x;
+//    //int y_dist_to_e = e_position.y - wk_postion.y;
+//
+//    //int dx = x_dist_to_e > 0 ? 1 : -1;
+//    //int dy = y_dist_to_e > 0 ? 1 : -1;
+//
+//    //for ( auto i = 0; i < 50; ++i ) {
+//    //    for ( int x = 0; x <= 1; ++x ) {
+//    //        for ( int y = 0; y <= 1; ++y ) {
+//
+//    //            int testing_x = wk_postion.x + x * dx;
+//    //            int testing_y = wk_postion.y + y * dy;
+//
+//    //            if ( !(x == 0, y == 0) &&
+//    //                testing_x < map_dim.x &&
+//    //                testing_y < map_dim.y &&
+//    //                testing_x > 0 &&
+//    //                testing_y > 0 ) { // check for being within reference space.
+//
+//    //                int temp = inv.map_veins_[testing_x][testing_y];
+//
+//    //                if ( temp > max_observed ) {
+//    //                    max_observed = temp;
+//    //                    nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//    //                    wk_postion = WalkPosition( nearest_choke ); //search from there.
+//    //                    if ( max_observed > 275 ) {
+//    //                        return nearest_choke;
+//    //                        break;
+//    //                    }
+//    //                }
+//    //                else if ( y_dist_to_e == 0 || abs( x_dist_to_e / y_dist_to_e ) > 1 ) {
+//    //                    dx = x_dist_to_e > 0 ? 1 : -1;
+//    //                }
+//    //                else {
+//    //                    dy = y_dist_to_e > 0 ? 1 : -1;
+//    //                }
+//    //            }
+//    //        }
+//    //    }
+//    //}
+//     //another attempt
+//    //int x_dist_to_e, y_dist_to_e, dx, dy, x_inc, y_inc;
+//
+//    //dx = x_dist_to_e > 0 ? 1 : -1;
+//    //dy = y_dist_to_e > 0 ? 1 : -1;
+//
+//    //for ( auto i = 0; i < 50; ++i ) {
+//
+//    //    x_dist_to_e = e_position.x - wk_postion.x;
+//    //    y_dist_to_e = e_position.y - wk_postion.y;
+//
+//    //    int testing_x = wk_postion.x + dx;
+//    //    int testing_y = wk_postion.y + dy;
+//
+//    //    if ( testing_x < map_dim.x &&
+//
+//    //        testing_y < map_dim.y &&
+//    //        testing_x > 0 &&
+//    //        testing_y > 0 ) { // check for being within reference space.
+//
+//    //        int temp = inv.map_veins_[testing_x][testing_y];
+//
+//    //        if ( temp > max_observed ) {
+//    //            max_observed = temp;
+//    //            nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+//    //            wk_postion = WalkPosition( nearest_choke ); //search from there.
+//    //            if ( max_observed > 275 ) {
+//    //                return nearest_choke;
+//    //                break;
+//    //            }
+//    //        }
+//    //        else if ( abs(y_dist_to_e / x_dist_to_e) < 1 ) {
+//    //            dx += x_dist_to_e > 0 ? 1 : -1;
+//    //        }
+//    //        else {
+//    //            dy += y_dist_to_e > 0 ? 1 : -1;
+//    //        }
+//    //    }
+//    //}
+//
+//    return nearest_choke;
+//}
 
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
@@ -1757,30 +1757,12 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Chitinous_Plating = 52,
 //Anabolic_Synthesis = 53,
 
-//Some safety checks if it can't find FAP objects, say at game start.
-int CUNYAIModule::getFAPScore(FAP::FastAPproximation<StoredUnit*> &fap, bool friendly_player) {
-    if (friendly_player && fap.getState().first && !fap.getState().first->empty())                       return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0,   [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
-    else if(!friendly_player && fap.getState().second && !fap.getState().second->empty())                return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
-    else return 0;
-}
 
 //bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitInventory &ei) {
 //    return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ && ui.squadAliveinFuture(24)) || // Proportional win. fixed division by crossmultiplying. Added squadalive in future so the bot is more reasonable in combat situations.
 //        //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
 //        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 //}
-
-bool CUNYAIModule::checkMiniFAPForecast(UnitInventory &ui, UnitInventory &ei, const bool equality_is_win) {
-    FAP::FastAPproximation<StoredUnit*> MiniFap; // integrating FAP into combat with a produrbation.
-    ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
-    ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
-    MiniFap.simulate(FAP_SIM_DURATION);
-    ui.pullFromFAP(*MiniFap.getState().first);
-    ei.pullFromFAP(*MiniFap.getState().second);
-    ui.updateUnitInventorySummary();
-    ei.updateUnitInventorySummary();
-    return checkSuperiorFAPForecast(ui, ei, equality_is_win);
-}
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitInventory &ei, const bool equality_is_win) {
     int total_surviving_ui = 0;
@@ -1796,10 +1778,10 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
             bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
             bool may_survive_and_fight = !escaping && u.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(u.second, 4) * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            //total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 4) * fighting_may_save;
-            total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 4) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * may_survive_and_fight;
-            total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 4) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * may_survive_and_fight;
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * u.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            //total_surviving_ui += u.second.stock_value_ * !u.second.unitDeadInFuture() * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !u.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * may_survive_and_fight;
+            total_surviving_ui_down += u.second.stock_value_ * !u.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * may_survive_and_fight;
         }
     }
 
@@ -1807,10 +1789,10 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             //bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
             bool may_survive_and_fight = /*!escaping &&*/ e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are hard to calculate for enemies, they may about-face at any time.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(e.second, 4) * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
-            //total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 4) * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 4) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
-            total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 4) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * may_survive_and_fight;
+            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * e.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
+            //total_surviving_ei += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second);
+            total_surviving_ei_up += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
+            total_surviving_ei_down += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * may_survive_and_fight;
         }
     }
 
@@ -1848,15 +1830,15 @@ int CUNYAIModule::getFAPSurvivalForecast(const UnitInventory & ui, const UnitInv
 
     for (auto u : ui.unit_map_) {
         bool fighting_may_save = u.second.phase_ != StoredUnit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-        total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
-        total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
-        total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
+        total_surviving_ui += u.second.stock_value_ * !u.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
+        total_surviving_ui_up += u.second.stock_value_ * !u.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+        total_surviving_ui_down += u.second.stock_value_ * !u.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * e.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !e.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !e.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !e.second.unitDeadInFuture(duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:

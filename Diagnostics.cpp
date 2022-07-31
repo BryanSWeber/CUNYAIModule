@@ -3,6 +3,7 @@
 #include "Source/Diagnostics.h"
 #include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
+#include "Source/UnitInventory.h"
 #include <chrono>
 #include <map>
 
@@ -65,168 +66,67 @@ void Diagnostics::drawCircle(const Position &s_pos, const Position &screen_pos, 
     }
 }
 
-void Diagnostics::drawHitPoints(const StoredUnit unit, const Position &screen_pos) {
+void Diagnostics::drawBar(const Position & s_pos, const UnitType uType, const int barAmountComplete, const int barAmountFull, const Color colTop, const Color colUnder)
+{
     if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields()) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+        Position upper_left = s_pos;
+        int barAmountEvenAndFull = barAmountFull;
+        if (barAmountEvenAndFull % 2 != 0)
+            barAmountEvenAndFull++;
+        if (CUNYAIModule::isOnScreen(upper_left, Broodwar->getScreenPosition()) & barAmountComplete != 0) {
+            // Draw the background. Shifts it a bit so it's not directly on the unit.
+            upper_left.y = upper_left.y + uType.dimensionUp();
+            upper_left.x = upper_left.x - uType.dimensionLeft();
 
             Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.x = upper_left.x + uType.width();
             lower_right.y = upper_left.y + 5;
 
-            //Overlay the appropriate green above it.
+            //Create the appropriate color underneath it.
             lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.current_hp_ / static_cast<double> (unit.type_.maxHitPoints() + unit.type_.maxShields()));
+            lower_right.x = static_cast<int>(upper_left.x + uType.width() * barAmountComplete / static_cast<double>(barAmountEvenAndFull));
             lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, colUnder, true);
 
-            int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
-            for (int i = 0; i <= static_cast<int>((unit.type_.maxHitPoints() + unit.type_.maxShields()) / 25); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_hp_value / static_cast<double>(unit.type_.maxHitPoints() + unit.type_.maxShields()));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-                temp_hp_value -= 25;
+            //Find chunk size that works, we want BIGGER chunks for larger things.
+            int chunk = static_cast<int>(max(sqrt(barAmountEvenAndFull), barAmountFull / 25.0));
+            while (barAmountFull % chunk != 0 && chunk < barAmountEvenAndFull)
+                chunk++;
+
+            //Create the dividing lines above it.
+            int temp_stock_value = barAmountEvenAndFull;
+            for (int i = 0; i <= chunk; i++) {
+                lower_right.x = static_cast<int>(upper_left.x + uType.width() * temp_stock_value / static_cast<double>(barAmountEvenAndFull));
+                Broodwar->drawBoxMap(upper_left, lower_right, colTop, false);
+                temp_stock_value = max(temp_stock_value - chunk, chunk);
             }
         }
     }
+}
+
+void Diagnostics::drawHitPoints(const StoredUnit unit, const Position &screen_pos) {
+    drawBar(unit.pos_, unit.type_, unit.current_hp_, unit.type_.maxHitPoints() + unit.type_.maxShields(), Colors::Black, Colors::Green);
 }
 
 void Diagnostics::drawFAP(const StoredUnit unit, const Position &screen_pos) {
-    if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.future_fap_value_ > 0) {
-            // Draw the red background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+    drawBar(unit.pos_, unit.type_, unit.future_fap_value_, unit.stock_value_, Colors::Black, Colors::Purple);
 
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate green above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.future_fap_value_ / static_cast<double>(unit.stock_value_));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            int temp_stock_value = unit.stock_value_;
-            for (int i = 0; i <= static_cast<int>(unit.stock_value_ / 25); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_stock_value / static_cast<double>(unit.stock_value_));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-                temp_stock_value -= 25;
-            }
-        }
-    }
 }
 void Diagnostics::drawEstimatedDeath(const StoredUnit unit, const Position &screen_pos) {
-    if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate color above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.count_of_consecutive_predicted_deaths_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-                //temp_stock_value -= 15;
-            }
-        }
-    }
+    drawBar(unit.pos_, unit.type_, min(unit.count_of_consecutive_predicted_deaths_, FAP_SIM_DURATION), FAP_SIM_DURATION, Colors::Black, Colors::Red);
 }
 
 void Diagnostics::drawLastDamage(const StoredUnit unit, const Position &screen_pos) {
-    if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate color above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.time_since_last_dmg_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-            }
-        }
-    }
+    drawBar(unit.pos_, unit.type_, min(unit.time_since_last_dmg_, FAP_SIM_DURATION), FAP_SIM_DURATION, Colors::Black, Colors::Cyan);
 }
 
 void Diagnostics::drawMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
-    if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = resource.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
-            // Draw the orange background.
-            upper_left.y = upper_left.y + resource.type_.dimensionUp();
-            upper_left.x = upper_left.x - resource.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + resource.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, false);
-
-            //Overlay the appropriate blue above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + resource.type_.width() * resource.current_stock_value_ / static_cast<double>(resource.max_stock_value_));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
-
-            //Overlay the 10hp rectangles over it.
-        }
-    }
+    drawBar(resource.pos_, resource.type_, resource.current_stock_value_, resource.max_stock_value_, Colors::Black, Colors::Orange);
 }
 
 void Diagnostics::drawSpamGuard(const StoredUnit unit, const Position & screen_pos)
 {
-    if constexpr (DIAGNOSTIC_MODE) {
-        Position upper_left = unit.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24) {
-            // Draw the black background.
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-            upper_left.y = upper_left.y - 10;
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            if (unit.bwapi_unit_ && !CUNYAIModule::spamGuard(unit.bwapi_unit_))
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, false);
-            else
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, false);
-
-            //Overlay the appropriate grey above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * (1 - min(unit.time_since_last_command_, 24) / static_cast<double>(24)));
-            lower_right.y = upper_left.y + 5;
-
-            if (unit.bwapi_unit_ && !CUNYAIModule::spamGuard(unit.bwapi_unit_))
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
-            else
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
-        }
-    }
+    drawBar(unit.pos_, unit.type_, 1 - min(unit.time_since_last_command_, 24), 24, Colors::Black, Colors::Yellow);
 }
 
 void Diagnostics::printLastOrder(const StoredUnit unit, const Position & screen_pos)
@@ -643,7 +543,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
     for (auto p = CUNYAIModule::land_inventory.ResourceInventory_.begin(); p != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); ++p) {
-        if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
+        if (CUNYAIModule::isOnScreen(p->second.pos_, Broodwar->getScreenPosition())) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
             Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
@@ -714,11 +614,11 @@ void Diagnostics::onFrame()
     //}
 
     for (auto & j : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        printPhase(j.second, CUNYAIModule::currentMapInventory.screen_position_);
+        printPhase(j.second, Broodwar->getScreenPosition());
     }
 
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
-    drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
+    drawDestination(CUNYAIModule::friendly_player_model.units_, Broodwar->getScreenPosition(), Colors::Grey);
 
     //Diagnostic_Watch_Expos();
     if (Broodwar->getFrameCount() % (24 * 60) == 0) {
@@ -726,23 +626,23 @@ void Diagnostics::onFrame()
         onFrameWritePlayerModel(CUNYAIModule::enemy_player_model);
     }
 
-    //drawTiles(CUNYAIModule::currentMapInventory.screen_position_);
+    //drawTiles(Broodwar->getScreenPosition());
     //for (auto e : CUNYAIModule::currentMapInventory.getExpoTilePositions())
-    //    drawCircle(Position(e), CUNYAIModule::currentMapInventory.screen_position_, 250);
+    //    drawCircle(Position(e), Broodwar->getScreenPosition(), 250);
 }
 
 void Diagnostics::drawAllVelocities(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        Diagnostics::drawLine(u.second.pos_, destination, CUNYAIModule::currentMapInventory.screen_position_, Colors::Green);
+        Diagnostics::drawLine(u.second.pos_, destination, Broodwar->getScreenPosition(), Colors::Green);
     }
 }
 
 void Diagnostics::drawAllHitPoints(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawHitPoints(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawHitPoints(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -750,7 +650,7 @@ void Diagnostics::drawAllHitPoints(const UnitInventory ui)
 void Diagnostics::drawAllMAFAPaverages(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawFAP(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawFAP(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -758,7 +658,7 @@ void Diagnostics::drawAllMAFAPaverages(const UnitInventory ui)
 void Diagnostics::drawAllFutureDeaths(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawEstimatedDeath(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -766,7 +666,7 @@ void Diagnostics::drawAllFutureDeaths(const UnitInventory ui)
 void Diagnostics::drawAllLastDamage(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawLastDamage(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawLastDamage(u.second, Broodwar->getScreenPosition());
     }
 
 }
@@ -775,7 +675,7 @@ void Diagnostics::drawAllLastDamage(const UnitInventory ui)
 void Diagnostics::drawAllSpamGuards(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawSpamGuard(u.second, CUNYAIModule::currentMapInventory.screen_position_);
+        Diagnostics::drawSpamGuard(u.second, Broodwar->getScreenPosition());
     }
 }
 
