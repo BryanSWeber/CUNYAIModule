@@ -114,20 +114,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     return false;
 }
 
-//Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.  Updates CUNYAIModule::friendly_player_model.units_.
-bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
-{
-
-    if (CUNYAIModule::checkWillingAndAble(larva, unittype, extra_critera))
-    {
-        if (larva->morph(unittype)) {
-            CUNYAIModule::updateUnitPhase(larva, StoredUnit::Phase::Morphing);
-            return true;
-        }
-    }
-
-    return false;
-}
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv) {
@@ -1059,8 +1045,10 @@ bool AssemblyManager::assignAssemblyRole()
 
 void AssemblyManager::morphReservedUnits()
 {
-    for (auto r : CUNYAIModule::my_reservation.getReservedUnits())
+    for (auto r : CUNYAIModule::my_reservation.getReservedUnits()) {
+        CUNYAIModule::updateUnitPhase(r.first, StoredUnit::Phase::Morphing);
         r.first->morph(r.second);
+    }
 }
 
 void AssemblyManager::clearSimulationHistory()
