@@ -17,24 +17,12 @@ using namespace std;
 
 bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution) {
 
-    // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
-        return CUNYAIModule::updateUnitPhase(unit_, phase);
-    }
-
-
-    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos))) {
-        if (unit_->move(getSaferPositionNear(e_pos))) {
-            Diagnostics::drawLine(pos_, getSaferPositionNear(e_pos), Colors::White);//Run around it.
-            return CUNYAIModule::updateUnitPhase(unit_, phase);
-        }
-    }
-
-    if (unit_->move(e_pos)) {
-        Diagnostics::drawLine(pos_, e_pos, Colors::Red);//Run towards it
-        return CUNYAIModule::updateUnitPhase(unit_, phase);
-    }
-    return false;
+    if (caution && CUNYAIModule::currentMapInventory.isInSurroundField(TilePosition(pos_)))
+        return moveAndUpdate(getSurroundingPosition(pos_), phase); // If you are already in a surround field and need to move somewhere cautiously, you should stay in your surround field.
+    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos)))
+        return moveAndUpdate(getPositionOneTurnCloser(getSurroundingPosition(e_pos)), phase); // getting position one turn closer is for short linear movements - will stop mutas and lings from leaping over threatened areas.
+    else
+        return moveAndUpdate(getPositionOneTurnCloser(e_pos), phase);
 
 }
 
@@ -68,22 +56,22 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
 
 bool Mobility::surroundLogic()
 {
-    return moveTo(pos_, pos_ + getSurroundingPosition(pos_), StoredUnit::Phase::Surrounding);
+    return moveTo(pos_, getSurroundingPosition(pos_), StoredUnit::Phase::Surrounding);
 }
 
-Position Mobility::getVectorAwayFromNeighbors()
-{
-    UnitInventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
-
-    Position central_pos = Positions::Origin;
-    for (auto u : u_loc.unit_map_) {
-        central_pos += u.second.pos_ - pos_;
-    }
-
-    Position vector_away = Positions::Origin - (central_pos - pos_);
-    double theta = atan2(vector_away.y, vector_away.x); // we want to go away from them.
-    return Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
-}
+//Position Mobility::getVectorAwayFromNeighbors()
+//{
+//    UnitInventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
+//
+//    Position central_pos = Positions::Origin;
+//    for (auto u : u_loc.unit_map_) {
+//        central_pos += u.second.pos_ - pos_;
+//    }
+//
+//    Position vector_away = Positions::Origin - (central_pos - pos_);
+//    double theta = atan2(vector_away.y, vector_away.x); // we want to go away from them.
+//    return Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+//}
 
 // This is basic combat logic for nonspellcasting units.
 bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const int &passed_distance, const Color &color = Colors::White)
@@ -182,13 +170,6 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
 
     if (target && !DISABLE_ATTACKING) {
         if (!prepareLurkerToAttack(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
-            //if (melee && !unit_->isFlying()) { // Attempting surround code.
-            //    StoredUnit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
-            //    permenent_target.circumference_remaining_ -= widest_dim;
-            //    if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) && permenent_target.type_.isBuilding()) {
-            //           return moveTo(pos_ ,pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target), StoredUnit::Phase::Attacking);
-            //    }
-            //}
             if (target->exists())
                 unit_->attack(target);
             else
@@ -208,11 +189,6 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
 // Basic retreat logic
 bool Mobility::Retreat_Logic() {
 
-    // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
-        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
-    }
-
     //Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
     if (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_))) {
@@ -222,7 +198,7 @@ bool Mobility::Retreat_Logic() {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
-        return moveTo(pos_, pos_ + getVectorApproachingPosition(CUNYAIModule::currentMapInventory.getSafeBase()), StoredUnit::Phase::Retreating);
+        return moveTo(pos_, getPositionOneTurnCloser(CUNYAIModule::currentMapInventory.getSafeBase()), StoredUnit::Phase::Retreating);
     }
     else {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
@@ -233,12 +209,6 @@ bool Mobility::Retreat_Logic() {
 bool Mobility::Scatter_Logic(const Position pos)
 {
     Position problem_pos = Positions::Origin;
-
-    // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
-        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
-    }
-
 
     if (pos == Positions::Origin) {
         if (unit_->isUnderStorm()) {
@@ -268,7 +238,7 @@ bool Mobility::Scatter_Logic(const Position pos)
         problem_pos = pos;
     }
 
-    if (unit_->move(pos_ - getVectorApproachingPosition(problem_pos)))
+    if (unit_->move(pos_ - getVectorApproachingPosition(problem_pos)))  // Move away from the problem position as soon as possible.
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     else
         return false;
@@ -280,11 +250,12 @@ Position Mobility::getSurroundingPosition(const Position p) {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    TilePosition bestTile = TilePosition(pos_); //default action is to do nothing.
-    TilePosition tp = TilePosition(p);
+    TilePosition bestTile = TilePosition(p); //default action is to do nothing.
+    TilePosition myTile = TilePosition(pos_);
+    TilePosition centerOfSpiral = TilePosition(p);
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(tp))
+    if (CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(myTile))
         return getCenterOfTile(bestTile);
 
     SpiralOut spiral;
@@ -292,34 +263,54 @@ Position Mobility::getSurroundingPosition(const Position p) {
     for (int i = 0; i <= pow(2 * n, 2); i++) {
         //Consider the tile of interest
         spiral.goNext();
-        int x = tp.x + spiral.x;
-        int y = tp.y + spiral.y;
+        int x = centerOfSpiral.x + spiral.x;
+        int y = centerOfSpiral.y + spiral.y;
         TilePosition target_tile = TilePosition(x, y);
         if (!target_tile.isValid()) {
             continue;
         }
 
         // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
-        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
+        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile));
         //If it's a better tile, switch to it. Exit upon finding a good one.
-        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) /*&& isTileApproachable(target_tile)*/ && slowExit) {
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && slowExit) {
             bestTile = target_tile;
-            CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
-            return getCenterOfTile(p - Position(bestTile)); // shift to surround, move to the center of the tile and not to the corners or something strange.
+            return getCenterOfTile(bestTile); // shift to surround, move to the center of the tile and not to the corners or something strange.
         }
 
     }
 
-    return Positions::Origin;
+    // Fallback- sometimes the target position is surrounded by threatening forces for 15 tiles or more. Then we just have to get to the safest position?
+    if (bestTile == TilePosition(p)) {
+        //Diagnostics::DiagnosticTrack(pos_);
+        //Diagnostics::drawLine(pos_, p, Colors::Red);
+        //Diagnostics::drawCircle(p, Broodwar->getScreenPosition(), 30, Colors::Red);
+        //Diagnostics::DiagnosticText("This unit doesn't want to do ... anything?");
+        return getSaferPositionNear(p);
+    }
+
+    return getCenterOfTile(bestTile);
+}
+
+Position Mobility::getPositionThatLetsUsAttack(const Position p, const double proportion)
+{
+    double theta = atan2(p.y - pos_.y, p.x - pos_.x); // get angle between two.
+    double maxRange = max(stored_unit_->type_.groundWeapon().maxRange(), stored_unit_->type_.airWeapon().maxRange());
+    Position closest_loc_to_permit_attacking = Position(static_cast<int>(cos(theta) * proportion * maxRange ), static_cast<int>(sin(theta) * proportion * maxRange)); // Get a vector at that angle of size a little shorter than our range.
+    return getCenterOfTile(p - closest_loc_to_permit_attacking);
+}
+
+Position Mobility::getPositionOneTurnCloser(const Position & p)
+{
+    return getCenterOfTile(pos_ + getVectorApproachingPosition(p)); // only one direction for now.
 }
 
 Position Mobility::getSaferPositionNear(const Position p) {
 
-    TilePosition tp = TilePosition(p);
-    TilePosition bestTile = TilePositions::Origin;
-    double base_threat = std::ceil(CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(pos_)) * 100.0) / 100.0; // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
-    Position retreatVector = Positions::Origin;
+    TilePosition centerSpiral = TilePosition(p);
+    TilePosition bestTile = TilePosition(p);
+    double base_threat = std::ceil(CUNYAIModule::currentMapInventory.getTileThreat(bestTile) * 100.0) / 100.0; // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
     int baseDist = INT_MAX;
 
     SpiralOut spiral;
@@ -327,8 +318,8 @@ Position Mobility::getSaferPositionNear(const Position p) {
     for (int i = 0; i <= pow(2 * n, 2); i++) {
         //Consider the tile of interest
         spiral.goNext();
-        int x = tp.x + spiral.x;
-        int y = tp.y + spiral.y;
+        int x = centerSpiral.x + spiral.x;
+        int y = centerSpiral.y + spiral.y;
         TilePosition target_tile = TilePosition(x, y);
         if (!target_tile.isValid()) {
             continue;
@@ -450,19 +441,14 @@ bool Mobility::prepareLurkerToAttack(const Position position_of_target) {
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange() + (UnitTypes::Zerg_Lurker.dimensionRight() + UnitTypes::Zerg_Lurker.dimensionUp())/2;
 
     if (u_type_ == UnitTypes::Zerg_Lurker) {
-        if (!unit_->isBurrowed() && dist_condition) {
-            unit_->burrow();
-            return true;
+        if (!unit_->isBurrowed() && dist_condition) { // If you're within range, burrow.
+            return unit_->burrow();
         }
-        else if (unit_->isBurrowed() && !dist_condition) {
-            unit_->unburrow();
-            return true;
+        else if (unit_->isBurrowed() && !dist_condition) {  // If you're burrowed and out of range, get up.
+            return unit_->unburrow();
         }
-        else if (!unit_->isBurrowed() && !dist_condition) {
-            double theta = atan2(position_of_target.y - unit_->getPosition().y, position_of_target.x - unit_->getPosition().x);
-            Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.85 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.85 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
-            moveTo(pos_, closest_loc_to_permit_attacking, StoredUnit::Phase::Attacking);
-            return true;
+        else if (!unit_->isBurrowed() && !dist_condition) { //If you're not burrowed and out of range, get into range. But where?
+            return moveTo(pos_, getPositionThatLetsUsAttack(position_of_target), StoredUnit::Phase::Attacking);
         }
     }
 
@@ -566,6 +552,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
 {
 
     if (!start.isValid() || !finish.isValid()) {
+        Diagnostics::DiagnosticText("We're trying to go somewhere that doesn't exist.");
         return false;
     }
 
@@ -574,51 +561,45 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
         BWEB::Path newPath;
         newPath.createUnitPath(start, finish);
         if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0) {
-            // lurker fix
-            if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove()) {
-                return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
-            }
-            else {
-                int i = 0;
-                while (newPath.getTiles().size() > 1 && i < newPath.getTiles().size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
-                    bool too_close = start.getDistance(getCenterOfTile(newPath.getTiles()[i])) < 32 * 5;
-                    if (too_close && i < newPath.getTiles().size())
-                        i++;
-                    else {
-                        TilePosition tileOfInterest = newPath.getTiles()[i];
-                        Position spotOfInterest = getCenterOfTile(tileOfInterest);
-                        if(caution && CUNYAIModule::currentMapInventory.isTileThreatened(tileOfInterest))
-                            unit_->move(getSaferPositionNear(spotOfInterest));
-                        else
-                            unit_->move(spotOfInterest);
-                        return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
-                    }
+            int i = 0;
+            TilePosition tileOfInterest = TilePosition(newPath.getTiles()[0]);
+            Position spotOfInterest = getCenterOfTile(tileOfInterest);
+            while (newPath.getTiles().size() > 1 && i < newPath.getTiles().size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
+                bool too_close = start.getDistance(getCenterOfTile(newPath.getTiles()[i])) < 32 * 5;
+                if (too_close && i < newPath.getTiles().size())
+                    i++;
+                else {
+                    tileOfInterest = newPath.getTiles()[i];
+                    spotOfInterest = getCenterOfTile(tileOfInterest);
+                    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(tileOfInterest))
+                        return moveAndUpdate(getSurroundingPosition(spotOfInterest), phase);
+                    else
+                        return moveAndUpdate(spotOfInterest, phase);
                 }
-                unit_->move(getCenterOfTile(newPath.getTiles()[0]));
-                return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
             }
+            return moveAndUpdate(spotOfInterest, phase); //We have a move. Update the phase and move along.
         }
         else { // There is no path? Perhaps we are trying to move to an enemy building. Then let us try CPP.
             int plength = 0;
             auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
             if (!cpp.empty() && plength > 0) {
                 int i = 0;
+                TilePosition tileOfInterest = TilePosition(cpp[0]->Center());
+                Position spotOfInterest = getCenterOfTile(tileOfInterest);
                 while (i < cpp.size()) { //If you're not travling far, go to the next path. Otherwise, if you're within 5 tiles of your destination, go to the next one.
-                    bool too_close = Position(cpp[i]->Center()).getDistance(unit_->getPosition()) < 32 * 5;
+                    bool too_close = spotOfInterest.getDistance(unit_->getPosition()) < 32 * 5;
                     if (too_close && i < cpp.size() - 1)
                         i++;
                     else {
-                        TilePosition tileOfInterest = TilePosition(cpp[i]->Center());
-                        Position spotOfInterest = getCenterOfTile(tileOfInterest);
+                        tileOfInterest = TilePosition(cpp[i]->Center());
+                        spotOfInterest = getCenterOfTile(tileOfInterest);
                         if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(tileOfInterest))
-                            unit_->move(getSaferPositionNear(spotOfInterest));
+                            return moveAndUpdate(getSurroundingPosition(spotOfInterest), phase);
                         else
-                            unit_->move(spotOfInterest);
-                        return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
+                            return moveAndUpdate(spotOfInterest, phase);
                     }
                 }
-                unit_->move(Position(cpp[0]->Center()));
-                return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
+                return moveAndUpdate(spotOfInterest, phase);
             }
         }
     }
@@ -646,6 +627,21 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
         }
     }
     return target;
+}
+
+bool Mobility::moveAndUpdate(const Position p, const StoredUnit::Phase phase)
+{
+    // lurkers should prepare to move if sent a move command, then we evaluate again later.
+    if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove())
+        return CUNYAIModule::updateUnitPhase(unit_, phase);
+
+    if (unit_->move(p)) {
+        Diagnostics::drawLine(pos_, p, Colors::White);//Run towards it
+        CUNYAIModule::currentMapInventory.setSurroundField(TilePosition(p), false); // update the tile as "full"
+        return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
+    }
+    else
+        return false;
 }
 
 bool Mobility::checkGoingDifferentDirections(Unit e) {
