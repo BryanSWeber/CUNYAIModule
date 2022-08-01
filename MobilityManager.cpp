@@ -24,9 +24,10 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
 
 
     if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos))) {
-        //Position destination = getCenterOfTile(pos_ + getVectorApproachingPosition(e_pos));
-        Diagnostics::drawLine(pos_, getSaferPositionNear(e_pos), Colors::White);//Run around it.
-        return unit_->move(getSaferPositionNear(e_pos));
+        if (unit_->move(getSaferPositionNear(e_pos))) {
+            Diagnostics::drawLine(pos_, getSaferPositionNear(e_pos), Colors::White);//Run around it.
+            return CUNYAIModule::updateUnitPhase(unit_, phase);
+        }
     }
 
     if (unit_->move(e_pos)) {
@@ -67,7 +68,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
 
 bool Mobility::surroundLogic()
 {
-    return moveTo(pos_, pos_ + getVectorToEmptySurroundField(pos_), StoredUnit::Phase::Surrounding);
+    return moveTo(pos_, pos_ + getSurroundingPosition(pos_), StoredUnit::Phase::Surrounding);
 }
 
 Position Mobility::getVectorAwayFromNeighbors()
@@ -274,20 +275,18 @@ bool Mobility::Scatter_Logic(const Position pos)
 }
 
 
-Position Mobility::getVectorToEmptySurroundField(const Position p) {
+Position Mobility::getSurroundingPosition(const Position p) {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    TilePosition bestTile = TilePositions::Origin;
+    TilePosition bestTile = TilePosition(pos_); //default action is to do nothing.
     TilePosition tp = TilePosition(p);
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
     if (CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(tp))
-        return Positions::Origin;
+        return getCenterOfTile(bestTile);
 
-    //double squaredRelativeDistance = INT_MAX;
-    //otherwise, move to a spot that is blind, or
     SpiralOut spiral;
     int n = 15; // how far in one direction should we search for a tile?
     for (int i = 0; i <= pow(2 * n, 2); i++) {
@@ -301,9 +300,9 @@ Position Mobility::getVectorToEmptySurroundField(const Position p) {
         }
 
         // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
-        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
+        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
         //If it's a better tile, switch to it. Exit upon finding a good one.
-        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && slowExit) {
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) /*&& isTileApproachable(target_tile)*/ && slowExit) {
             bestTile = target_tile;
             CUNYAIModule::currentMapInventory.setSurroundField(bestTile, false);
             // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
