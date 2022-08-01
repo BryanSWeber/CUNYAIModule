@@ -113,6 +113,6 @@ public:
         auto clockFinish = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clockFinish - clockStart).count();
         if constexpr (DIAGNOSTIC_MODE)
-            if(duration >= 15) std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
+            if(duration >= 55) std::cout << "This clock " << p << " took " << duration << "ms." << std::endl;
     }
 };

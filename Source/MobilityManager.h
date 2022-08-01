@@ -28,7 +28,7 @@ private:
 
     bool isMoreOpen(TilePosition &tp); //Returns true if the position is less occupied than pos_.
 
-    Position getSafestPositionNear(const Position p);     // Gets unoccupied position furthest away from threat, then sorted by shortest walk from p.
+    Position getSaferPositionNear(const Position p);  // Gets unoccupied position outside of range from threat, then sorted by shortest walk from p.
 
     Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 

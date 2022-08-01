@@ -22,14 +22,15 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
 
-    Position destination = getCenterOfTile(pos_ + getVectorApproachingPosition(e_pos));
 
-    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(destination)))
-        unit_->move(getSafestPositionNear(destination));
+    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos))) {
+        //Position destination = getCenterOfTile(pos_ + getVectorApproachingPosition(e_pos));
+        Diagnostics::drawLine(pos_, getSaferPositionNear(e_pos), Colors::White);//Run around it.
+        return unit_->move(getSaferPositionNear(e_pos));
+    }
 
-    if (unit_->move(destination)) {
-        Diagnostics::drawLine(pos_, destination, Colors::White);//Run towards it.
-        Diagnostics::drawLine(pos_, e_pos, Colors::Red);//Run around
+    if (unit_->move(e_pos)) {
+        Diagnostics::drawLine(pos_, e_pos, Colors::Red);//Run towards it
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
@@ -214,7 +215,7 @@ bool Mobility::Retreat_Logic() {
     //Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
     if (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(pos_))) {
-        return moveTo(pos_, getSafestPositionNear(pos_), StoredUnit::Phase::Retreating); //Let's just get out of threat!
+        return moveTo(pos_, getSaferPositionNear(pos_), StoredUnit::Phase::Retreating); //Let's just get out of threat!
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
@@ -266,7 +267,6 @@ bool Mobility::Scatter_Logic(const Position pos)
         problem_pos = pos;
     }
 
-    ;
     if (unit_->move(pos_ - getVectorApproachingPosition(problem_pos)))
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     else
@@ -301,8 +301,7 @@ Position Mobility::getVectorToEmptySurroundField(const Position p) {
         }
 
         // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
-        //bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
-        bool slowExit = dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
+        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(tp) <= 2 ? false : dis(gen) < 1.0 / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(tp));
         //If it's a better tile, switch to it. Exit upon finding a good one.
         if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && isTileApproachable(target_tile) && slowExit) {
             bestTile = target_tile;
@@ -316,7 +315,7 @@ Position Mobility::getVectorToEmptySurroundField(const Position p) {
     return Positions::Origin;
 }
 
-Position Mobility::getSafestPositionNear(const Position p) {
+Position Mobility::getSaferPositionNear(const Position p) {
 
     TilePosition tp = TilePosition(p);
     TilePosition bestTile = TilePositions::Origin;
@@ -340,7 +339,7 @@ Position Mobility::getSafestPositionNear(const Position p) {
 
 
         //If it's a better tile, move there at the end of this.
-        if (new_threat <= base_threat && isMoreOpen(target_tile) /*&& isTileApproachable(target_tile)*/) {
+        if (new_threat <= base_threat && isMoreOpen(target_tile)) {
             int newDist = target_tile.getDistance(TilePosition(p)); //Don't calculate distances you don't have to, but if they're equal and not better don't switch.
 
             if (new_threat == base_threat) {
@@ -590,7 +589,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         TilePosition tileOfInterest = newPath.getTiles()[i];
                         Position spotOfInterest = getCenterOfTile(tileOfInterest);
                         if(caution && CUNYAIModule::currentMapInventory.isTileThreatened(tileOfInterest))
-                            unit_->move(getSafestPositionNear(spotOfInterest));
+                            unit_->move(getSaferPositionNear(spotOfInterest));
                         else
                             unit_->move(spotOfInterest);
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
@@ -613,7 +612,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
                         TilePosition tileOfInterest = TilePosition(cpp[i]->Center());
                         Position spotOfInterest = getCenterOfTile(tileOfInterest);
                         if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(tileOfInterest))
-                            unit_->move(getSafestPositionNear(spotOfInterest));
+                            unit_->move(getSaferPositionNear(spotOfInterest));
                         else
                             unit_->move(spotOfInterest);
                         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
