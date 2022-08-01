@@ -318,7 +318,7 @@ void CombatManager::removeLiablity(const Unit & u)
 bool CombatManager::isGoingToBeExpensiveFight(const UnitInventory & ui, const UnitInventory &ei)
 {
     //return ui.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > ui.unit_map_.size() / 5;
-    return (ui.stock_both_up_and_down_ - ui.future_fap_stock_) > (ei.stock_both_up_and_down_ - ei.future_fap_stock_);
+    return (ui.stock_fighting_total_ - ui.future_fap_stock_) > (ei.stock_fighting_total_ - ei.future_fap_stock_);
 }
 
 bool CombatManager::isWorkerFight(const UnitInventory & friendly, const UnitInventory & enemy)
