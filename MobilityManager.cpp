@@ -250,15 +250,15 @@ Position Mobility::getSurroundingPosition(const Position p) {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    TilePosition bestTile = TilePosition(p); //default action is to do nothing.
-    TilePosition myTile = TilePosition(pos_);
+    TilePosition myTile = TilePosition(pos_); //default action is to do nothing.
+    TilePosition bestTile = TilePosition(p); 
     TilePosition centerOfSpiral = TilePosition(p);
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
+    //only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
     bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile));
     if(CUNYAIModule::currentMapInventory.isInBufferField(myTile) && !slowExit)
-        return getCenterOfTile(bestTile);
+        return getCenterOfTile(myTile);
 
     SpiralOut spiral;
     int n = 15; // how far in one direction should we search for a tile?
