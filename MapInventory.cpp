@@ -1298,7 +1298,7 @@ void MapInventory::createOccupationField() {
     for (auto i = 0; i < 256; i++)
         std::fill(pfOccupation_[i], pfOccupation_[i] + 256, 0);
 
-    for (auto unit : CUNYAIModule::friendly_player_model.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
+    for (auto unit : CUNYAIModule::friendly_player_model.units_.unit_map_) { 
         for (auto x = TilePosition(unit.second.pos_).x; x <= TilePosition(unit.second.pos_).x + unit.second.type_.tileWidth(); x++)
             for (auto y = TilePosition(unit.second.pos_).y; y <= TilePosition(unit.second.pos_).y + unit.second.type_.tileHeight(); y++)
                 pfOccupation_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]+= 2 - 1 * (unit.second.type_.size() == UnitSizeTypes::Small);

@@ -28,7 +28,6 @@ private:
     Position getSaferPositionNear(const Position p);  // Gets unoccupied position at lower level of threat, then sorted by shortest walk from p.
     Position getSurroundingPosition(const Position p);  // Returns a position that meets several critiera - the position falls a safe distance away from P and is less ocupied. Declares the destination tile "occupied" for the moment. Has a limiter in it that could potentially be put elsewhere.  May fail to find, in which case it defaults to getSaferPosition(p), which gurantees a return.
     Position getPositionThatLetsUsAttack(const Position p, const double proportion = 0.90); // Returns a position such that p is just within range.  Using 100% might get some pixel missing.
-    Position getPositionOneTurnCloser(const Position & p);     // Gets a short vector going to a local position that should make us look at the unit just before the spam guard triggers.
 
     Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 

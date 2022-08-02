@@ -20,9 +20,9 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
     if (caution && CUNYAIModule::currentMapInventory.isInSurroundField(TilePosition(pos_)))
         return moveAndUpdate(getSurroundingPosition(pos_), phase); // If you are already in a surround field and need to move somewhere cautiously, you should stay in your surround field.
     if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos)))
-        return moveAndUpdate(getPositionOneTurnCloser(getSurroundingPosition(e_pos)), phase); // getting position one turn closer is for short linear movements - will stop mutas and lings from leaping over threatened areas.
+        return moveAndUpdate(getSurroundingPosition(e_pos), phase); // getting position one turn closer is for short linear movements - will stop mutas and lings from leaping over threatened areas.
     else
-        return moveAndUpdate(getPositionOneTurnCloser(e_pos), phase);
+        return moveAndUpdate(e_pos, phase);
 
 }
 
@@ -198,7 +198,7 @@ bool Mobility::Retreat_Logic() {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
-        return moveTo(pos_, getPositionOneTurnCloser(CUNYAIModule::currentMapInventory.getSafeBase()), StoredUnit::Phase::Retreating);
+        return moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
     }
     else {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
@@ -255,7 +255,9 @@ Position Mobility::getSurroundingPosition(const Position p) {
     TilePosition centerOfSpiral = TilePosition(p);
 
     //Don't move if you're in the buffer around their threatRadus and you're the only one on your tile.
-    if (CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 && CUNYAIModule::currentMapInventory.isInBufferField(myTile))
+    // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
+    bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile));
+    if(CUNYAIModule::currentMapInventory.isInBufferField(myTile) && !slowExit)
         return getCenterOfTile(bestTile);
 
     SpiralOut spiral;
@@ -270,10 +272,8 @@ Position Mobility::getSurroundingPosition(const Position p) {
             continue;
         }
 
-        // only about 1/n the time should you filter out, noting that each unit is . Otherwise all units will filter out. Scheduling is hard.
-        bool slowExit = CUNYAIModule::currentMapInventory.getOccupationField(myTile) <= 2 ? false : dis(gen) < static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile) - 1.0) / static_cast<double>(CUNYAIModule::currentMapInventory.getOccupationField(myTile));
         //If it's a better tile, switch to it. Exit upon finding a good one.
-        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile) && slowExit) {
+        if (CUNYAIModule::currentMapInventory.isInSurroundField(target_tile) && isMoreOpen(target_tile)) {
             bestTile = target_tile;
             // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
             return getCenterOfTile(bestTile); // shift to surround, move to the center of the tile and not to the corners or something strange.
@@ -283,10 +283,6 @@ Position Mobility::getSurroundingPosition(const Position p) {
 
     // Fallback- sometimes the target position is surrounded by threatening forces for 15 tiles or more. Then we just have to get to the safest position?
     if (bestTile == TilePosition(p)) {
-        //Diagnostics::DiagnosticTrack(pos_);
-        //Diagnostics::drawLine(pos_, p, Colors::Red);
-        //Diagnostics::drawCircle(p, Broodwar->getScreenPosition(), 30, Colors::Red);
-        //Diagnostics::DiagnosticText("This unit doesn't want to do ... anything?");
         return getSaferPositionNear(p);
     }
 
@@ -301,10 +297,6 @@ Position Mobility::getPositionThatLetsUsAttack(const Position p, const double pr
     return getCenterOfTile(p - closest_loc_to_permit_attacking);
 }
 
-Position Mobility::getPositionOneTurnCloser(const Position & p)
-{
-    return getCenterOfTile(pos_ + getVectorApproachingPosition(p)); // only one direction for now.
-}
 
 Position Mobility::getSaferPositionNear(const Position p) {
 
@@ -631,13 +623,15 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
 
 bool Mobility::moveAndUpdate(const Position p, const StoredUnit::Phase phase)
 {
+    if (CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(p)))
+        cout << "Why are we moving into a threat?" << endl;
     // lurkers should prepare to move if sent a move command, then we evaluate again later.
     if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove())
         return CUNYAIModule::updateUnitPhase(unit_, phase);
 
     if (unit_->move(p)) {
         Diagnostics::drawLine(pos_, p, Colors::White);//Run towards it
-        CUNYAIModule::currentMapInventory.setSurroundField(TilePosition(p), false); // update the tile as "full"
+        if(!unit_->isFlying()) CUNYAIModule::currentMapInventory.setSurroundField(TilePosition(p), false); // update the tile as "full"
         return CUNYAIModule::updateUnitPhase(unit_, phase); //We have a move. Update the phase and move along.
     }
     else
