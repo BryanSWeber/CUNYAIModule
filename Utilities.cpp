@@ -1777,7 +1777,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
             bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
-            bool may_survive_and_fight = !escaping && u.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+            bool may_survive_and_fight = !escaping && !u.second.isSuicideUnit(); // Retreating units are sunk costs, they cannot inherently be saved.
             total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * u.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             //total_surviving_ui += u.second.stock_value_ * !u.second.unitDeadInFuture() * fighting_may_save;
             total_surviving_ui_up += u.second.stock_value_ * !u.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * may_survive_and_fight;
@@ -1788,7 +1788,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             //bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
-            bool may_survive_and_fight = /*!escaping &&*/ e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are hard to calculate for enemies, they may about-face at any time.
+            bool may_survive_and_fight = /*!escaping &&*/ e.second.isSuicideUnit(); // Retreating units are hard to calculate for enemies, they may about-face at any time.
             total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * e.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
             //total_surviving_ei += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second);
             total_surviving_ei_up += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
@@ -1806,6 +1806,8 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
         return total_dying_ui <= total_dying_ei;
     else
         return total_dying_ui < total_dying_ei;
+
+    //return total_dying_ei > total_surviving_ei && total_dying_ei > total_dying_ui;
 
     //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
     //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
