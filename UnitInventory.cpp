@@ -980,6 +980,11 @@ bool StoredUnit::isLongRangeLock() {
     return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
 }
 
+bool StoredUnit::isSuicideUnit()
+{
+    return type_ == UnitTypes::Terran_Vulture_Spider_Mine || type_ == UnitTypes::Zerg_Scourge || type_ == UnitTypes::Zerg_Infested_Terran;
+}
+
 void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
     double proportion_anticipated_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
