@@ -624,7 +624,7 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
 bool Mobility::moveAndUpdate(const Position p, const StoredUnit::Phase phase)
 {
     if (CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(p)))
-        cout << "Why are we moving into a threat?" << endl;
+        Diagnostics::DiagnosticText("Why are we moving into a threat?");
     // lurkers should prepare to move if sent a move command, then we evaluate again later.
     if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove())
         return CUNYAIModule::updateUnitPhase(unit_, phase);
