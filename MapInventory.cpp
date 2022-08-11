@@ -1332,7 +1332,7 @@ void MapInventory::createThreatField(PlayerModel & enemy_player)
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         if (unit.second.valid_pos_ && CUNYAIModule::checkCanFight(unit.second.type_)) {
-            int threatRange = CUNYAIModule::convertPixelDistanceToTileDistance(max({ static_cast<int>(!CUNYAIModule::isRanged(unit.second.type_) * CUNYAIModule::getProperSpeed(unit.first) * 24 * 2), CUNYAIModule::getExactRange( unit.second.type_) })) + buffer;
+            int threatRange = CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.getThreatRange()) + buffer;
             pfThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(threatRange, static_cast<int>(pfThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
             max_range = max(max_range, threatRange);
         }

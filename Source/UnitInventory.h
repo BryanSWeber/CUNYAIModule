@@ -116,6 +116,7 @@ struct StoredUnit {
     bool isNoLock(); // If the unit has no target. May be broken.
     bool isLongRangeLock(); // if the unit cannot see its target.
     bool isSuicideUnit(); //if the unit kills itself to attack.
+    int getThreatRange(); // How far can the unit "threaten"? Tied to movement speed, range, and suprisingly unit size.
 
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.

@@ -985,6 +985,23 @@ bool StoredUnit::isSuicideUnit()
     return type_ == UnitTypes::Terran_Vulture_Spider_Mine || type_ == UnitTypes::Zerg_Scourge || type_ == UnitTypes::Zerg_Infested_Terran;
 }
 
+int StoredUnit::getThreatRange()
+{
+    //Should only contain StoredUnits
+    //Should not give spidermines 1k range
+    //Should give unburrowed lurkers a real range
+    //Should give bunkers a real range
+    //Should give buffer for fatness of unit, since we are measuring from unit center.
+    int threatRange = static_cast<int>(!CUNYAIModule::isRanged(type_) * CUNYAIModule::getProperSpeed(bwapi_unit_) * 24 * 2 + CUNYAIModule::getExactRange(type_));
+    int biggestDim = max({ type_.dimensionDown(), type_.dimensionUp(), type_.dimensionLeft(), type_.dimensionRight() });
+
+    if (type_ == UnitTypes::Terran_Vulture_Spider_Mine)
+        threatRange = type_.sightRange();
+    if (type_ == UnitTypes::Protoss_Interceptor)
+        threatRange = 64;
+    return threatRange + biggestDim;
+}
+
 void StoredUnit::updateFAPvalue(FAP::FAPUnit<StoredUnit*> fap_unit)
 {
     double proportion_anticipated_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);

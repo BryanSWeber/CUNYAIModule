@@ -178,7 +178,9 @@ void CUNYAIModule::onFrame()
         if (p->isNeutral()) neutral_player = &p;
     }
     neutral_player_model.updateOtherOnFrame(*neutral_player);
+
     //Draw Diagnostics
+    Diagnostics::onFrameWritePlayerModel(friendly_player_model);
     enemy_player_model.units_.drawAllLocations();
     enemy_player_model.units_.drawAllLastSeens();
     neutral_player_model.units_.drawAllLocations();
@@ -224,8 +226,6 @@ void CUNYAIModule::onFrame()
     DiagnosticTimer basesOnFrame;
     basemanager.updateBases();
     basesOnFrame.clockFinish("Bases Updated");
-
-    Diagnostics::onFrameWritePlayerModel(friendly_player_model);
 
     techmanager.updateCanMakeTechExpenditures();
     techmanager.updateOptimalTech();

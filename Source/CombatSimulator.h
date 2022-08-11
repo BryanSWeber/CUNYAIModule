@@ -8,7 +8,7 @@
 #include <random> // C++ base random is low quality.
 
 struct StoredUnit;
-constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
+constexpr int FAP_SIM_DURATION = 24 * 3; // set FAP sim durations.
 
 class CombatSimulator {
 

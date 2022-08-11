@@ -1547,9 +1547,6 @@ bool CUNYAIModule::isRanged(const UnitType u_type) {
     return CUNYAIModule::getExactRange(u_type) > 64;
 }
 
-int CUNYAIModule::getFunctionalRange(const UnitType u_type, const Player owner) {
-    return max(getExactRange(u_type, owner), convertTileDistanceToPixelDistance(1) );
-}
 
 int CUNYAIModule::getFunctionalRange(const Unit u) {
     return max(getExactRange(u), convertTileDistanceToPixelDistance(1) );
@@ -1776,23 +1773,24 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
-            bool may_survive_and_fight = !escaping && !u.second.isSuicideUnit(); // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * u.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            //total_surviving_ui += u.second.stock_value_ * !u.second.unitDeadInFuture() * fighting_may_save;
-            total_surviving_ui_up += u.second.stock_value_ * !u.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * may_survive_and_fight;
-            total_surviving_ui_down += u.second.stock_value_ * !u.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * may_survive_and_fight;
+            //bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
+            //total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * u.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_dying_ui += u.second.future_fap_value_ * !u.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            //total_dying_ui -= (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_);
+            total_surviving_ui += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second);
+            total_surviving_ui_up += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * !u.second.isSuicideUnit();
+            total_surviving_ui_down += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * !u.second.isSuicideUnit();
         }
     }
 
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             //bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
-            bool may_survive_and_fight = /*!escaping &&*/ e.second.isSuicideUnit(); // Retreating units are hard to calculate for enemies, they may about-face at any time.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * e.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
-            //total_surviving_ei += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei_up += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
-            total_surviving_ei_down += e.second.stock_value_ * !e.second.unitDeadInFuture() * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * may_survive_and_fight;
+            total_dying_ei += e.second.future_fap_value_ * !e.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(e.second.type_, ui); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            //total_dying_ei -= (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_);
+            total_surviving_ei += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second);
+            total_surviving_ei_up += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * !e.second.isSuicideUnit();
+            total_surviving_ei_down += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * !e.second.isSuicideUnit();
         }
     }
 
@@ -1802,12 +1800,12 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
     if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
     if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
 
-    if (equality_is_win)
-        return total_dying_ui <= total_dying_ei;
-    else
-        return total_dying_ui < total_dying_ei;
+    //if (equality_is_win)
+    //    return total_dying_ui <= total_dying_ei;
+    //else
+    //    return total_dying_ui < total_dying_ei;
 
-    //return total_dying_ei > total_surviving_ei && total_dying_ei > total_dying_ui;
+    return  total_surviving_ei < total_surviving_ui /*|| total_dying_ei > total_dying_ui*/;
 
     //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
     //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.

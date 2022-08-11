@@ -24,7 +24,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
@@ -173,9 +173,8 @@ public:
     //range in pixels, including upgrades
     static int getExactRange(const Unit u);
     static int getExactRange(const UnitType u_type, const Player owner = Broodwar->self());
-    //Shortcut returns 32 if unit is melee.
-    static int getFunctionalRange(const UnitType u_type, const Player owner);
-    static int getFunctionalRange(const Unit u);
+    static int getFunctionalRange(const Unit u);     //Shortcut returns 32 if unit is melee.
+
 
     //Returns about how far a unit can move+shoot in a FAP sim duration.
     static int getChargableDistance(const Unit &u);

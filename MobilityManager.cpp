@@ -16,11 +16,22 @@ using namespace std;
 
 
 bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phase, const bool caution) {
+    if (caution) {
+        DDALineCheck lineObj;
+        lineObj.initializeDDALine(TilePosition(pos_), TilePosition(e_pos));
+        TilePosition tileInQuestion = TilePosition(pos_);
+        while(tileInQuestion != TilePositions::None){
 
-    if (caution && CUNYAIModule::currentMapInventory.isInSurroundField(TilePosition(pos_)))
-        return moveAndUpdate(getSurroundingPosition(pos_), phase); // If you are already in a surround field and need to move somewhere cautiously, you should stay in your surround field.
-    if (caution && CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(e_pos)))
-        return moveAndUpdate(getSurroundingPosition(e_pos), phase); // getting position one turn closer is for short linear movements - will stop mutas and lings from leaping over threatened areas.
+            Position destination = getCenterOfTile(tileInQuestion);
+            Diagnostics::drawCircle(destination, Broodwar->getScreenPosition(), 32, Colors::Red); //confirm the algo is not broken.
+
+            if (CUNYAIModule::currentMapInventory.isTileThreatened(tileInQuestion)) { // Check if the tile along the path is threatened.
+                return moveAndUpdate(getSurroundingPosition(destination), phase); //  If there is a problem along the way, surround and move along.
+            }
+            tileInQuestion = lineObj.nextTile();
+        }
+        return moveAndUpdate(e_pos, phase);
+    }
     else
         return moveAndUpdate(e_pos, phase);
 

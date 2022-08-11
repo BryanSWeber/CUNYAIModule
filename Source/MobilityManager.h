@@ -92,7 +92,7 @@ protected:
     unsigned leg;
 public:
     int x, y; //read these as output from next, do not modify.
-    SpiralOut() :layer(1), leg(0), x(0), y(0) {}
+    SpiralOut(): layer(1), leg(0), x(0), y(0) {}
     void goNext() {
         switch (leg) {
         case 0: ++x; if (x == layer)  ++leg;                break;
@@ -101,4 +101,34 @@ public:
         case 3: --y; if (-y == layer) { leg = 0; ++layer; }   break;
         }
     }
+};
+
+//Alterantive is Brenshans algorithm
+class DDALineCheck {
+protected:
+    int dy;
+    int dx;
+    int steps;
+    int stepCount;
+    double Xinc;
+    double Yinc;
+    TilePosition tp;
+public:
+    void initializeDDALine(TilePosition start, TilePosition finish) {
+        dy = finish.y - start.y;
+        dx = finish.x - start.x;
+        steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+        Xinc = dx / static_cast<double>(steps);
+        Yinc = dx / static_cast<double>(steps);
+        tp = start;
+        stepCount = 0;
+    };
+    TilePosition nextTile() {
+        tp.x = round(tp.x + Xinc);
+        tp.y = round(tp.y + Yinc);
+        stepCount++;
+        if(stepCount < steps)
+            return tp;
+        return TilePositions::None;
+    };
 };
