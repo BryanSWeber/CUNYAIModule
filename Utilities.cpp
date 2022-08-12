@@ -1344,7 +1344,8 @@ bool CUNYAIModule::checkOccupiedArea(const UnitInventory &ui, const UnitType typ
 }
 
 
-bool CUNYAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
+bool CUNYAIModule::isOnScreen( const Position &pos) {
+    Position screen_pos = Broodwar->getScreenPosition();
     bool inrange_x = screen_pos.x < pos.x && screen_pos.x + 640 > pos.x;
     bool inrange_y = screen_pos.y < pos.y && screen_pos.y + 480 > pos.y;
     return inrange_x && inrange_y;
@@ -1775,30 +1776,30 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
             //bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
             //total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * u.second.unitDeadInFuture() * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            total_dying_ui += u.second.future_fap_value_ * !u.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_dying_ui += sqrt(u.second.stock_value_ - u.second.future_fap_value_) * !u.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             //total_dying_ui -= (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_);
-            total_surviving_ui += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second);
-            total_surviving_ui_up += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * !u.second.isSuicideUnit();
-            total_surviving_ui_down += u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * !u.second.isSuicideUnit();
+            total_surviving_ui += sqrt(u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second));
+            total_surviving_ui_up += sqrt(u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * !u.second.isSuicideUnit());
+            total_surviving_ui_down += sqrt(u.second.future_fap_value_ * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * !u.second.isSuicideUnit());
         }
     }
 
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             //bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
-            total_dying_ei += e.second.future_fap_value_ * !e.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(e.second.type_, ui); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_dying_ei += sqrt(e.second.stock_value_ - e.second.future_fap_value_) * !e.second.isSuicideUnit() * CUNYAIModule::canContributeToFight(e.second.type_, ui); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             //total_dying_ei -= (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_);
-            total_surviving_ei += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei_up += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * !e.second.isSuicideUnit();
-            total_surviving_ei_down += e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * !e.second.isSuicideUnit();
+            total_surviving_ei += sqrt(e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second));
+            total_surviving_ei_up += sqrt(e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * !e.second.isSuicideUnit());
+            total_surviving_ei_down += sqrt(e.second.future_fap_value_ * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * !e.second.isSuicideUnit());
         }
     }
 
     // Calculate if the surviving side can destroy the fodder:
     //if (total_surviving_ei_up > 0) total_dying_ui += ui.stock_air_fodder_;
     //if (total_surviving_ei_down > 0) total_dying_ui += ui.stock_ground_fodder_;
-    if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
-    if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
+    if (total_surviving_ui_up > 0) total_dying_ei += sqrt(ei.stock_air_fodder_);
+    if (total_surviving_ui_down > 0) total_dying_ei += sqrt(ei.stock_ground_fodder_);
 
     //if (equality_is_win)
     //    return total_dying_ui <= total_dying_ei;

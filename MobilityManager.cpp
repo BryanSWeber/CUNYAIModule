@@ -23,12 +23,14 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
         while(tileInQuestion != TilePositions::None){
 
             Position destination = getCenterOfTile(tileInQuestion);
-            Diagnostics::drawCircle(destination, Broodwar->getScreenPosition(), 32, Colors::Red); //confirm the algo is not broken.
+            Diagnostics::drawDot(destination, Broodwar->getScreenPosition(), Colors::White); //confirm the algo is not broken.
 
             if (CUNYAIModule::currentMapInventory.isTileThreatened(tileInQuestion)) { // Check if the tile along the path is threatened.
-                return moveAndUpdate(getSurroundingPosition(destination), phase); //  If there is a problem along the way, surround and move along.
+                Diagnostics::drawDot(destination, Broodwar->getScreenPosition(), Colors::Red); //confirm the algo is not broken.
+                return moveAndUpdate(getSurroundingPosition(destination), phase); //  If there is a problem along the way, dodge the problem.
             }
-            tileInQuestion = lineObj.nextTile();
+
+            tileInQuestion = lineObj.nextTile(); // if there is no problem, continue looking for one along the path.
         }
         return moveAndUpdate(e_pos, phase);
     }
@@ -189,7 +191,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
         Diagnostics::drawLine(pos_, target->getPosition(), color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
-
+    Diagnostics::DiagnosticText("We couldn't shoot someone. Huh.");
     return false; // no target, we got a falsehood.
 }
 
@@ -634,8 +636,8 @@ Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
 
 bool Mobility::moveAndUpdate(const Position p, const StoredUnit::Phase phase)
 {
-    if (CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(p)))
-        Diagnostics::DiagnosticText("Why are we moving into a threat?");
+    if (CUNYAIModule::currentMapInventory.getTileThreat(TilePosition(p)) && (phase != StoredUnit::Phase::Attacking || phase != StoredUnit::Phase::Retreating) )
+        Diagnostics::DiagnosticText("Moving into a threatened tile without attacking or retreating");
     // lurkers should prepare to move if sent a move command, then we evaluate again later.
     if (u_type_ == UnitTypes::Zerg_Lurker && prepareLurkerToMove())
         return CUNYAIModule::updateUnitPhase(unit_, phase);

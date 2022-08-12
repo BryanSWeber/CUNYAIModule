@@ -111,15 +111,15 @@ protected:
     int steps;
     int stepCount;
     double Xinc;
-    double Yinc;
     TilePosition tp;
+    double Yinc;
 public:
     void initializeDDALine(TilePosition start, TilePosition finish) {
         dy = finish.y - start.y;
         dx = finish.x - start.x;
-        steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+        steps = max(abs(dx), abs(dy));
         Xinc = dx / static_cast<double>(steps);
-        Yinc = dx / static_cast<double>(steps);
+        Yinc = dy / static_cast<double>(steps);
         tp = start;
         stepCount = 0;
     };
@@ -127,7 +127,7 @@ public:
         tp.x = round(tp.x + Xinc);
         tp.y = round(tp.y + Yinc);
         stepCount++;
-        if(stepCount < steps)
+        if(stepCount <= steps)
             return tp;
         return TilePositions::None;
     };

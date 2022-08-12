@@ -286,7 +286,7 @@ public:
     static int getThreateningStocks(const Unit & u, const UnitInventory & enemy_loc);
 
     // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
-    static bool isOnScreen(const Position &pos, const Position &screen_pos);
+    static bool isOnScreen(const Position &pos);
     //Returns TRUE if a unit is safe to send an order to. False if the unit has been ordered about recently.
     static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
     //Returns the number of frames a unit has before it needs to be checked again.

@@ -62,20 +62,22 @@ bool CombatManager::combatScript(const Unit & u)
 
         UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
         UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
+
         friend_loc.updateUnitInventorySummary();
         enemy_loc.updateUnitInventorySummary();
 
         StoredUnit* e_closest_demanding_response = CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         StoredUnit* e_closest_threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        //StoredUnit* e_closest_target = CUNYAIModule::getClosestTargetWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         StoredUnit* my_unit = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u);
 
         // Building units (workers) should not be pulled into combat manouvers.
         if (my_unit->phase_ == StoredUnit::Phase::Building || my_unit->phase_ == StoredUnit::Phase::Prebuilding) 
             return false;
 
-        // if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
-        if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInBufferField(u->getTilePosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
-            return mobility.surroundLogic();
+        //// if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
+        //if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInBufferField(u->getTilePosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
+        //    return mobility.surroundLogic();
 
         //If there are potential targets, must fight.
         if (e_closest_demanding_response) {
@@ -99,12 +101,10 @@ bool CombatManager::combatScript(const Unit & u)
                 //resource_loc.updateResourceInventory();
 
                 //bool unit_death_in_moments = StoredUnit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
-                bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
                 //bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
                 //bool worker_time_and_place = false;
                 UnitInventory expanded_friend_loc = friend_loc;
-                bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
-                bool positionedForAttack = CUNYAIModule::currentMapInventory.isInBufferField(TilePosition(u->getPosition()));
+                bool standard_fight_reasons = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
                 if (e_closest_threat && e_closest_threat->type_.isWorker()) {
                     expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                     expanded_friend_loc.updateUnitInventorySummary();
@@ -129,12 +129,12 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                     }
                     break; 
-                case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && positionedForAttack && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) {
-                        mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
-                        return true; // now the lurker should be burrowed.
-                    }
-                    else if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
+                case UnitTypes::Zerg_Lurker: // Lurkers are siege units and should be moved sparingly.
+                    //if (CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && enemy_loc.detector_count_ > 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating)) { //If it isn't trying to fight, but the fight is upon it, it should fight if it has a target.
+                    //    return mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow any lurkers that are not burrowed yet.
+                    //}
+                    //else 
+                    if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
                         return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
@@ -146,7 +146,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 default: // Most simple combat units behave like this:
                     if (standard_fight_reasons) {
-                        StoredUnit* e_closest_melee_threat = CUNYAIModule::getClosestMeleeThreatStored(enemy_loc, u, 450); // maximum sight distance of 352, siege tanks in siege mode are about 382
+                        StoredUnit* e_closest_melee_threat = CUNYAIModule::getClosestMeleeThreatStored(enemy_loc, u, 100); // maximum sight distance of 352, siege tanks in siege mode are about 382
                         int distance_to_ground_threat = 0;
                         if (e_closest_melee_threat) {
                             distance_to_ground_threat = e_closest_melee_threat->pos_.getDistance(u->getPosition());
@@ -332,9 +332,9 @@ int CombatManager::getSearchRadius(const Unit & u)
 {
     int totalSearchRadius = 0;
     if (u->isFlying())
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_air_ + CUNYAIModule::convertTileDistanceToPixelDistance(2);
+        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_air_ + CUNYAIModule::convertTileDistanceToPixelDistance(3);
     else
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_ground_ + CUNYAIModule::convertTileDistanceToPixelDistance(2); //Units have size/mass. Largest shooting unit has size 2 tiles.
+        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_ground_ + CUNYAIModule::convertTileDistanceToPixelDistance(3); //Units have size/mass. Largest shooting unit has size 2 tiles.
 
     totalSearchRadius = max({ CUNYAIModule::friendly_player_model.units_.max_range_, 192, totalSearchRadius });
 

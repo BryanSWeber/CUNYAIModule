@@ -10,7 +10,7 @@
 // This function limits the drawing that needs to be done by the bot.
 void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::isOnScreen(s_pos, Broodwar->getScreenPosition()) || CUNYAIModule::isOnScreen(f_pos, Broodwar->getScreenPosition())) {
+        if (CUNYAIModule::isOnScreen(s_pos) || CUNYAIModule::isOnScreen(f_pos)) {
             Broodwar->drawLineMap(s_pos, f_pos, col);
         }
     }
@@ -51,7 +51,7 @@ void Diagnostics::drawDestination(const UnitInventory &ui, const Position &scree
     // This function limits the drawing that needs to be done by the bot.
 void Diagnostics::drawDot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
+        if (CUNYAIModule::isOnScreen(s_pos)) {
             Broodwar->drawCircleMap(s_pos, 25, col, true);
         }
     }
@@ -60,7 +60,7 @@ void Diagnostics::drawDot(const Position &s_pos, const Position &screen_pos, Col
     // This function limits the drawing that needs to be done by the bot.
 void Diagnostics::drawCircle(const Position &s_pos, const Position &screen_pos, const int &radius, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
+        if (CUNYAIModule::isOnScreen(s_pos)) {
             Broodwar->drawCircleMap(s_pos, radius, col, false);
         }
     }
@@ -73,7 +73,7 @@ void Diagnostics::drawBar(const Position & s_pos, const UnitType uType, const in
         int barAmountEvenAndFull = barAmountFull;
         if (barAmountEvenAndFull % 2 != 0)
             barAmountEvenAndFull++;
-        if (CUNYAIModule::isOnScreen(upper_left, Broodwar->getScreenPosition()) & barAmountComplete != 0) {
+        if (CUNYAIModule::isOnScreen(upper_left) & barAmountComplete != 0) {
             // Draw the background. Shifts it a bit so it's not directly on the unit.
             upper_left.y = upper_left.y + uType.dimensionUp();
             upper_left.x = upper_left.x - uType.dimensionLeft();
@@ -133,7 +133,7 @@ void Diagnostics::printLastOrder(const StoredUnit unit, const Position & screen_
 {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
+        if (CUNYAIModule::isOnScreen(upper_left)) {
             Broodwar->drawTextMap(unit.pos_, unit.order_.c_str());
         }
     }
@@ -161,7 +161,7 @@ void Diagnostics::printPhase(const StoredUnit unit, const Position & screen_pos)
         { StoredUnit::Phase::Building,"Building" },
         { StoredUnit::Phase::Detecting,"Detecting" } };
         Position upper_left = unit.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.phase_ != StoredUnit::Phase::None) {
+        if (CUNYAIModule::isOnScreen(upper_left) && unit.phase_ != StoredUnit::Phase::None) {
             Broodwar->drawTextMap(unit.pos_ + Position(unit.type_.dimensionDown(), unit.type_.dimensionRight()), enum_to_string[unit.phase_].c_str());
         }
     }
@@ -173,7 +173,7 @@ void Diagnostics::drawReservations(const Reservation reservations, const Positio
         for (auto const res : reservations.getReservedBuildings()) {
             Position upper_left = Position(res.first);
             Position lower_right = Position(res.first) + Position(32,32) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations! The +32 is because the drawing is off by a tile.
-            if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
+            if (CUNYAIModule::isOnScreen(upper_left)) {
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
                 Broodwar->drawTextMap(upper_left, res.second.c_str());
             }
@@ -187,7 +187,7 @@ void Diagnostics::drawExpo()
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = pos;
         Position lower_right = pos + Position(32, 32) + Position(Broodwar->self()->getRace().getResourceDepot().width(), Broodwar->self()->getRace().getResourceDepot().height()); //thank goodness I overloaded the + operator for the pathing operations! The +32 is because the drawing is off by a tile.
-        if (CUNYAIModule::isOnScreen(upper_left, Broodwar->getScreenPosition())) {
+        if (CUNYAIModule::isOnScreen(upper_left)) {
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
             Broodwar->drawTextMap(upper_left, Broodwar->self()->getRace().getResourceDepot().c_str());
         }
@@ -207,7 +207,7 @@ void Diagnostics::drawMousePosition()
 void Diagnostics::writeMap(Position pos, string s)
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::isOnScreen(pos, Broodwar->getScreenPosition()))
+        if (CUNYAIModule::isOnScreen(pos))
             Broodwar->drawTextMap(pos, s.c_str());
     }
 }
@@ -543,7 +543,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
     for (auto p = CUNYAIModule::land_inventory.ResourceInventory_.begin(); p != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); ++p) {
-        if (CUNYAIModule::isOnScreen(p->second.pos_, Broodwar->getScreenPosition())) {
+        if (CUNYAIModule::isOnScreen(p->second.pos_)) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
             Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
@@ -584,7 +584,7 @@ void Diagnostics::onFrame()
     //        }
     //    }
     //} // Pretty to look at!
-
+    
     //for (vector<int>::size_type i = 0; i < CUNYAIModule::current_MapInventory.map_out_from_safety_.size(); ++i) {
     //    for (vector<int>::size_type j = 0; j < CUNYAIModule::current_MapInventory.map_out_from_safety_[i].size(); ++j) {
     //        if (CUNYAIModule::current_MapInventory.map_out_from_safety_[i][j] % 25 == 0 && CUNYAIModule::current_MapInventory.map_out_from_safety_[i][j] > 1) {

@@ -1403,7 +1403,7 @@ void MapInventory::DiagnosticField(const double pf[256][256])  const
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }))) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }) + Position(16, 16), "%4.2f", pf[i][j]);
                     }
@@ -1418,7 +1418,7 @@ void MapInventory::DiagnosticField(const int pf[256][256])  const
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }))) {
                     if (pf[i][j] > 0) {
                         Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
                     }
@@ -1433,7 +1433,7 @@ void MapInventory::DiagnosticField(const bool pf[256][256])  const
     if (DIAGNOSTIC_MODE) {
         for (int i = 0; i < 256; ++i) {
             for (int j = 0; j < 256; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }))) {
                     if (pf[i][j]) {
                         Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
                     }
@@ -1449,7 +1449,7 @@ void MapInventory::DiagnosticTile() const
             //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
             for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), Broodwar->getScreenPosition())) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }))) {
                     Broodwar->drawTextMap(getCenterOfTile(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
