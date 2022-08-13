@@ -468,6 +468,7 @@ bool LearningManager::checkValidBuild(BuildEnums b)
         break;
     case Races::Zerg:
         if (b == BuildEnums::Lurker)
+            return false;
         break;
     default: //Random or Unknown.
         break;
