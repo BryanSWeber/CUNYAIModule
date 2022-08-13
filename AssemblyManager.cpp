@@ -1255,7 +1255,6 @@ TilePosition AssemblyManager::updateExpoPosition()
         for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
 
             score_temp = CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelevant.
-
             bool want_more_gas = CUNYAIModule::learnedPlan.inspectCurrentBuild().countTimesInBuildQueue(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
             bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
 

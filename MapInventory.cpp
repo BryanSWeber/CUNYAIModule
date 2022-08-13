@@ -1808,7 +1808,11 @@ int MapInventory::getExpoPositionScore(const Position & p)
     TilePosition centerTile = TilePosition(BWEM::Map::Instance().Center());
     bool centeredBase = BWEM::Map::Instance().GetArea(centerTile) == BWEM::Map::Instance().GetArea(TilePosition(p)); //Centered Bases are hard to defend.
     bool naturalBase = BWEB::Map::getNaturalArea() == BWEM::Map::Instance().GetArea(TilePosition(p)); //Natural bases are easy to defend.
-    return CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(p) - CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(p) - centeredBase * 5000 + naturalBase * 5000; // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
+
+    if (naturalBase && CUNYAIModule::basemanager.getBaseCount() < 2)
+        return INT_MAX;
+    else
+        return CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(p) - CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(p) - centeredBase * 5000 + naturalBase * 5000; // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
 
 }
 

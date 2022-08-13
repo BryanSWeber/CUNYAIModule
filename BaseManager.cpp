@@ -250,6 +250,8 @@ void BaseManager::displayBaseData()
         for (auto b : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
             Broodwar->drawTextMap(Position(b) + Position(5, 80), "BaseScore: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b)));
             Broodwar->drawTextMap(Position(b) + Position(5, 90), "BaseDist: %d", CUNYAIModule::assemblymanager.getBuildingRelatedGroundDistance(Position(b), BWEB::Map::getMainPosition()));
+            Broodwar->drawTextMap(Position(b) + Position(5, 100), "BaseGases: %d", CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(b)).countLocalGeysers());
+
         }
     }
 }
