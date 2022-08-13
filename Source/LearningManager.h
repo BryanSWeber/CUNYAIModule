@@ -72,6 +72,7 @@ public:
 
     void definePremadeBuildOrders(); // Creates the builds and stuffs them into myBuilds_.
     void parseLearningFile(); // Reads a learning file appropriate for this game and stores the info in gameHistory_.
+    bool checkValidBuild(BuildEnums b); // returns false if opponent is not a good match for this build.
     void selectDefaultBuild(); //Set Build if no opponent is recognized or no history exists.
     void selectBestBuild(); //Using history, determine superior build.
 };

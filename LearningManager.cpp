@@ -71,7 +71,7 @@ void LearningManager::onEnd(bool isWinner)
     //If your Build Order didn't work and the bot is broken, let's write that specifically.
     if (!currentBuild_.isEmptyBuildOrder()) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(CUNYAIModule::learnedPlan.getWriteDir() + CUNYAIModule::learnedPlan.getBuildName() + "BuildOrderFailures.txt", ios_base::app);
+        output.open(getWriteDir() + getBuildName() + "BuildOrderFailures.txt", ios_base::app);
         string print_value = "";
 
         print_value += currentBuild_.getNext().getResearch().c_str();
@@ -454,6 +454,28 @@ void LearningManager::parseLearningFile()
     myFile.close();
 }
 
+bool LearningManager::checkValidBuild(BuildEnums b)
+{
+    //Mark all cases where the build is not ok.
+    switch (Broodwar->enemy()->getRace()) {
+    case Races::Protoss:
+        if (b == BuildEnums::OneBaseMuta)
+            return false;
+        break;
+    case Races::Terran:
+        if (b == BuildEnums::OneBaseMuta)
+            return false;
+        break;
+    case Races::Zerg:
+        if (b == BuildEnums::Lurker)
+        break;
+    default: //Random or Unknown.
+        break;
+    }
+
+    return true;
+}
+
 
 void LearningManager::selectDefaultBuild() {
     switch (Broodwar->enemy()->getRace() ) {
@@ -500,7 +522,7 @@ void LearningManager::selectBestBuild()
     double bestScore = storedUCB.find(bestBuild)->second;
 
     for (auto &s : storedUCB) {
-        if (s.second > bestScore) {
+        if (s.second > bestScore && checkValidBuild(s.first)) {
             bestScore = s.second;
             bestBuild = s.first;
             Diagnostics::DiagnosticText("New best Build:", getBuildNameFromEnum(bestBuild) );
