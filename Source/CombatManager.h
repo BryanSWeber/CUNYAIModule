@@ -18,6 +18,8 @@ private:
     static UnitInventory scout_squad_;     //Squad scouts
     UnitInventory detector_squad_;     //Squad detects
     static bool getMacroCombatReadiness();  // Evaluate advance/retreat conditions based on macro conditions.
+    bool checkVoteGoIn(const UnitInventory u) const; //Checks if the mass of units are attacking.
+
 
 public:
     bool grandStrategyScript(const Unit & u);     // Runs all movement script for nonworker units. Priortizes combat when needed and pathing otherwise.
@@ -29,6 +31,7 @@ public:
     static bool liabilitiesScript(const Unit &u); // Runs liability units towards static defence.
     static bool pathingScript(const Unit &u);      // Runs a basic pathing script. Home if concerned, out if safe.
     static bool checkNeedMoreWorkersToHold(const UnitInventory & friendly, const UnitInventory & enemy); // Returns true if we are using enough workers to defend some rush.
+
 
     //Grouping for inventories, mostly unused.
     bool addAntiAir(const Unit &u);      //Adds to appropriate inventory. May move differently.

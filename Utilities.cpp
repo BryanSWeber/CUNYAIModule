@@ -1806,7 +1806,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
     //else
     //    return total_dying_ui < total_dying_ei;
 
-    return  total_surviving_ei < total_surviving_ui /*|| total_dying_ei > total_dying_ui*/;
+    return  total_surviving_ei < total_surviving_ui || total_dying_ei > total_dying_ui;
 
     //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
     //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.

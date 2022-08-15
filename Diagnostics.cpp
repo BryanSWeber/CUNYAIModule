@@ -433,10 +433,6 @@ void Diagnostics::onFrameWritePlayerModel(PlayerModel &pmodel)
             Diagnostics::DiagnosticWrite("Players upgrades are: %s", i.first.c_str());
     }
 
-    if (Broodwar->getFrameCount() % (24 * 60) == 0 && RIP_REPLAY) {
-        pmodel.units_.printUnitInventory(Broodwar->self());
-        pmodel.casualties_.printUnitInventory(Broodwar->self(), "casualties");
-    }
 }
 
 void Diagnostics::onFrame()
@@ -744,7 +740,7 @@ void Diagnostics::printUnitEventDetails(BWAPI::Event e)
     if constexpr (DIAGNOSTIC_MODE) {
         std::ofstream fout;  // Create Object of Ofstream
         std::ifstream fin;
-        std::string filename = prettyRepName() + static_cast<std::string>("-Events") + static_cast<std::string>(".csv");
+        std::string filename = prettyRepName() + static_cast<std::string>("'") + static_cast<std::string>(".csv");
 
         fin.open(filename);
         std::string line;

@@ -24,6 +24,12 @@ using namespace Filter;
 using namespace std;
 
 
+void LearningManager::dumpStatus()
+{
+    CUNYAIModule::friendly_player_model.units_.printUnitInventory(Broodwar->self(), Broodwar->mapFileName());
+    CUNYAIModule::friendly_player_model.casualties_.printUnitInventory(Broodwar->self(), Broodwar->mapFileName() + "casualties");
+}
+
 void LearningManager::onStart()
 {
     // File extension including our race initial;
@@ -90,6 +96,8 @@ void LearningManager::onEnd(bool isWinner)
         if (readFile)
             copyFile(getWriteDir() + gameInfoExtension_, getReadDir() + gameInfoExtension_);
     }
+
+    dumpStatus();
 }
 
 void LearningManager::definePremadeBuildOrders()

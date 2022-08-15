@@ -93,14 +93,12 @@ int main(int argc, const char* argv[])
                     break;
                 case EventType::UnitCreate:
                     myBot->onUnitCreate(e.getUnit());
-                    Diagnostics::printUnitEventDetails(e);
                     break;
                 case EventType::UnitDestroy:
                     myBot->onUnitDestroy(e.getUnit());
                     break;
                 case EventType::UnitMorph:
                     myBot->onUnitMorph(e.getUnit());
-                    Diagnostics::printUnitEventDetails(e);
                     break;
                 case EventType::UnitRenegade:
                     myBot->onUnitRenegade(e.getUnit());
@@ -110,7 +108,6 @@ int main(int argc, const char* argv[])
                     break;
                 case EventType::UnitComplete:
                     myBot->onUnitComplete(e.getUnit());
-                    Diagnostics::printUnitEventDetails(e);
                     break;
                 default:
                     myBot->onFrame(); // has catch in it for when it needs to run.

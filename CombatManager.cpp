@@ -76,8 +76,12 @@ bool CombatManager::combatScript(const Unit & u)
             return false;
 
         //// if you are in the extra wide buffer and collecting forces, surround/spread. Should lead to smoother entry/exit.
-        //if (isGoingToBeExpensiveFight(friend_loc, enemy_loc) && !my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && CUNYAIModule::currentMapInventory.isInBufferField(u->getTilePosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding || my_unit->phase_ == StoredUnit::Phase::Retreating))
-        //    return mobility.surroundLogic();
+        if (!my_unit->type_.isWorker() && CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc) && !checkVoteGoIn(friend_loc)) {
+            if (CUNYAIModule::currentMapInventory.isTileThreatened(TilePosition(my_unit->pos_)))
+                return mobility.Retreat_Logic();
+            else
+                return mobility.surroundLogic();
+        }
 
         //If there are potential targets, must fight.
         if (e_closest_demanding_response) {
@@ -244,6 +248,19 @@ bool CombatManager::checkNeedMoreWorkersToHold(const UnitInventory &friendly, co
     return bare_minimum_defenders && check_enough_mining;
 }
 
+bool CombatManager::checkVoteGoIn(const UnitInventory u) const
+{
+    double attackReady = 0; 
+    double notAttacking = 0;
+
+    for (auto unit : u.unit_map_)
+        if (unit.second.phase_ == StoredUnit::Phase::Attacking || unit.second.phase_ == StoredUnit::Phase::Surrounding || unit.second.phase_ == StoredUnit::Phase::Retreating)
+            attackReady += pow(unit.second.current_stock_value_, 2);
+        else 
+            notAttacking += pow(unit.second.current_stock_value_, 2);
+    return attackReady > notAttacking;
+}
+
 bool CombatManager::addAntiAir(const Unit & u)
 {
     if (anti_air_squad_.addStoredUnit(u)) {
@@ -330,15 +347,7 @@ bool CombatManager::isWorkerFight(const UnitInventory & friendly, const UnitInve
 
 int CombatManager::getSearchRadius(const Unit & u)
 {
-    int totalSearchRadius = 0;
-    if (u->isFlying())
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_air_ + CUNYAIModule::convertTileDistanceToPixelDistance(3);
-    else
-        totalSearchRadius += CUNYAIModule::enemy_player_model.units_.max_range_ground_ + CUNYAIModule::convertTileDistanceToPixelDistance(3); //Units have size/mass. Largest shooting unit has size 2 tiles.
-
-    totalSearchRadius = max({ CUNYAIModule::friendly_player_model.units_.max_range_, 192, totalSearchRadius });
-
-    return totalSearchRadius;
+    return max({ CUNYAIModule::friendly_player_model.units_.max_threat_ + CUNYAIModule::convertTileDistanceToPixelDistance(BUFFER_SIZE), 192 });
 }
 
 void CombatManager::onFrame()

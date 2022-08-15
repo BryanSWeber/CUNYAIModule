@@ -55,6 +55,7 @@ private:
     string learningExtension_;
     string gameInfoExtension_;
 
+    void dumpStatus(); //For training and game results against UMS maps.
 public:
 
     // Key Operations

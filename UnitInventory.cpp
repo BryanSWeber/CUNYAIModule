@@ -539,6 +539,7 @@ void UnitInventory::updateUnitInventorySummary() {
     max_range_ = 0;
     max_cooldown_ = 0;
     max_speed_ = 0;
+    max_threat_ = 0;
     worker_count_ = 0;
     volume_ = 0;
     detector_count_ = 0;
@@ -614,6 +615,7 @@ void UnitInventory::updateUnitInventorySummary() {
                 max_range_air_ = (range_temp > max_range_air_ && up_gun) ? range_temp : max_range_air_;
                 max_range_ground_ = (range_temp > max_range_ground_ && down_gun) ? range_temp : max_range_ground_; //slightly faster if-else conditions.
                 max_speed_ = max(static_cast<int>(CUNYAIModule::getProperSpeed(u_iter.second.type_)), max_speed_);
+                max_threat_ = max(max_threat_, u_iter.second.getThreatRange());
             }
             else {
                 resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
@@ -657,16 +659,13 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    if ( (csv_length > 500 && player != Broodwar->self()) || Broodwar->elapsedTime() > (60 * 24) )
-        return;  // let's not flood the world
-
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
         output.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios_base::app);
         output << "GameSeed" << ",";
         output << "GameTime" << ",";
         for (auto i : UnitTypes::allUnitTypes()) {
-            if (!i.isNeutral() && !i.isHero() && !i.isSpecialBuilding() && !i.isResourceContainer() && !i.isPowerup() && !i.isBeacon() && i.getRace() != Races::None) {
+            if (!i.isNeutral() && !i.isHero() && !i.isSpecialBuilding() && !i.isResourceContainer() && !i.isPowerup() && !i.isBeacon() && i.getRace() == Broodwar->self()->getRace()) {
                 output << i.c_str() << ",";
             }
         }
@@ -985,7 +984,7 @@ bool StoredUnit::isSuicideUnit()
     return type_ == UnitTypes::Terran_Vulture_Spider_Mine || type_ == UnitTypes::Zerg_Scourge || type_ == UnitTypes::Zerg_Infested_Terran;
 }
 
-int StoredUnit::getThreatRange()
+int StoredUnit::getThreatRange() const
 {
     //Should only contain StoredUnits
     //Should not give spidermines 1k range
