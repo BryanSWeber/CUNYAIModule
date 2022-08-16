@@ -347,7 +347,9 @@ bool CombatManager::isWorkerFight(const UnitInventory & friendly, const UnitInve
 
 int CombatManager::getSearchRadius(const Unit & u)
 {
-    return max({ CUNYAIModule::friendly_player_model.units_.max_threat_ + CUNYAIModule::convertTileDistanceToPixelDistance(BUFFER_SIZE), 192 });
+    return max({ CUNYAIModule::friendly_player_model.units_.max_threat_ + CUNYAIModule::convertTileDistanceToPixelDistance(BUFFER_SIZE), 
+                CUNYAIModule::enemy_player_model.units_.max_threat_ + CUNYAIModule::convertTileDistanceToPixelDistance(BUFFER_SIZE),
+                192 });
 }
 
 void CombatManager::onFrame()
