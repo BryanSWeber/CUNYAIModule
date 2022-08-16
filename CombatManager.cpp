@@ -253,11 +253,12 @@ bool CombatManager::checkVoteGoIn(const UnitInventory u) const
     double attackReady = 0; 
     double notAttacking = 0;
 
-    for (auto unit : u.unit_map_)
+    for (auto unit : u.unit_map_) {
         if (unit.second.phase_ == StoredUnit::Phase::Attacking || unit.second.phase_ == StoredUnit::Phase::Surrounding || unit.second.phase_ == StoredUnit::Phase::Retreating)
             attackReady += pow(unit.second.current_stock_value_, 2);
-        else 
+        else if (unit.second.phase_ == StoredUnit::Phase::PathingHome || unit.second.phase_ == StoredUnit::Phase::PathingOut)
             notAttacking += pow(unit.second.current_stock_value_, 2);
+    }
     return attackReady > notAttacking;
 }
 

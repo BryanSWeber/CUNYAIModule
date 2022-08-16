@@ -28,6 +28,8 @@ void LearningManager::dumpStatus()
 {
     CUNYAIModule::friendly_player_model.units_.printUnitInventory(Broodwar->self(), Broodwar->mapFileName());
     CUNYAIModule::friendly_player_model.casualties_.printUnitInventory(Broodwar->self(), Broodwar->mapFileName() + "casualties");
+    CUNYAIModule::enemy_player_model.casualties_.printUnitInventory(Broodwar->self(), Broodwar->mapFileName() + "kills");
+
 }
 
 void LearningManager::onStart()
