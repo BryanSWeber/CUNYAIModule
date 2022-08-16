@@ -410,8 +410,8 @@ void CUNYAIModule::onFrame()
     onFrameWritePlayerModel(friendly_player_model, "friendly");
     onFrameWritePlayerModel(enemy_player_model, "enemy");
 
-    if (Broodwar->getFrameCount() >= 7200 && RESIGN_MODE)
-        Broodwar->leaveGame();
+    //if (Broodwar->getFrameCount() >= 7200 && RESIGN_MODE)
+    //    Broodwar->leaveGame();
 
     onFrameClock.clockFinish("On Frame Total");
 } // closure: Onframe
