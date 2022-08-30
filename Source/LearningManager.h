@@ -24,6 +24,7 @@ struct History {
     int firstAirFrame;
     int firstDetectFrame;
     int gameDuration;
+    bool wasRushed;
 };
 
 

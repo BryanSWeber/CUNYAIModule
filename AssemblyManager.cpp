@@ -1060,34 +1060,6 @@ void AssemblyManager::clearSimulationHistory()
     assemblyCycle_.insert({ UnitTypes::None, 0 });
 }
 
-void AssemblyManager::planDefensiveWalls()
-{
-    //vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
-    //vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
-    //for (auto &area : BWEM::Map::Instance().Areas()) {
-    //    // Only make walls at gas bases that aren't starting bases
-    //    bool invalidBase = false;
-    //    for (auto &base : area.Bases()) {
-    //        if (base.Starting())
-    //            invalidBase = true;
-    //    }
-    //    if (invalidBase)
-    //        continue;
-
-    //    const BWEM::ChokePoint * bestChoke = nullptr;
-    //    double distBest = DBL_MAX;
-    //    for (auto &cp : area.ChokePoints()) {
-    //        auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
-    //        if (dist < distBest) {
-    //            distBest = dist;
-    //            bestChoke = cp;
-    //        }
-    //    }
-    //    BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
-    //}
-    BWEB::Walls::createZSimCity();
-}
-
 bool AssemblyManager::canMakeCUNY(const UnitType & type, const bool can_afford, const Unit & builder)
 {
     // Error checking

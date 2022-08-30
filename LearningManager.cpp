@@ -75,6 +75,7 @@ void LearningManager::onEnd(bool isWinner)
         << CUNYAIModule::enemy_player_model.getFirstAirSeen() << ','
         << CUNYAIModule::enemy_player_model.getFirstDetectorSeen() << ','
         << Broodwar->elapsedTime() << ','
+        << CUNYAIModule::rushManager.getRushDetected() << ','
         << endl;
 
     //If your Build Order didn't work and the bot is broken, let's write that specifically.
@@ -458,6 +459,8 @@ void LearningManager::parseLearningFile()
         row.firstDetectFrame = std::stoi(rowHolder);
         getline(myFile, rowHolder, ',');
         row.gameDuration = std::stoi(rowHolder);
+        getline(myFile, rowHolder, ',');
+        row.wasRushed = std::stoi(rowHolder);
         //Now that all files have been added, append this to the output vector.
         gameHistory_.push_back(row);
     }

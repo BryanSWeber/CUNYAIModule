@@ -88,7 +88,6 @@ public:
     //static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
     map<int, TilePosition> addClosestBlockWithSizeOrLargerWithinWall(const UnitType & building, const TilePosition & tp); 
     map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
-    static void planDefensiveWalls(); // Creates a Z-sim city at the natural.
 
     //Building assembly functions
     TilePosition updateExpoPosition(); // Returns the TilePosition of the next Expo we want to make. Is determined without considering cost first, which should evade issues of sending drones on long trips so we can "afford" the expo upon arrival.

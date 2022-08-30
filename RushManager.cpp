@@ -68,12 +68,6 @@ void RushManager::doRushResponse()
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
@@ -87,12 +81,6 @@ void RushManager::doRushResponse()
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
             CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);

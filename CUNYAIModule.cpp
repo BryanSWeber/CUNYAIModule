@@ -81,7 +81,7 @@ void CUNYAIModule::onStart()
     bool startingLocationsOK = bwemMap.FindBasesForStartingLocations();
 
     BWEB::Map::onStart();
-    BWEB::Stations::findStations();
+    //BWEB::Stations::findStations();
     BWEB::Walls::createZSimCity();
     //assemblymanager.getDefensiveWalls(); //needs work.
     BWEB::Blocks::findBlocks();
