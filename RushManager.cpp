@@ -30,7 +30,7 @@ RushManager::RushManager()
         { UnitTypes::Protoss_Zealot, {4, clockToFrames(3,30) } },
         { UnitTypes::Terran_Marine, {4, clockToFrames(3,30) } },
         { UnitTypes::Zerg_Spawning_Pool, {1, clockToFrames(2,15) } },
-        { UnitTypes::Protoss_Gateway, {2, clockToFrames(2,30) } },
+        { UnitTypes::Protoss_Gateway, {2, clockToFrames(2,15) } },
         { UnitTypes::Terran_Barracks, {2, clockToFrames(3,0) } }
     }; // unit, <count, time in frames>
 
