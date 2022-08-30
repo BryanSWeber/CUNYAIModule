@@ -73,7 +73,7 @@ void Diagnostics::drawBar(const Position & s_pos, const UnitType uType, const in
         int barAmountEvenAndFull = barAmountFull;
         if (barAmountEvenAndFull % 2 != 0)
             barAmountEvenAndFull++;
-        if (CUNYAIModule::isOnScreen(upper_left) & barAmountComplete != 0) {
+        if (CUNYAIModule::isOnScreen(upper_left) && barAmountComplete != 0) {
             // Draw the background. Shifts it a bit so it's not directly on the unit.
             upper_left.y = upper_left.y + uType.dimensionUp();
             upper_left.x = upper_left.x - uType.dimensionLeft();
@@ -183,7 +183,7 @@ void Diagnostics::drawReservations(const Reservation reservations, const Positio
 
 void Diagnostics::drawExpo()
 {
-    Position pos = Position(CUNYAIModule::assemblymanager.getExpoPosition());
+    Position pos = Position(CUNYAIModule::assemblyManager.getExpoPosition());
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = pos;
         Position lower_right = pos + Position(32, 32) + Position(Broodwar->self()->getRace().getResourceDepot().width(), Broodwar->self()->getRace().getResourceDepot().height()); //thank goodness I overloaded the + operator for the pathing operations! The +32 is because the drawing is off by a tile.
@@ -359,10 +359,10 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
         another_row_of_printing++;
     }
     Broodwar->drawTextScreen(screen_x, screen_y + 40 + another_row_of_printing * 10, "Excess Resources");  //
-    Broodwar->drawTextScreen(screen_x, screen_y + 50 + another_row_of_printing * 10, "Min: %d", CUNYAIModule::my_reservation.getExcessMineral() );  //
-    Broodwar->drawTextScreen(screen_x, screen_y + 60 + another_row_of_printing * 10, "Gas: %d", CUNYAIModule::my_reservation.getExcessGas());  //
-    Broodwar->drawTextScreen(screen_x, screen_y + 70 + another_row_of_printing * 10, "Supply: %d", CUNYAIModule::my_reservation.getExcessSupply()/2);  // Conver to the human scale.
-    Broodwar->drawTextScreen(screen_x, screen_y + 80 + another_row_of_printing * 10, "Larva: %d", CUNYAIModule::my_reservation.getExcessLarva());  //
+    Broodwar->drawTextScreen(screen_x, screen_y + 50 + another_row_of_printing * 10, "Min: %d", CUNYAIModule::myReservation.getExcessMineral() );  //
+    Broodwar->drawTextScreen(screen_x, screen_y + 60 + another_row_of_printing * 10, "Gas: %d", CUNYAIModule::myReservation.getExcessGas());  //
+    Broodwar->drawTextScreen(screen_x, screen_y + 70 + another_row_of_printing * 10, "Supply: %d", CUNYAIModule::myReservation.getExcessSupply()/2);  // Conver to the human scale.
+    Broodwar->drawTextScreen(screen_x, screen_y + 80 + another_row_of_printing * 10, "Larva: %d", CUNYAIModule::myReservation.getExcessLarva());  //
 
 }
 
@@ -394,20 +394,20 @@ void Diagnostics::writeMacroIssues()
         DiagnosticWrite("Frame: %d", Broodwar->getFrameCount());
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-            int u_count = CUNYAIModule::countUnits(((UnitType)i), CUNYAIModule::my_reservation);
+            int u_count = CUNYAIModule::countUnits(((UnitType)i), CUNYAIModule::myReservation);
             if (u_count > 0) {
                 DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
             }
         }
-        for (auto const r : CUNYAIModule::my_reservation.getReservedUpgrades()) {
+        for (auto const r : CUNYAIModule::myReservation.getReservedUpgrades()) {
             DiagnosticWrite("Reserved Upgrades:");  //
             DiagnosticWrite("%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
         }
         DiagnosticWrite("Excess Resources/Current Resources");  //
-        DiagnosticWrite("Min: %d/%d", CUNYAIModule::my_reservation.getExcessMineral(), Broodwar->self()->minerals());  //
-        DiagnosticWrite("Gas: %d/%d", CUNYAIModule::my_reservation.getExcessGas(), Broodwar->self()->gas());  //
-        DiagnosticWrite("Supply: %d/%d", CUNYAIModule::my_reservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
-        DiagnosticWrite("Larva: %d/%d", CUNYAIModule::my_reservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
+        DiagnosticWrite("Min: %d/%d", CUNYAIModule::myReservation.getExcessMineral(), Broodwar->self()->minerals());  //
+        DiagnosticWrite("Gas: %d/%d", CUNYAIModule::myReservation.getExcessGas(), Broodwar->self()->gas());  //
+        DiagnosticWrite("Supply: %d/%d", CUNYAIModule::myReservation.getExcessSupply() / 2, Broodwar->self()->supplyTotal() / 2);  // Conver to the human scale.
+        DiagnosticWrite("Larva: %d/%d", CUNYAIModule::myReservation.getExcessLarva(), CUNYAIModule::countUnits(UnitTypes::Zerg_Larva));  //
 
         DiagnosticWrite("Econ : %s, D.Econ:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::EconAlpha));  //
         DiagnosticWrite("Army : %s, D.Army:  %4.2f", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE", CUNYAIModule::friendly_player_model.spending_model_.getDeriviative(BuildParameterNames::ArmyAlpha));  //
@@ -446,10 +446,10 @@ void Diagnostics::onFrame()
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
     //Print_Test_Case(0, 50);
-    Print_Reservations(0, 190, CUNYAIModule::my_reservation);
+    Print_Reservations(0, 190, CUNYAIModule::myReservation);
     //enemy_player_model.Print_Average_CD(500, 170);
     if (CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
-        CUNYAIModule::assemblymanager.Print_Assembly_FAP_Cycle(500, 170);
+        CUNYAIModule::assemblyManager.Print_Assembly_FAP_Cycle(500, 170);
         //CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //Print_UnitInventory(500, 170, enemy_player_model.units_); // actual units on ground.
         //Print_ResearchInventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
@@ -458,10 +458,10 @@ void Diagnostics::onFrame()
         Print_Build_Order_Remaining(500, 170, CUNYAIModule::learnedPlan.inspectCurrentBuild());
     }
 
-    Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::land_inventory.countLocalMinPatches());
-    Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::workermanager.getGasWorkers());  //
-    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::land_inventory.countLocalMiners()); // This a misuse of local miners.
-    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workermanager.getGasWorkers(), CUNYAIModule::land_inventory.countLocalGasCollectors()); // this is a misuse of local gas.
+    Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::landInventory.countLocalMinPatches());
+    Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", CUNYAIModule::workerManager.getMinWorkers(), CUNYAIModule::workerManager.getGasWorkers());  //
+    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workerManager.getMinWorkers(), CUNYAIModule::landInventory.countLocalMiners()); // This a misuse of local miners.
+    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workerManager.getGasWorkers(), CUNYAIModule::landInventory.countLocalGasCollectors()); // this is a misuse of local gas.
 
     Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
     Broodwar->drawTextScreen(125, 10, "Army Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
@@ -469,8 +469,8 @@ void Diagnostics::onFrame()
 
     //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
     Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", CUNYAIModule::gas_starved ? "TRUE" : "FALSE");
-    Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", CUNYAIModule::workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
-    Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", CUNYAIModule::workermanager.checkExcessGasCapacity() ? "TRUE" : "FALSE");  //
+    Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", CUNYAIModule::workerManager.checkGasOutlet() ? "TRUE" : "FALSE");  //
+    Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", CUNYAIModule::workerManager.checkExcessGasCapacity() ? "TRUE" : "FALSE");  //
 
 
     //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlnYPerCapita()); //
@@ -538,7 +538,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 150, upgrade_string);
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-    for (auto p = CUNYAIModule::land_inventory.ResourceInventory_.begin(); p != CUNYAIModule::land_inventory.ResourceInventory_.end() && !CUNYAIModule::land_inventory.ResourceInventory_.empty(); ++p) {
+    for (auto p = CUNYAIModule::landInventory.ResourceInventory_.begin(); p != CUNYAIModule::landInventory.ResourceInventory_.end() && !CUNYAIModule::landInventory.ResourceInventory_.empty(); ++p) {
         if (CUNYAIModule::isOnScreen(p->second.pos_)) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.

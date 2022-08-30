@@ -99,7 +99,7 @@ bool CombatManager::combatScript(const Unit & u)
             //If we can fight, our unit type will determine our behavior.
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
 
-                ResourceInventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 256));
+                ResourceInventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::landInventory, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 256));
                 UnitInventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_demanding_response->pos_, max(enemy_loc.max_range_ground_, 200));
                 trigger_loc.updateUnitInventorySummary();
                 //resource_loc.updateResourceInventory();
@@ -120,8 +120,8 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.ResourceInventory_.empty()) {
-                        bool unit_dead_next_check = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->unitDeadInFuture(14);
-                        if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
+                        bool unit_dead_next_check = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->unitDeadInFuture();
+                        if (CUNYAIModule::baseManager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
                             return mobility.Retreat_Logic();// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
                             return mobility.Tactical_Logic(enemy_loc, friend_loc, search_radius, Colors::White);
@@ -187,7 +187,7 @@ bool CombatManager::scoutScript(const Unit & u)
             }
         }
     }
-    else if(CUNYAIModule::basemanager.getBaseCount() > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
+    else if(CUNYAIModule::baseManager.getBaseCount() > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
             StoredUnit* closest = CUNYAIModule::getClosestStoredLinear(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2, UnitTypes::AllUnits, UnitTypes::None);
             if (closest)
@@ -203,9 +203,9 @@ int CombatManager::scoutCount() {
 };
 
 int CombatManager::scoutPosition(const Unit & u) {
-    auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end())
-        return distance(CUNYAIModule::combat_manager.scout_squad_.unit_map_.begin(), found_item);
+    auto found_item = CUNYAIModule::combatManager.scout_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combatManager.scout_squad_.unit_map_.end())
+        return distance(CUNYAIModule::combatManager.scout_squad_.unit_map_.begin(), found_item);
     return 0;
 }
 
@@ -315,15 +315,15 @@ void CombatManager::removeScout(const Unit & u)
 
 bool CombatManager::isScout(const Unit & u)
 {
-    auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end()) return true;
+    auto found_item = CUNYAIModule::combatManager.scout_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combatManager.scout_squad_.unit_map_.end()) return true;
     return false;
 }
 
 bool CombatManager::isLiability(const Unit & u)
 {
-    auto found_item = CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.end()) return true;
+    auto found_item = CUNYAIModule::combatManager.liabilities_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combatManager.liabilities_squad_.unit_map_.end()) return true;
     return false;
 }
 

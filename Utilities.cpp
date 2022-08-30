@@ -418,7 +418,7 @@ int CUNYAIModule::countUnits(const UnitType &type, bool reservations_included)
 {
     int count = 0;
     if (reservations_included) {
-        count = countUnits(type, CUNYAIModule::my_reservation);
+        count = countUnits(type, CUNYAIModule::myReservation);
     }
 
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
@@ -1710,7 +1710,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        have_to_save = CUNYAIModule::land_inventory.countLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::basemanager.getBaseCount() == 1;
+        have_to_save = CUNYAIModule::landInventory.countLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::baseManager.getBaseCount() == 1;
     }
 
 
@@ -1720,7 +1720,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv) {
 
-    bool desperate_for_minerals = CUNYAIModule::land_inventory.countLocalMinPatches() < 6;
+    bool desperate_for_minerals = CUNYAIModule::landInventory.countLocalMinPatches() < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }

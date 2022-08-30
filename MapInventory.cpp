@@ -84,7 +84,7 @@ void MapInventory::onFrame()
     createThreatBufferField(CUNYAIModule::enemy_player_model);
     createOccupationField();
     createSurroundField(CUNYAIModule::enemy_player_model);
-    DiagnosticThreatTiles();
+    DiagnosticSurroundTiles();
 
 
     if (Broodwar->getFrameCount() == 0) {
@@ -680,7 +680,7 @@ int MapInventory::getRadialDistanceOutFromHome(const Position A) const
 //        }
 //    }
 //
-//    for (auto & u : CUNYAIModule::land_inventory.ResourceInventory_) {
+//    for (auto & u : CUNYAIModule::landInventory.ResourceInventory_) {
 //        // mark the building's current position.
 //        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
 //        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
@@ -949,7 +949,7 @@ Position MapInventory::getBaseWithMostSurvivors(const bool &friendly, const bool
     int current_best_surviving = 0; // surviving units must be bigger than 0 or else it's not really a base.
     int sample_surviving = 0;
     int sample_ground_fodder = 0;
-    for (auto b : CUNYAIModule::basemanager.getBases()) {
+    for (auto b : CUNYAIModule::baseManager.getBases()) {
         UnitInventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
         UnitInventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, b.first);
         UnitInventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
@@ -982,7 +982,7 @@ Position MapInventory::getBasePositionNearest(const Position &p) const
 {
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
-    for (auto b : CUNYAIModule::basemanager.getBases()) {
+    for (auto b : CUNYAIModule::baseManager.getBases()) {
         if (getDistanceBetween(b.first, p) < shortest_path){
             shortest_path = getDistanceBetween(b.first, p);
             closest_base = b.first;
@@ -1553,7 +1553,7 @@ Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) 
 
     vector<tuple<double, Position>> scout_expo_vector;
     vector<Position> chokesOrMineralPositions;
-    for (const auto& r : CUNYAIModule::land_inventory.ResourceInventory_) {
+    for (const auto& r : CUNYAIModule::landInventory.ResourceInventory_) {
         chokesOrMineralPositions.push_back(r.second.pos_);
     }
     for (const auto& a : BWEM::Map::Instance().Areas()) {
@@ -1809,7 +1809,7 @@ int MapInventory::getExpoPositionScore(const Position & p)
     bool centeredBase = BWEM::Map::Instance().GetArea(centerTile) == BWEM::Map::Instance().GetArea(TilePosition(p)); //Centered Bases are hard to defend.
     bool naturalBase = BWEB::Map::getNaturalArea() == BWEM::Map::Instance().GetArea(TilePosition(p)); //Natural bases are easy to defend.
 
-    if (naturalBase && CUNYAIModule::basemanager.getBaseCount() < 2)
+    if (naturalBase && CUNYAIModule::baseManager.getBaseCount() < 2)
         return INT_MAX;
     else
         return CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(p) - CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(p) - centeredBase * 5000 + naturalBase * 5000; // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.

@@ -42,8 +42,8 @@ bool Mobility::simplePathing(const Position &e_pos, const StoredUnit::Phase phas
 bool Mobility::BWEM_Movement(const bool &forward_movement) {
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
-        if (CUNYAIModule::combat_manager.isScout(unit_)) {
-            int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
+        if (CUNYAIModule::combatManager.isScout(unit_)) {
+            int scouts = CUNYAIModule::combatManager.scoutPosition(unit_);
             return moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut, true);
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
@@ -104,7 +104,6 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()));
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
-    bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
     bool melee = CUNYAIModule::getFunctionalRange(unit_) == 32;
     double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION / 12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
 
@@ -118,7 +117,7 @@ bool Mobility::Tactical_Logic(UnitInventory &ei, const UnitInventory &ui, const 
         if (e->first && e->first->isDetected()) { // only target observable units.
             UnitType e_type = e->second.type_;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
-            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_ && CUNYAIModule::isFightingUnit(e->second.type_))) { // do not suicide into units less valuable than you are.
+            if (!stored_unit_->isSuicideUnit() || (stored_unit_->isSuicideUnit() && e->second.stock_value_ >= stored_unit_->stock_value_ && CUNYAIModule::isFightingUnit(e->second.type_))) { // do not suicide into units less valuable than you are.
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
@@ -210,7 +209,7 @@ bool Mobility::Retreat_Logic() {
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
     }
-    else if (CUNYAIModule::combat_manager.isScout(unit_)) {
+    else if (CUNYAIModule::combatManager.isScout(unit_)) {
         return moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
     }
     else {
@@ -315,7 +314,7 @@ Position Mobility::getSaferPositionNear(const Position p) {
 
     TilePosition centerSpiral = TilePosition(p);
     TilePosition bestTile = TilePosition(p);
-    double base_threat = std::ceil(CUNYAIModule::currentMapInventory.getTileThreat(bestTile) * 100.0) / 100.0; // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
+    double base_threat = convertToScale(CUNYAIModule::currentMapInventory.getTileThreat(bestTile), 2, -2); // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
     int baseDist = INT_MAX;
 
     SpiralOut spiral;
@@ -330,12 +329,16 @@ Position Mobility::getSaferPositionNear(const Position p) {
             continue;
         }
 
-        double new_threat = std::ceil(CUNYAIModule::currentMapInventory.getTileThreat(target_tile) * 100.0) / 100.0; // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
-
+        double new_threat = convertToScale(CUNYAIModule::currentMapInventory.getTileThreat(target_tile), 2, -2); // round threat to nearest 2 decimal places, since you do not want to be attracted to machine rounding errors of 0.
+        int altitude = CUNYAIModule::convertPixelDistanceToTileDistance(BWEM::Map::Instance().GetMiniTile(WalkPosition(target_tile)).Altitude());
+        if (stored_unit_->is_flying_)  // altitude is not as important as threat, so scale it down by 100.  Ground units want high altitude, others want low altitude.
+            new_threat += convertToScale(max(altitude, 100), 2, -4); //Flyers avoid high altitude positions
+        else
+            new_threat -= convertToScale(max(altitude, 100), 2, -4); // ground units avoid low altitude positions.
 
         //If it's a better tile, move there at the end of this.
         if (new_threat <= base_threat && isMoreOpen(target_tile)) {
-            int newDist = target_tile.getDistance(TilePosition(p)); //Don't calculate distances you don't have to, but if they're equal and not better don't switch.
+            int newDist = target_tile.getDistance(TilePosition(p)); //Don't calculate distances you don't have to, but if they're equal and not better don't switch.  One might have considered making this a low scale modifier to the PF, but it is too much to calculate these distances every frame.
 
             if (new_threat == base_threat) {
                 if (newDist < baseDist) {
@@ -354,44 +357,6 @@ Position Mobility::getSaferPositionNear(const Position p) {
     }
 
     return getCenterOfTile(bestTile); // The first time this event occurs will be the closest tile, roughly. There may be some sub-tile differentiation.
-}
-
-
-
-Position Mobility::getVectorAwayFromEdges() {
-
-    // numerous tiles to check.
-    WalkPosition main = WalkPosition(pos_);
-    BWEM::MiniTile main_mini = BWEM::Map::Instance().GetMiniTile(main);
-    WalkPosition alt = main;
-    alt.x = main.x + 1;
-    pair<BWEM::altitude_t, WalkPosition> up = {BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt};
-    alt = main;
-    alt.x = main.x - 1;
-    pair<BWEM::altitude_t, WalkPosition> down = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
-    alt = main;
-    alt.y = main.y + 1;
-    pair<BWEM::altitude_t, WalkPosition> left = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
-    alt = main;
-    alt.y = main.y - 1;
-    pair<BWEM::altitude_t, WalkPosition> right = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
-
-    vector<pair<BWEM::altitude_t, WalkPosition>> higher_ground;
-    for (auto i : { up, down, left, right }) {
-        if (i.first >= main_mini.Altitude())
-            higher_ground.push_back(i);
-    }
-
-    if (higher_ground.empty()) {
-        Diagnostics::DiagnosticWrite("No higher ground?");
-        return Positions::Origin;
-    }
-    else {
-        pair<BWEM::altitude_t, WalkPosition> targeted_pair = *CUNYAIModule::select_randomly(higher_ground.begin(), higher_ground.end());
-        Position vector_to = Position(targeted_pair.second) - pos_;
-        double theta = atan2(vector_to.y, vector_to.x);
-        return Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
-    }
 }
 
 Position Mobility::getVectorApproachingPosition(const Position & p) {
@@ -611,27 +576,47 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
     return simplePathing(finish, phase, caution);
 }
 
-bool Mobility::isTileApproachable(const TilePosition tp) {
-    bool same_height = Broodwar->getGroundHeight(TilePosition(pos_)) == Broodwar->getGroundHeight(tp);
-    bool closer_to_home = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(pos_) < CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(getCenterOfTile(tp));
-    bool isVisible = Broodwar->isVisible(tp); //allows flying units to retreat anywhere... unless they're blind.
-    return same_height || isVisible || closer_to_home;
+bool Mobility::checkStraightPathTo(const StoredUnit su){
+    if (unit_->isFlying())
+        return true;
+
+    DDALineCheck lineObj;
+    lineObj.initializeDDALine(TilePosition(pos_), TilePosition(su.pos_));
+    TilePosition tileInQuestion = TilePosition(pos_);
+    while (tileInQuestion != TilePositions::None) {
+
+        WalkPosition destination = WalkPosition(getCenterOfTile(tileInQuestion));
+        Diagnostics::drawDot(getCenterOfTile(tileInQuestion), Broodwar->getScreenPosition(), Colors::White); //confirm the algo is not broken.
+
+        if (!Broodwar->isWalkable(destination)) { // Check if the tile along the path is threatened.
+            Diagnostics::drawDot(getCenterOfTile(tileInQuestion), Broodwar->getScreenPosition(), Colors::Red); //confirm the algo is not broken.
+            return false; //  If there is a problem along the way, dodge the problem.
+        }
+
+        tileInQuestion = lineObj.nextTile(); // if there is no problem, continue looking for one along the path.
+    }
+    return true;
 }
 
 Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
     Unit target = nullptr;
     int dist_to_enemy = 0;
-    int target_surviablity = INT_MAX;
+    int targetDamage = INT_MIN;
     for (auto t : ui.unit_map_) {
         dist_to_enemy = unit_->getDistance(t.second.pos_);
-        bool baseline_requirement = (isTileApproachable(TilePosition(t.second.pos_)) || stored_unit_->is_flying_) && CUNYAIModule::checkCanFight(u_type_, t.second.type_);
-        if (t.second.future_fap_value_ <= target_surviablity && dist_to_enemy <= MaxDiveDistance && baseline_requirement) {
+        int thisDamage = t.second.stock_value_ - t.second.future_fap_value_;
+        if (thisDamage >= targetDamage && dist_to_enemy <= MaxDiveDistance && checkStraightPathTo(t.second) && CUNYAIModule::checkCanFight(u_type_, t.second.type_)) { //Shoot the thing that is most projected to die and is closest.
             MaxDiveDistance = dist_to_enemy;
-            target_surviablity = t.second.future_fap_value_;  //attack most likely to die, not closest!
+            targetDamage = thisDamage;  //attack most likely to die, not closest!
             target = t.first;
         }
     }
     return target;
+}
+
+double Mobility::convertToScale(double X, int Y, int Z)
+{
+    return std::ceil(X * pow(10, Y)) * pow(10, Z);
 }
 
 bool Mobility::moveAndUpdate(const Position p, const StoredUnit::Phase phase)

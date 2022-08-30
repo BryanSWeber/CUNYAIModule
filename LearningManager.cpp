@@ -1,10 +1,11 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
+
 # include "Source\CUNYAIModule.h"
 # include "Source\LearningManager.h"
 # include "Source\Diagnostics.h"
 # include "Source\Build.h"
-# include "Source/UnitInventory.h"
+# include "Source\UnitInventory.h"
 # include <fstream>
 # include <BWAPI.h>
 # include <cstdlib>
@@ -87,7 +88,7 @@ void LearningManager::onEnd(bool isWinner)
         print_value += currentBuild_.getNext().getUpgrade().c_str();
 
         output << "Couldn't build: " << print_value << endl;
-        output << "Hatches Left?:" << CUNYAIModule::basemanager.getBaseCount() << endl;
+        output << "Hatches Left?:" << CUNYAIModule::baseManager.getBaseCount() << endl;
         output << "Win:" << isWinner << endl;
         output.close();
     };
@@ -99,7 +100,7 @@ void LearningManager::onEnd(bool isWinner)
             copyFile(getWriteDir() + gameInfoExtension_, getReadDir() + gameInfoExtension_);
     }
 
-    dumpStatus();
+    //dumpStatus();
 }
 
 void LearningManager::definePremadeBuildOrders()

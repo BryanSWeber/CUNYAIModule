@@ -61,7 +61,7 @@ bool Reservation::addReserveSystem(Unit originUnit, UnitType outputUnit) {
 bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservationBuildingMap_.find(pos);
     if (it != reservationBuildingMap_.end() && !reservationBuildingMap_.empty()) {
-        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_building) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(type);
+        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_building) CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(type);
         reservationBuildingMap_.erase(pos);
         return true;
     }
@@ -71,7 +71,7 @@ bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retr
 bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
     auto it = find(reservedUpgrades_.begin(), reservedUpgrades_.end(), up);
     if (it != reservedUpgrades_.end() && !reservedUpgrades_.empty()) {
-        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(up);
+        if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(up);
         reservedUpgrades_.erase(it);
         return true;
     }
@@ -81,7 +81,7 @@ bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
 bool Reservation::removeReserveSystem(UnitType type, bool retry_this_unit = false) {
     for (auto i = reservationUnits_.begin(); i != reservationUnits_.end(); i++) {
         if (i->second == type) {
-            if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(type);
+            if (!CUNYAIModule::learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && retry_this_unit) CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(type);
             reservationUnits_.erase(i);
             return true;
         }
@@ -205,8 +205,8 @@ map<Unit,UnitType> Reservation::getReservedUnits() const
 
 bool Reservation::checkAffordablePurchase(const UnitType type, const int distance) {
     double bonus_frames = 48.0; //we need extra frames to make SURE we arrive early. 3 seconds?
-    double extra_min = 0.046 * static_cast<double>(CUNYAIModule::workermanager.getMinWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames);
-    double extra_gas = 0.069 * static_cast<double>(CUNYAIModule::workermanager.getGasWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames); // top speed overestimates drone movement heavily.
+    double extra_min = 0.046 * static_cast<double>(CUNYAIModule::workerManager.getMinWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames);
+    double extra_gas = 0.069 * static_cast<double>(CUNYAIModule::workerManager.getGasWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames); // top speed overestimates drone movement heavily.
 
     bool min_affordable = ( static_cast<double>(Broodwar->self()->minerals()) + extra_min - static_cast<double>(minReserve_) >= type.mineralPrice() ) || type.mineralPrice() == 0;
     bool gas_affordable = ( static_cast<double>(Broodwar->self()->gas()) + extra_gas - static_cast<double>(gasReserve_) >= type.gasPrice() ) || type.gasPrice() == 0;
@@ -249,7 +249,7 @@ void Reservation::confirmOngoingReservations() {
 
         for (auto unit_it = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); unit_it != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); unit_it++) {
             StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit_it->first); // we will want DETAILED information about this unit.
-            if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first && CUNYAIModule::assemblymanager.canMakeCUNY(res_it->second, false) ) //If the miner is there and we can still make the object (ignoring costs).
+            if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first && CUNYAIModule::assemblyManager.canMakeCUNY(res_it->second, false) ) //If the miner is there and we can still make the object (ignoring costs).
                 keep = true;
 
         } // check if we have a unit building it.
@@ -338,8 +338,8 @@ int RemainderTracker::getWaveSize(UnitType ut)
 
 void RemainderTracker::getReservationCapacity()
 {
-    int gasRemaining_ = CUNYAIModule::my_reservation.getExcessGas();
-    int minRemaining_ = CUNYAIModule::my_reservation.getExcessMineral();
-    int supplyRemaining_ = CUNYAIModule::my_reservation.getExcessSupply();
+    int gasRemaining_ = CUNYAIModule::myReservation.getExcessGas();
+    int minRemaining_ = CUNYAIModule::myReservation.getExcessMineral();
+    int supplyRemaining_ = CUNYAIModule::myReservation.getExcessSupply();
     int larvaeRemaining_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva);
 }

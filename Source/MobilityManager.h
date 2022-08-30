@@ -20,8 +20,6 @@ private:
     double distance_metric_;
 
     Position getVectorApproachingPosition(const Position & p);     // Gets a short vector going to a local position that should make us look at the unit just before the spam guard triggers.
-    //Position getVectorAwayFromNeighbors();  // Gets a vector away from nearest neighbors.
-    Position getVectorAwayFromEdges();     // causes a unit to avoid low-"altitude areas" - altitude refers to distance to unwalkable tiles.  In general, one prefers to be on a high altitude position, more options.
 
     bool isMoreOpen(TilePosition &tp); //Returns true if the position is less occupied than pos_.
 
@@ -30,7 +28,7 @@ private:
     Position getPositionThatLetsUsAttack(const Position p, const double proportion = 0.90); // Returns a position such that p is just within range.  Using 100% might get some pixel missing.
 
     Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
-
+    double convertToScale(double X, int Y, int Z); // Converts X to Y sig figs and scales it to 10^Z
 
     bool prepareLurkerToMove();     //Gets a lurker ready to move. Returns TRUE if the lurker needed fixing. 
     bool moveAndUpdate(const Position p, const StoredUnit::Phase phase); //Moves the unit and updates required items. Convenience function. Returns true if the unit was fiddled with in some way.
@@ -64,6 +62,8 @@ public:
     bool checkSafeGroundPath(const Position & finish);     //Checks all areas between here and the finish for safety, including the first.
 
     bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase, const bool caution = false);     // Moves to a location, if caution is TRUE then it will modify an order to move to a threatened area and instead send it to the nearest suitable surround tile.
+
+    bool checkStraightPathTo(const StoredUnit su);
 
     bool isTileApproachable(const TilePosition tp);     //Checks if a particular tile is worth running to (for attacking or retreating). Heuristic, needs work.
 

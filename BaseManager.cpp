@@ -168,7 +168,7 @@ void BaseManager::updateBases()
     for (auto & b : baseMap_) {
         b.second.e_loc_ = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
         b.second.u_loc_ = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
-        b.second.r_loc_ = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, b.first);
+        b.second.r_loc_ = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::landInventory, b.first);
 
         b.second.r_loc_.updateMines();
         b.second.e_loc_.updateUnitInventorySummary();
@@ -207,21 +207,21 @@ void BaseManager::updateBases()
         if (b.second.emergency_sunken_ && Broodwar->getFrameCount() % 24 == 0) {
             StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(b.second.u_loc_, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
-                CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
+                CUNYAIModule::assemblyManager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::myReservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
                     b.second.sunken_count_ + b.second.creep_count_ < 6, b.second.unit_->getTilePosition()); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
         }
         if (b.second.emergency_spore_ && Broodwar->getFrameCount() % 24 == 0) {
             StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(b.second.u_loc_, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
-                CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
+                CUNYAIModule::assemblyManager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::myReservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
                     b.second.sunken_count_ + b.second.creep_count_ < 6, b.second.unit_->getTilePosition()); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
         }
 
         UnitInventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(b.second.u_loc_, UnitTypes::Zerg_Creep_Colony, b.first);
         for (auto u : creep_colonies.unit_map_) {
-            if (u.first) CUNYAIModule::assemblymanager.buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
+            if (u.first) CUNYAIModule::assemblyManager.buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
         }
     }
 
@@ -244,13 +244,13 @@ void BaseManager::displayBaseData()
             Broodwar->drawTextMap(b.first + Position(5, 60), "Sunkens: %s", b.second.emergency_sunken_ ? "TRUE":"FALSE" );
             Broodwar->drawTextMap(b.first + Position(5, 70), "Spores: %s", b.second.emergency_spore_ ? "TRUE" : "FALSE");
             Broodwar->drawTextMap(b.first + Position(5, 80), "BaseScore: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b.first)));
-            Broodwar->drawTextMap(b.first + Position(5, 90), "BaseDist: %d", CUNYAIModule::assemblymanager.getBuildingRelatedGroundDistance(Position(b.first), BWEB::Map::getMainPosition()));
+            Broodwar->drawTextMap(b.first + Position(5, 90), "BaseDist: %d", CUNYAIModule::assemblyManager.getBuildingRelatedGroundDistance(Position(b.first), BWEB::Map::getMainPosition()));
         }
 
         for (auto b : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
             Broodwar->drawTextMap(Position(b) + Position(5, 80), "BaseScore: %d", CUNYAIModule::currentMapInventory.getExpoPositionScore(Position(b)));
-            Broodwar->drawTextMap(Position(b) + Position(5, 90), "BaseDist: %d", CUNYAIModule::assemblymanager.getBuildingRelatedGroundDistance(Position(b), BWEB::Map::getMainPosition()));
-            Broodwar->drawTextMap(Position(b) + Position(5, 100), "BaseGases: %d", CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(b)).countLocalGeysers());
+            Broodwar->drawTextMap(Position(b) + Position(5, 90), "BaseDist: %d", CUNYAIModule::assemblyManager.getBuildingRelatedGroundDistance(Position(b), BWEB::Map::getMainPosition()));
+            Broodwar->drawTextMap(Position(b) + Position(5, 100), "BaseGases: %d", CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::landInventory, Position(b)).countLocalGeysers());
 
         }
     }
@@ -308,7 +308,7 @@ bool Base::isSunkenNeeded()
     set<int> distance_to_alarming_ground;
     bool they_are_moving_out_ground = false;
 
-    for (auto & b : CUNYAIModule::basemanager.getBases()) {
+    for (auto & b : CUNYAIModule::baseManager.getBases()) {
         distance_to_alarming_ground.insert(b.second.distance_to_ground_);
     }
 
@@ -329,7 +329,7 @@ bool Base::isSunkenNeeded()
 
     bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
     bool getting_hit_ground = (this->e_loc_.worker_count_ > 1 || this->e_loc_.building_count_ > 0 || this->e_loc_.stock_ground_units_ > 0);
-    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && ((too_close_by_ground || worker_check.worker_count_ >= 2) && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (this->sunken_count_ <= max(alarming_enemy_ground.ground_count_ / 2, 2));
+    return CUNYAIModule::assemblyManager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && ((too_close_by_ground || worker_check.worker_count_ >= 2) && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (this->sunken_count_ <= max(alarming_enemy_ground.ground_count_ / 2, 2));
 }
 
 bool Base::isSporeNeeded()
@@ -337,7 +337,7 @@ bool Base::isSporeNeeded()
     set<int> distance_to_alarming_air;
 
     bool they_are_moving_out_air = false;
-    for (auto & b : CUNYAIModule::basemanager.getBases()) {
+    for (auto & b : CUNYAIModule::baseManager.getBases()) {
         distance_to_alarming_air.insert(b.second.distance_to_air_);
     }
 
@@ -355,7 +355,7 @@ bool Base::isSporeNeeded()
 
     bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
     bool getting_hit_air = (this->e_loc_.stock_fliers_ > 0);
-    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && (this->spore_count_ <= max(alarming_enemy_air.flyer_count_, 2));
+    return CUNYAIModule::assemblyManager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && (this->spore_count_ <= max(alarming_enemy_air.flyer_count_, 2));
 }
 
 bool Base::checkHasGroundBuffer(const Position& threat_pos)
@@ -368,7 +368,7 @@ bool Base::checkHasGroundBuffer(const Position& threat_pos)
         for (auto choke_point : cpp) {
             BWEM::Area area = *choke_point->GetAreas().first;
             BWEM::Area area2 = *choke_point->GetAreas().second;
-            for (auto b : CUNYAIModule::basemanager.getBases()) { // if another base blocks the path.
+            for (auto b : CUNYAIModule::baseManager.getBases()) { // if another base blocks the path.
                 if (b.second.unit_ == this->unit_) continue; // The same base cannot block the path.
                 int id = BWEM::Map::Instance().GetNearestArea(b.second.unit_->getTilePosition())->Id();
                 if ((area.Id() == id) || (area2.Id() == id)) return true; // return true if it is being blocked.

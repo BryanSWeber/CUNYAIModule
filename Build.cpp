@@ -92,12 +92,12 @@ void Build::addBuildOrderElement(const UnitType & ut)
     updateCumulativeResources();
 }
 
-void Build::retryBuildOrderElement(const UnitType & ut)
+void Build::pushToFrontOfBuildOrder(const UnitType & ut)
 {
     queueBuild_.insert(queueBuild_.begin(), BuildOrderElement(ut));
     updateCumulativeResources();
 }
-void Build::retryBuildOrderElement(const UpgradeType & up)
+void Build::pushToFrontOfBuildOrder(const UpgradeType & up)
 {
     queueBuild_.insert(queueBuild_.begin(), BuildOrderElement(up));
     updateCumulativeResources();

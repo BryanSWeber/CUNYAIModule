@@ -93,6 +93,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <PreLinkEvent />
     <Link>
@@ -121,6 +122,7 @@
     <ClCompile Include="Research_Inventory.cpp" />
     <ClCompile Include="ReservationManager.cpp" />
     <ClCompile Include="ResourceInventory.cpp" />
+    <ClCompile Include="RushManager.cpp" />
     <ClCompile Include="Source\BWEB\Block.cpp" />
     <ClCompile Include="Source\BWEB\BWEB.cpp" />
     <ClCompile Include="Source\BWEB\PathFind.cpp" />
@@ -155,6 +157,7 @@
     <ClInclude Include="Source\ResearchInventory.h" />
     <ClInclude Include="Source\ReservationManager.h" />
     <ClInclude Include="Source\ResourceInventory.h" />
+    <ClInclude Include="Source\RushManager.h" />
     <ClInclude Include="Source\TechManager.h" />
     <ClInclude Include="Source\UnitInventory.h" />
     <ClInclude Include="Source\LearningManager.h" />

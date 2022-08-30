@@ -77,6 +77,9 @@
     <ClCompile Include="CombatSimulator.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="RushManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -116,6 +119,7 @@
     <ClInclude Include="Source\ResourceInventory.h" />
     <ClInclude Include="Source\Build.h" />
     <ClInclude Include="Source\CombatSimulator.h" />
+    <ClInclude Include="Source\RushManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

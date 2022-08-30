@@ -41,7 +41,6 @@ private:
     double getUpperConfidenceBound(int win, int lose); // Calculates average reward + confidence interval, the UCB.
 
     const int countLines(string fileIn); //Count lines in File
-    const void copyFile(string source, string destination); // Moves file, important since the tournaments copy write dir into read dir at the end of each round.
     string cleanBuildName(string messyString); //takes care of leading newline characters, nothing else.
     vector<BuildOrderSetup> myBuilds_; //Predefined BO's
     static map<string, BuildEnums> BuildStringsTable_; //Table for build orders to translate human-readable strings.
@@ -62,6 +61,7 @@ public:
     void onStart();
     void onEnd(bool isWinner);
 
+    const void copyFile(string source, string destination); // Moves file, important since the tournaments copy write dir into read dir at the end of each round.
 
     string getBuildName() const;
 

@@ -113,7 +113,7 @@ void ResearchInventory::updateBuildingStock(const Player & player) {
     }
 
     if (player == Broodwar->self()) {
-        for (auto i : CUNYAIModule::my_reservation.getReservedBuildings())
+        for (auto i : CUNYAIModule::myReservation.getReservedBuildings())
             if(isTechBuilding(i.second))
                 temp_building_stock += i.second * StoredUnit(i.second).stock_value_; // include value of drone if race is zerg.
     }

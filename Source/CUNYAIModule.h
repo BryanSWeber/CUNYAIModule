@@ -15,6 +15,7 @@
 #include "CombatSimulator.h"
 #include "CombatManager.h"
 #include "BaseManager.h"
+#include "RushManager.h"
 #include "BWEB\BWEB.h"
 #include <bwem.h>
 #include <functional>
@@ -24,7 +25,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
@@ -86,16 +87,17 @@ public:
     static PlayerModel friendly_player_model;
     static PlayerModel enemy_player_model;
     static PlayerModel neutral_player_model;
-    static CombatManager combat_manager;
-    static ResourceInventory land_inventory; // resources.
+    static CombatManager combatManager;
+    static ResourceInventory landInventory; // resources.
     static MapInventory currentMapInventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
-    static TechManager techmanager;
-    static AssemblyManager assemblymanager;
-    static Reservation my_reservation;
+    static TechManager techManager;
+    static AssemblyManager assemblyManager;
+    static Reservation myReservation;
     static LearningManager learnedPlan;
-    static WorkerManager workermanager;
-    static BaseManager basemanager;
+    static WorkerManager workerManager;
+    static BaseManager baseManager;
+    static RushManager rushManager;
 
     //These measure its clock.
     static int short_delay;
@@ -318,9 +320,6 @@ public:
     static int convertTileDistanceToPixelDistance(int numberOfTiles);
     static int convertPixelDistanceToTileDistance(int numberOfPixels);
 
-// Vision Functions
-    // returns number of visible tiles.
-    int Vision_Count();
 
     //Suprisingly missing functions:
     template< typename ContainerT, typename PredicateT >

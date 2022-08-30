@@ -5,7 +5,7 @@
 #include "Source\UnitInventory.h"
 #include "Source\MapInventory.h"
 #include "Source\ReservationManager.h"
-#include "Source/Diagnostics.h"
+#include "Source\Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.
 #include <fstream>
@@ -128,7 +128,7 @@ void UnitInventory::purgeWorkerRelationsStop(const Unit &unit)
         miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
+                CUNYAIModule::myReservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
         }
         unit->stop();
@@ -152,7 +152,7 @@ void UnitInventory::purgeWorkerRelationsNoStop(const Unit &unit)
         miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
+                CUNYAIModule::myReservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
@@ -644,14 +644,14 @@ void UnitInventory::updateUnitInventorySummary() {
 
 void UnitInventory::printUnitInventory(const Player &player, const string &bonus)
 {
-    //string start = "learnedPlan.readDirectory + player->getName() + bonus + ".txt";
-    //string finish = learnedPlan.writeDirectory + player->getName() + bonus + ".txt";
-    //if (filesystem::exists(start.c_str()))
-    //    filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
+    string fileExtension = player->getName() + bonus + ".txt";
 
+    ifstream readFile(CUNYAIModule::learnedPlan.getReadDir() + fileExtension);
+    if (readFile)
+        CUNYAIModule::learnedPlan.copyFile(CUNYAIModule::learnedPlan.getReadDir() + fileExtension, CUNYAIModule::learnedPlan.getWriteDir() + fileExtension);
 
     ifstream input; // brings in info;
-    input.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios::in);   // for each row
+    input.open(CUNYAIModule::learnedPlan.getWriteDir() + fileExtension, ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -659,13 +659,14 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
+ 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(CUNYAIModule::learnedPlan.getWriteDir() + player->getName() + bonus + ".txt", ios_base::app);
+        output.open(CUNYAIModule::learnedPlan.getWriteDir() + fileExtension, ios_base::app);
         output << "GameSeed" << ",";
         output << "GameTime" << ",";
         for (auto i : UnitTypes::allUnitTypes()) {
-            if (!i.isNeutral() && !i.isHero() && !i.isSpecialBuilding() && !i.isResourceContainer() && !i.isPowerup() && !i.isBeacon() && i.getRace() == Broodwar->self()->getRace()) {
+            if (!i.isNeutral() && !i.isHero() && !i.isSpecialBuilding() && !i.isResourceContainer() && !i.isPowerup() && !i.isBeacon() && i.getRace() != Races::None) {
                 output << i.c_str() << ",";
             }
         }
@@ -685,13 +686,6 @@ void UnitInventory::printUnitInventory(const Player &player, const string &bonus
     }
     output << endl;
     output.close();
-
-    //if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-    //    string start = learnedPlan.writeDirectory + player->getName() + bonus + ".txt";
-    //    string finish = learnedPlan.readDirectory + player->getName() + bonus + ".txt";
-    //    if (filesystem::exists(start.c_str()))
-    //        filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
-    //}
 }
 
 void UnitInventory::stopMine(Unit u) {
@@ -849,12 +843,12 @@ bool StoredUnit::unitDeadInFuture(const int &numberOfConsecutiveDeadSims) const 
 //Increments the number of miners on a resource.
 void StoredUnit::startMine(Stored_Resource &new_resource) {
     locked_mine_ = new_resource.bwapi_unit_;
-    CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 //Increments the number of miners on a resource.
 void StoredUnit::startMine(Unit &new_resource) {
     locked_mine_ = new_resource;
-    CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 //Decrements the number of miners on a resource, if possible.
@@ -883,8 +877,8 @@ void stopMine(const Unit &unit) {
 //finds mine- Will return true something even if the mine DNE.
 Stored_Resource* StoredUnit::getMine() {
     Stored_Resource* tenative_resource = nullptr;
-    if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
-        tenative_resource = &CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_)->second;
+    if (CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::landInventory.ResourceInventory_.end()) {
+        tenative_resource = &CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_)->second;
     }
     return tenative_resource;
 }
@@ -892,8 +886,8 @@ Stored_Resource* StoredUnit::getMine() {
 //finds mine- Will return true null if the mine DNE.
 Stored_Resource* getMine(const Unit &resource) {
     Stored_Resource* tenative_resource = nullptr;
-    if (CUNYAIModule::land_inventory.ResourceInventory_.find(resource) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
-        tenative_resource = &CUNYAIModule::land_inventory.ResourceInventory_.find(resource)->second;
+    if (CUNYAIModule::landInventory.ResourceInventory_.find(resource) != CUNYAIModule::landInventory.ResourceInventory_.end()) {
+        tenative_resource = &CUNYAIModule::landInventory.ResourceInventory_.find(resource)->second;
     }
     return tenative_resource;
 }
@@ -922,7 +916,7 @@ bool StoredUnit::isAssignedLongDistanceMining() {
 //checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
 bool StoredUnit::isAssignedMining() {
     if (locked_mine_) {
-        if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
+        if (CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::landInventory.ResourceInventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine();
             return !mine_of_choice->blocking_mineral_ && mine_of_choice->type_.isMineralField();
         }
@@ -932,7 +926,7 @@ bool StoredUnit::isAssignedMining() {
 
 bool StoredUnit::isAssignedGas() {
     if (locked_mine_) {
-        if (CUNYAIModule::land_inventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::land_inventory.ResourceInventory_.end()) {
+        if (CUNYAIModule::landInventory.ResourceInventory_.find(locked_mine_) != CUNYAIModule::landInventory.ResourceInventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine();
             return mine_of_choice->type_.isRefinery();
         }

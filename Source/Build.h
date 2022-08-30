@@ -105,8 +105,8 @@ public:
     void addBuildOrderElement(const TechType & research);// adds an element to the end of the queue.
     void addBuildOrderElement(const UnitType & ut); // adds an element to the end of the queue.
 
-    void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
-    void retryBuildOrderElement(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
+    void pushToFrontOfBuildOrder(const UnitType & ut); // Adds the element to the front of the queue, presumably to retry something that went wrong.
+    void pushToFrontOfBuildOrder(const UpgradeType & up); // Adds the element to the front of the queue, presumably to retry something that went wrong.
 
     void announceBuildingAttempt(const UnitType ut) const;  // Announce that a building has been attempted.
     int countTimesInBuildQueue(const UnitType ut) const;  //Counts the number of this unit in the BO. Needed to evaluate extractor-related items.

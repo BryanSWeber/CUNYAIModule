@@ -16,6 +16,7 @@
 #include "Source\BaseManager.h"
 #include "Source\Build.h"
 #include "Source\CombatSimulator.h"
+#include "Source\RushManager.h"
 #include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing
@@ -47,15 +48,17 @@ bool CUNYAIModule::gas_starved = false;
 PlayerModel CUNYAIModule::friendly_player_model;
 PlayerModel CUNYAIModule::enemy_player_model;
 PlayerModel CUNYAIModule::neutral_player_model;
-ResourceInventory CUNYAIModule::land_inventory; // resources.
+ResourceInventory CUNYAIModule::landInventory; // resources.
 MapInventory CUNYAIModule::currentMapInventory;  // macro variables, not every unit I have.
-CombatManager CUNYAIModule::combat_manager;
-TechManager CUNYAIModule::techmanager;
-AssemblyManager CUNYAIModule::assemblymanager;
-Reservation CUNYAIModule::my_reservation;
+CombatManager CUNYAIModule::combatManager;
+TechManager CUNYAIModule::techManager;
+AssemblyManager CUNYAIModule::assemblyManager;
+Reservation CUNYAIModule::myReservation;
 LearningManager CUNYAIModule::learnedPlan;
-WorkerManager CUNYAIModule::workermanager;
-BaseManager CUNYAIModule::basemanager;
+WorkerManager CUNYAIModule::workerManager;
+BaseManager CUNYAIModule::baseManager;
+RushManager CUNYAIModule::rushManager;
+
 
 double CUNYAIModule::supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
 double CUNYAIModule::gas_proportion = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
@@ -146,7 +149,7 @@ void CUNYAIModule::onStart()
     currentMapInventory.onStart();
     onStartMapClock.clockFinish("Map Inventory (OnStart)");
 
-    my_reservation = Reservation();
+    myReservation = Reservation();
     onStartClock.clockFinish("onStart");
 }
 
@@ -186,17 +189,21 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllLocations();
     playerUpdatesClock.clockFinish("Player Models Updated On Frame");
 
+    //Run Rush Detection and responses
+    DiagnosticTimer rushClock;
+    rushManager.OnFrame();
+    rushClock.clockFinish("Rush Checks Completed On Frame");
 
     //Update the combat manager
     DiagnosticTimer combatOnFrame;
-    combat_manager.onFrame();
+    combatManager.onFrame();
     combatOnFrame.clockFinish("Combat Updated");
 
 
     //Knee-jerk states: gas, supply.
-    gas_starved = (workermanager.checkGasOutlet() && workermanager.getMinWorkers() > workermanager.getGasWorkers() //You must have more mineral gatherers than gas miners, otherwise you are simply eco starved.
-        && (currentMapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
-        !learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && (my_reservation.getExcessGas() <= 0 || (learnedPlan.inspectCurrentBuild().getRemainingGas() >= Broodwar->self()->gas()));// you need gas for a required build order item.
+    gas_starved = (workerManager.checkGasOutlet() && workerManager.getMinWorkers() > workerManager.getGasWorkers() //You must have more mineral gatherers than gas miners, otherwise you are simply eco starved.
+        && (currentMapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblyManager.getMaxGas(), CUNYAIModule::techManager.getMaxGas()}))) || // you cannot buy something because of gas.
+        !learnedPlan.inspectCurrentBuild().isEmptyBuildOrder() && (myReservation.getExcessGas() <= 0 || (learnedPlan.inspectCurrentBuild().getRemainingGas() >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (currentMapInventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
@@ -205,12 +212,12 @@ void CUNYAIModule::onFrame()
 
 
     //Update posessed minerals. Erase those that are mined out.
-    land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, currentMapInventory);
-    land_inventory.drawMineralRemaining();
+    landInventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, currentMapInventory);
+    landInventory.drawMineralRemaining();
 
     //Update workers.
     DiagnosticTimer workerOnFrame;
-    workermanager.onFrame();
+    workerManager.onFrame();
     workerOnFrame.clockFinish("Workers Updated");
 
     //Update Map.
@@ -220,27 +227,27 @@ void CUNYAIModule::onFrame()
 
     //Update Resources.
     DiagnosticTimer landOnFrame;
-    land_inventory.onFrame();
+    landInventory.onFrame();
     landOnFrame.clockFinish("Land Resources Updated");
 
     DiagnosticTimer basesOnFrame;
-    basemanager.updateBases();
+    baseManager.updateBases();
     basesOnFrame.clockFinish("Bases Updated");
 
-    techmanager.updateCanMakeTechExpenditures();
-    techmanager.updateOptimalTech();
+    techManager.updateCanMakeTechExpenditures();
+    techManager.updateOptimalTech();
 
-    if (army_starved || CUNYAIModule::my_reservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling)) {
-        assemblymanager.updateOptimalCombatUnit();
+    if (army_starved || CUNYAIModule::myReservation.canReserveWithExcessResource(UnitTypes::Zerg_Zergling)) {
+        assemblyManager.updateOptimalCombatUnit();
     }
-    assemblymanager.updatePotentialBuilders();
+    assemblyManager.updatePotentialBuilders();
 
     if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
         bool need_gas_now = false;
         learnedPlan.inspectCurrentBuild().getNextGasCost() ? need_gas_now = true : need_gas_now = false;
         bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
-        for (auto r : CUNYAIModule::my_reservation.getReservedBuildings()) {
+        for (auto r : CUNYAIModule::myReservation.getReservedBuildings()) {
             reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
         }
         if (need_gas_now && no_extractor && !reserved_extractor) {
@@ -249,8 +256,8 @@ void CUNYAIModule::onFrame()
         }
     }
 
-    my_reservation.confirmOngoingReservations();
-    Diagnostics::drawReservations(my_reservation, Broodwar->getScreenPosition());
+    myReservation.confirmOngoingReservations();
+    Diagnostics::drawReservations(myReservation, Broodwar->getScreenPosition());
 
 
 
@@ -270,9 +277,9 @@ void CUNYAIModule::onFrame()
 
     // Assemble units when needed.
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-        assemblymanager.assignAssemblyRole();
-        assemblymanager.morphReservedUnits();
-        assemblymanager.updateExpoPosition();
+        assemblyManager.assignAssemblyRole();
+        assemblyManager.morphReservedUnits();
+        assemblyManager.updateExpoPosition();
         Diagnostics::drawExpo();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
     //larva_time = end_unit_morphs - start_unit_morphs;
@@ -340,13 +347,13 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground.
         auto start_combat = std::chrono::high_resolution_clock::now();
-        combat_manager.grandStrategyScript(u);
+        combatManager.grandStrategyScript(u);
         auto end_combat = std::chrono::high_resolution_clock::now();
 
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
-        if (u->getType().isWorker()) workermanager.workerWork(u);
+        if (u->getType().isWorker()) workerManager.workerWork(u);
         auto end_worker = std::chrono::high_resolution_clock::now();
 
         //detector_time += end_detector - start_detector;
@@ -364,7 +371,7 @@ void CUNYAIModule::onFrame()
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
         //Upgrades only occur on a specific subtype of units.
         if (isIdleEmpty(u) && !u_type.canAttack() && unconsidered_unit_type && spamGuard(u) && (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
-            techmanager.tryToTech(u, friendly_player_model.units_, currentMapInventory);
+            techManager.tryToTech(u, friendly_player_model.units_, currentMapInventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }
@@ -498,7 +505,7 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
     if (unit->getPlayer()->isNeutral() && unit->getType().isResourceContainer()) { // safety check.
         Stored_Resource* ru = &Stored_Resource(unit);
         ru->max_stock_value_ = ru->current_stock_value_; // its value is what it has now, since it was somehow missing at game start. Must be passed by refrence or it will be forgotten.
-        land_inventory.addStored_Resource(*ru);
+        landInventory.addStored_Resource(*ru);
     }
 
 
@@ -530,8 +537,8 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
     }
 
     if (CUNYAIModule::isFightingUnit(unit)) {
-        techmanager.clearSimulationHistory();
-        assemblymanager.clearSimulationHistory();
+        techManager.clearSimulationHistory();
+        assemblyManager.clearSimulationHistory();
     }
 
     if (Broodwar->isReplay())
@@ -562,8 +569,8 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
     }
 
     if (CUNYAIModule::isFightingUnit(unit)) {
-        techmanager.clearSimulationHistory();
-        assemblymanager.clearSimulationHistory();
+        techManager.clearSimulationHistory();
+        assemblyManager.clearSimulationHistory();
     }
 
     if (unit->getPlayer() == Broodwar->self()) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
@@ -574,7 +581,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
         if (!learnedPlan.inspectCurrentBuild().isEmptyBuildOrder()) {
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
-                learnedPlan.modifyCurrentBuild()->retryBuildOrderElement(UnitTypes::Zerg_Overlord);
+                learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Overlord);
             }
             else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
                 learnedPlan.modifyCurrentBuild()->clearRemainingBuildOrder( false );
@@ -592,8 +599,8 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             //Diagnostics::DiagnosticWrite( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.UnitInventory_.size() );
         }
 
-        combat_manager.removeScout(unit);
-        combat_manager.removeLiablity(unit);
+        combatManager.removeScout(unit);
+        combatManager.removeLiablity(unit);
     }
 
     if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
@@ -623,14 +630,14 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
                 friendly_player_model.units_.purgeWorkerRelationsNoStop(miner_unit); // reset the worker
                 if (was_clearing) {
 
-                    auto found_mineral_ptr = land_inventory.ResourceInventory_.find(unit); // erase the now-gone mine.
-                    if (found_mineral_ptr != land_inventory.ResourceInventory_.end()) {
-                        land_inventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
+                    auto found_mineral_ptr = landInventory.ResourceInventory_.find(unit); // erase the now-gone mine.
+                    if (found_mineral_ptr != landInventory.ResourceInventory_.end()) {
+                        landInventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
                     }
 
-                    workermanager.assignClear(miner_unit); // reassign clearing workers again.
+                    workerManager.assignClear(miner_unit); // reassign clearing workers again.
                     if (potential_miner->second.isAssignedClearing()) {
-                        workermanager.updateWorkersClearing();
+                        workerManager.updateWorkersClearing();
                     }
                 }
                 else {
@@ -643,9 +650,9 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
 
         // clear it just in case.
-        auto found_mineral_ptr = land_inventory.ResourceInventory_.find(unit);
-        if (found_mineral_ptr != land_inventory.ResourceInventory_.end()) {
-            land_inventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
+        auto found_mineral_ptr = landInventory.ResourceInventory_.find(unit);
+        if (found_mineral_ptr != landInventory.ResourceInventory_.end()) {
+            landInventory.ResourceInventory_.erase(unit); //Clear that mine from the resource inventory.
         }
 
     }
@@ -673,8 +680,8 @@ void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
     }
 
     if (CUNYAIModule::isFightingUnit(unit)) {
-        techmanager.clearSimulationHistory();
-        assemblymanager.clearSimulationHistory();
+        techManager.clearSimulationHistory();
+        assemblyManager.clearSimulationHistory();
     }
 
     BWEB::Map::onUnitMorph(unit);
@@ -705,7 +712,7 @@ void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
 
     if (unit->getBuildType().isBuilding()) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
-        my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType(), false);
+        myReservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType(), false);
     }
 }
 
