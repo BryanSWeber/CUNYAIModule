@@ -33,6 +33,11 @@ RushManager::RushManager()
         { UnitTypes::Protoss_Gateway, {2, clockToFrames(2,30) } },
         { UnitTypes::Terran_Barracks, {2, clockToFrames(3,0) } }
     }; // unit, <count, time in frames>
+
+    // Hints from McRave:
+    // 2 gates complete by 2:15 for a 9 / 9 in base
+    // 2 zealots arrive by 3 : 25
+    // 4 arrive by ~4 : 00
 }
 
 bool RushManager::getRushDetected()

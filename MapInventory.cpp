@@ -1004,8 +1004,8 @@ vector<TilePosition> MapInventory::getExpoTilePositions() const
 
 vector<TilePosition> MapInventory::getInsideWallTilePositions()  const{
     std::vector<TilePosition> macroPositions;
-    BWEB::Path distanceBetweenWallAndStart;
-    distanceBetweenWallAndStart.createUnitPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()));
+    BWEB::Path distanceBetweenWallAndStart = BWEB::Path(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()), UnitTypes::Zerg_Drone);
+    distanceBetweenWallAndStart.generateJPS([&](const TilePosition &t) { return distanceBetweenWallAndStart.unitWalkable(t); });
     for (auto block : BWEB::Blocks::getBlocks()) {
 
         //For each block get all placements
@@ -1014,8 +1014,8 @@ vector<TilePosition> MapInventory::getInsideWallTilePositions()  const{
         // If there's a good placement, let's use it.
         if (!placements.empty()) {
             for (auto &tile : placements) {
-                BWEB::Path pathFromStart;
-                pathFromStart.createUnitPath(Position(Broodwar->self()->getStartLocation()), Position(tile));
+                BWEB::Path pathFromStart = BWEB::Path(Position(Broodwar->self()->getStartLocation()), Position(tile), UnitTypes::Zerg_Drone);
+                pathFromStart.generateJPS([&](const TilePosition &t) { return distanceBetweenWallAndStart.unitWalkable(t); });
                 if (pathFromStart.isReachable() && !pathFromStart.getTiles().empty() && pathFromStart.getDistance() < distanceBetweenWallAndStart.getDistance())
                     macroPositions.push_back(tile);
             }

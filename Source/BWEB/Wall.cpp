@@ -1240,4 +1240,11 @@ namespace BWEB::Walls {
             }
         }
     }
+
+    Wall* createZSimCity()
+    {
+        vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber };
+        vector<UnitType> defenses(10, UnitTypes::Zerg_Sunken_Colony);
+        return createWall(buildings, Map::getNaturalArea(), Map::getNaturalChoke(), UnitTypes::None, defenses, true, false);
+    }
 }

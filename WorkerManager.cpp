@@ -24,8 +24,8 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
         Diagnostics::DiagnosticWrite("We seem to be overzealous with keeping our reserve system clean, sir!");
 
     if (!has_path) {
-        BWEB::Path newPath;
-        newPath.createUnitPath(miner.pos_, Position(miner.intended_build_tile_));
+        BWEB::Path newPath = BWEB::Path(miner.pos_, Position(miner.intended_build_tile_),UnitTypes::Zerg_Drone);
+        newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
         has_path = newPath.isReachable() && !newPath.getTiles().empty();
     }
 

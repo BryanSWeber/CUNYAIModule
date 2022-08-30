@@ -528,8 +528,8 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
 
     if (!unit_->isFlying()) {
         //First, let us try to get there with JPS.
-        BWEB::Path newPath;
-        newPath.createUnitPath(start, finish);
+        BWEB::Path newPath = BWEB::Path(start, finish, stored_unit_->type_);
+        newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
         if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0) {
             int i = 0;
             TilePosition tileOfInterest = TilePosition(newPath.getTiles()[0]);

@@ -614,7 +614,7 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     auto closest_station = BWEB::Stations::getClosestStation(tp);
     if (closest_station) {
         int i = 0;
-        for (auto &tile : closest_station->getDefenseLocations()) {
+        for (auto &tile : closest_station->getDefenses()) {
             int walkDistance = getUnbuiltSpaceGroundDistance(Position(tp), Position(tile));
             if (walkDistance > 0)
                 viable_placements.insert({ walkDistance, tile });
@@ -1297,10 +1297,9 @@ int AssemblyManager::getBuildingRelatedGroundDistance(const Position & A, const 
 }
 
 int AssemblyManager::getUnbuiltSpaceGroundDistance(const Position & A, const Position & B) {
-    BWEB::Path newPath;
     //Try JPS pathing.
-    newPath.createUnitPath(A, B);
-
+    BWEB::Path newPath = BWEB::Path(A, B, UnitTypes::Zerg_Drone);
+    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
     if (newPath.isReachable() && newPath.getDistance() > 0)
         return static_cast<int>(newPath.getDistance());
     else
