@@ -63,34 +63,34 @@ void RushManager::OnFrame()
 
 void RushManager::doRushResponse()
 {
-    switch (Broodwar->enemy()->getRace()) {
-        case Races::Protoss:
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony); //Remember, first thing you do is added last. The Stack!
-            break;
-        case Races::Zerg:
-            break;
-        case Races::Terran:
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
-            CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
-            break;
-        case Races::Random:
-        default:
-            break;
-    }
+    //switch (Broodwar->enemy()->getRace()) {
+    //    case Races::Protoss:
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony); //Remember, first thing you do is added last. The Stack!
+    //        break;
+    //    case Races::Zerg:
+    //        break;
+    //    case Races::Terran:
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Drone);
+    //        CUNYAIModule::learnedPlan.modifyCurrentBuild()->pushToFrontOfBuildOrder(UnitTypes::Zerg_Creep_Colony);
+    //        break;
+    //    case Races::Random:
+    //    default:
+    //        break;
+    //}
     rushResponded = true;
 }
